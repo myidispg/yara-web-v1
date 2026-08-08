@@ -1,0 +1,124 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Jost:ital,wght@0,300..600;1,300..500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-ivory font-body text-ink antialiased;
+    }
+
+    ::selection {
+        @apply bg-gold/30;
+    }
+}
+
+@layer components {
+    .eyebrow {
+        @apply text-[11px] font-medium uppercase tracking-[0.35em] text-gold-deep;
+    }
+
+    .btn-gold {
+        @apply inline-flex items-center justify-center gap-2 bg-gold px-8 py-4 text-[12px] font-medium uppercase tracking-[0.25em] text-ink transition-all duration-300 hover:bg-gold-deep hover:text-ivory;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 border border-ink/25 px-8 py-4 text-[12px] font-medium uppercase tracking-[0.25em] text-ink transition-all duration-300 hover:border-gold-deep hover:text-gold-deep;
+    }
+
+    .btn-ghost-light {
+        @apply inline-flex items-center justify-center gap-2 border border-ivory/40 px-8 py-4 text-[12px] font-medium uppercase tracking-[0.25em] text-ivory transition-all duration-300 hover:border-gold hover:text-gold-light;
+    }
+
+    .input {
+        @apply w-full border border-ink/20 bg-white/70 px-4 py-3 text-sm tracking-wide outline-none transition focus:border-gold-deep focus:ring-1 focus:ring-gold-deep;
+    }
+
+    .chip {
+        @apply inline-flex cursor-pointer items-center gap-1 border px-3.5 py-1.5 text-[11px] uppercase tracking-[0.18em] transition;
+    }
+}
+
+/* film-grain overlay */
+.grain {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+}
+
+/* line-mask headline reveal */
+.mask-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+}
+
+.mask-line>span {
+    display: block;
+    transform: translateY(115%);
+    animation: rise 1.1s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+@keyframes rise {
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* scroll reveals */
+.reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.8s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* slow zoom on hover */
+.zoom-hover img {
+    transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.zoom-hover:hover img {
+    transform: scale(1.07);
+}
+
+.gold-rule {
+    height: 1px;
+    background: linear-gradient(90deg, #c19a4b, rgba(193, 154, 75, 0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .mask-line>span {
+        transform: none;
+        animation: none;
+    }
+
+    .reveal {
+        opacity: 1;
+        transform: none;
+    }
+}
