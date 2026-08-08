@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { variantLabel } from "../utils/format";
 
 const CartContext = createContext(null);
-const STORAGE_KEY = "vaira_cart";
+const STORAGE_KEY = "yara_cart";
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => {
@@ -22,8 +22,10 @@ export function CartProvider({ children }) {
         slug: product.slug,
         name: product.name,
         image: product.images?.[0]?.url || product.primary_image || null,
-        variant: { id: variant.id, gold_color: variant.gold_color, purity: variant.purity,
-                   ring_size: variant.ring_size, price: variant.price, label: variantLabel(variant) },
+        variant: {
+          id: variant.id, gold_color: variant.gold_color, purity: variant.purity,
+          ring_size: variant.ring_size, price: variant.price, label: variantLabel(variant)
+        },
         unit_price: variant.price,
         qty,
       }];

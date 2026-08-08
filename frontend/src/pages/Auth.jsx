@@ -42,7 +42,7 @@ export default function AuthPage() {
     return (
         <div className="grid min-h-[80vh] lg:grid-cols-2">
             <div className="hidden flex-col justify-between bg-pine p-12 text-ivory lg:flex">
-                <p className="font-display text-2xl tracking-[0.3em]">VAIRA<span className="ml-1 text-gold">◆</span></p>
+                <p className="font-display text-2xl tracking-[0.3em]">YA-RA<span className="ml-1 text-gold">◆</span></p>
                 <div>
                     <p className="max-w-sm font-display text-4xl italic leading-snug text-champagne">
                         “A diamond is the slowest kind of lightning — we just give it a setting.”
@@ -96,7 +96,7 @@ export default function AuthPage() {
                         {isRegister ? (
                             <>Already have an account? <Link to="/login" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Sign in</Link></>
                         ) : (
-                            <>New to VAIRA? <Link to="/register" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Create an account</Link></>
+                            <>New to YA-RA? <Link to="/register" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Create an account</Link></>
                         )}
                     </p>
                 </div>

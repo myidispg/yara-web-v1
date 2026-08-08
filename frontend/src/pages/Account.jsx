@@ -149,7 +149,7 @@ export default function AccountPage() {
                             <p className="mt-1">{v}</p>
                         </div>
                     ))}
-                    <p className="text-xs text-ink/45">Contact care@vaira.in to update your email or phone.</p>
+                    <p className="text-xs text-ink/45">Contact care@yara.in to update your email or phone.</p>
                 </div>
             )}
         </div>

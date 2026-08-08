@@ -43,7 +43,7 @@ function Hero() {
                         <span className="mask-line"><span style={{ animationDelay: "260ms" }}>in Jaipur.</span></span>
                     </h1>
                     <p className="mt-7 max-w-md text-[15px] leading-relaxed text-ink/70">
-                        VAIRA cuts, certifies and sets natural diamonds into 14 & 18 KT gold — solitaires,
+                        YA-RA cuts, certifies and sets natural diamonds into 14 & 18 KT gold — solitaires,
                         tennis bracelets and heirloom jhumkas, shipped insured anywhere in India.
                     </p>
                     <div className="mt-9 flex flex-wrap gap-4">
@@ -60,7 +60,7 @@ function Hero() {
                 <div className="relative md:col-span-6">
                     <div className="relative ml-auto max-w-md">
                         <div className="absolute -inset-3 border border-gold/50" aria-hidden="true" />
-                        <img src="https://picsum.photos/seed/vaira-solitaire-hero/900/1150" alt="Solitaire ring on silk"
+                        <img src="https://picsum.photos/seed/yara-solitaire-hero/900/1150" alt="Solitaire ring on silk"
                             className="relative aspect-[3/4] w-full animate-breathe object-cover shadow-luxe" />
                         <div className="absolute -left-12 bottom-10 hidden w-56 border border-gold/40 bg-ivory p-4 shadow-card sm:block">
                             <p className="text-[10px] uppercase tracking-[0.3em] text-gold-deep">Certificate</p>
@@ -72,7 +72,7 @@ function Hero() {
                             <circle cx="60" cy="60" r="58" fill="#173227" />
                             <circle cx="60" cy="60" r="30" fill="none" stroke="#c19a4b" strokeWidth="1" />
                             <text fontSize="9.5" letterSpacing="2.6" fill="#e3cd9b">
-                                <textPath href="#sealcirc">VAIRA · NATURAL DIAMONDS · JAIPUR · EST. 2026 ·</textPath>
+                                <textPath href="#sealcirc">YA-RA · NATURAL DIAMONDS · JAIPUR · EST. 2026 ·</textPath>
                             </text>
                             <text x="60" y="67" textAnchor="middle" fontSize="20" fill="#c19a4b">◆</text>
                         </svg>
@@ -189,9 +189,9 @@ function Craft() {
                 <Reveal delay={150}>
                     <div className="relative ml-auto max-w-md">
                         <div className="absolute -inset-3 border border-gold/40" aria-hidden="true" />
-                        <img src="https://picsum.photos/seed/vaira-atelier-hands/900/1100" alt="Karigar setting a stone"
+                        <img src="https://picsum.photos/seed/yara-atelier-hands/900/1100" alt="Karigar setting a stone"
                             loading="lazy" className="relative aspect-[4/5] w-full object-cover" />
-                        <img src="https://picsum.photos/seed/vaira-atelier-tools/500/620" alt="Setting tools" loading="lazy"
+                        <img src="https://picsum.photos/seed/yara-atelier-tools/500/620" alt="Setting tools" loading="lazy"
                             className="absolute -bottom-10 -left-14 hidden w-44 border-4 border-pine object-cover shadow-luxe md:block" />
                     </div>
                 </Reveal>

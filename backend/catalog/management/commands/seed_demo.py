@@ -145,11 +145,11 @@ class Command(BaseCommand):
 
         # ---- demo user, address and a delivered sample order -------------
         user, created_user = User.objects.get_or_create(
-            email="demo@vaira.in",
+            email="demo@yara.in",
             defaults={"phone": "9876543210", "first_name": "Aisha", "last_name": "Sharma"},
         )
         if created_user:
-            user.set_password("vaira@123")
+            user.set_password("yara@123")
             user.save()
 
             address = Address.objects.create(
@@ -176,5 +176,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Seeded {Category.objects.count()} categories, "
             f"{created_products} new products ({Product.objects.count()} total). "
-            "Demo login: demo@vaira.in / vaira@123 (phone 9876543210 works too)."
+            "Demo login: demo@yara.in / yara@123 (phone 9876543210 works too)."
         ))

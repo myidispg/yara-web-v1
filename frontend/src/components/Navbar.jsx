@@ -27,7 +27,7 @@ export default function Navbar() {
                     </button>
 
                     <Link to="/" className="font-display text-2xl tracking-[0.3em]">
-                        VAIRA<span className="ml-1 text-gold">◆</span>
+                        YA-RA<span className="ml-1 text-gold">◆</span>
                     </Link>
 
                     <nav className="hidden items-center gap-8 md:flex">
