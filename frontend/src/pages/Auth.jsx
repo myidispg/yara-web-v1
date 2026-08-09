@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../utils/usePageTitle";
 
 const inputCls =
     "w-full bg-transparent border-b border-charcoal/25 py-3 text-sm focus:outline-none focus:border-gold placeholder-charcoal/40";
@@ -10,6 +11,8 @@ export default function AuthPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const isRegister = location.pathname === "/register";
+
+    usePageTitle(isRegister ? "Create Account" : "Welcome Back");
 
     const [loginForm, setLoginForm] = useState({ identifier: "", password: "" });
     const [regForm, setRegForm] = useState({ first_name: "", last_name: "", email: "", phone: "", password: "", confirm: "" });

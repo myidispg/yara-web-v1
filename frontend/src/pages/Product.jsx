@@ -20,6 +20,8 @@ export default function ProductPage() {
     const [imgIdx, setImgIdx] = useState(0);
     const [showBreakdown, setShowBreakdown] = useState(false);
 
+    usePageTitle(product?.name);
+
     useEffect(() => {
         (async () => {
             for (const path of [`/products/${slug}/`, `/products/?slug=${slug}`]) {

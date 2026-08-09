@@ -1,3 +1,5 @@
+import usePageTitle from "../utils/usePageTitle";
+
 const PROMISES = [
     { num: "01", title: "Certification", body: "All diamond jewellery items at YA-RA® are certified by IGI or GIA. Gold jewellery is 100% BIS Hallmarked in 14Kt or 18Kt solid gold." },
     { num: "02", title: "Lifetime Exchange & Buyback", body: "We provide 100% gold prevailing value + 90% prevailing diamond value on lifetime exchanges across India." },
@@ -15,6 +17,9 @@ const FAQS = [
 ];
 
 export default function PoliciesPage() {
+
+    usePageTitle("Guarantees & Certifications");
+
     return (
         <div className="max-w-5xl mx-auto px-6 lg:px-12 py-16">
             <p className="eyebrow mb-2 text-center">Policies &amp; Certifications</p>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/client";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../utils/usePageTitle";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -20,6 +21,8 @@ const Field = ({ label, ...props }) => (
 export default function CheckoutPage() {
     const { items, subtotal, clear } = useCart();
     const { user } = useAuth();
+
+    usePageTitle("Secure Checkout");
 
     const [form, setForm] = useState({
         full_name: [user?.first_name, user?.last_name].filter(Boolean).join(" "),

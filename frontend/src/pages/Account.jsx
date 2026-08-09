@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../utils/usePageTitle";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -21,6 +22,8 @@ export default function AccountPage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
+
+    usePageTitle("My Account");
 
     useEffect(() => {
         (async () => {

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import usePageTitle from "../utils/usePageTitle";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -7,6 +8,8 @@ const inr = (n) =>
 export default function CartPage() {
     const { items, setQty, removeItem, subtotal, count } = useCart();
     const navigate = useNavigate();
+
+    usePageTitle("Shopping Bag");
 
     if (!items.length)
         return (

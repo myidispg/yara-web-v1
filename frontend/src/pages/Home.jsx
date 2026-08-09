@@ -4,8 +4,6 @@ import api from "../api/client";
 import ProductCard from "../components/ProductCard";
 import usePageTitle from "../utils/usePageTitle";
 
-usePageTitle();
-
 const IMG = {
     hero: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop",
     studs: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=400&auto=format&fit=crop",
@@ -40,6 +38,9 @@ const FOUR_CS = [
 
 export default function Home() {
     const [products, setProducts] = useState([]);
+
+    usePageTitle();
+
     useEffect(() => {
         (async () => {
             for (const path of ["/products/", "/catalog/products/"]) {
