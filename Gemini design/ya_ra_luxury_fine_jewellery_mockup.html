@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YA-RA® | Natural Diamond Fine Jewellery</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#1A2938',       /* Deep Dana Rebecca slate navy */
+                            navyDark: '#0F1A24',   /* High-contrast dark charcoal navy */
+                            accentPink: '#E8A3A8', /* Muted diamond blush from logo */
+                            accentGold: '#C5A059', /* Muted gold line accent */
+                            cream: '#FCFBF9',      /* Luxurious ivory white tone */
+                            softBorder: '#EAE6E1'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'Georgia', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FFFFFF;
+            color: #1A2938;
+        }
+        h1, h2, h3, h4, .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-white text-brand-navy antialiased selection:bg-brand-navy selection:text-white">
+
+    <!-- TOP ANNOUNCEMENT BAR (Minimal & Elegant) -->
+    <div class="bg-brand-navy text-white text-[11px] py-2 px-4 text-center tracking-[0.15em] uppercase flex justify-between items-center border-b border-gray-800">
+        <div class="hidden sm:block text-brand-accentPink font-medium">✨ 100% Certified Natural Diamonds & 14Kt/18Kt Solid Gold</div>
+        <div class="w-full sm:w-auto text-center font-light">
+            Complimentary Insured Shipping Across India | <span class="underline cursor-pointer font-semibold hover:text-brand-accentPink">Explore Solitaires &rarr;</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-4 text-gray-300 font-normal">
+            <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-location-dot text-brand-accentPink mr-1"></i> Stores</span>
+            <span>|</span>
+            <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-headset text-brand-accentPink mr-1"></i> VIP Concierge</span>
+        </div>
+    </div>
+
+    <!-- MAIN NAVIGATION HEADER (Dana Rebecca Editorial Style + Glassmorphism) -->
+    <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-brand-softBorder transition-all duration-300" id="mainHeader">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-24">
+                
+                <!-- Mobile Drawer Icon -->
+                <div class="flex items-center lg:hidden">
+                    <button type="button" class="text-brand-navy p-2 rounded-md hover:text-brand-accentPink focus:outline-none" onclick="toggleMobileMenu()">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- BRAND LOGO (Replicating exact structure of your official logo) -->
+                <div class="flex-1 lg:flex-none text-center cursor-pointer py-2" onclick="switchPage('home')">
+                    <div class="inline-flex flex-col items-center">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-3xl sm:text-4xl font-serif font-medium tracking-[0.2em] text-brand-navy">YA<span class="font-sans font-light mx-0.5">-</span>RA</span>
+                            <span class="text-[9px] font-bold text-brand-navy border border-brand-navy rounded-full w-3.5 h-3.5 flex items-center justify-center -mt-4">R</span>
+                        </div>
+                        
+                        <!-- Diamond Logo Mark & Line -->
+                        <div class="w-full flex items-center justify-center my-1">
+                            <div class="h-[1px] bg-brand-accentGold/60 flex-1"></div>
+                            <div class="mx-2 flex flex-col items-center">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L3 9L12 22L21 9L12 22Z" stroke="#1A2938" stroke-width="1.5" stroke-linejoin="round"/>
+                                    <path d="M3 9H21" stroke="#1A2938" stroke-width="1.5"/>
+                                    <path d="M7.5 9L12 22L16.5 9" stroke="#1A2938" stroke-width="1.5"/>
+                                    <path d="M7.5 9L12 2L16.5 9" stroke="#1A2938" stroke-width="1.5"/>
+                                    <path d="M3 9L7.5 22" fill="#E8A3A8" fill-opacity="0.5"/>
+                                </svg>
+                            </div>
+                            <div class="h-[1px] bg-brand-accentGold/60 flex-1"></div>
+                        </div>
+
+                        <p class="text-[9px] sm:text-[10px] font-semibold text-brand-navy tracking-[0.18em] uppercase -mt-0.5">Diamond, Gold and Gemstone Fine Jewellery</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Links (Dana Rebecca Fashion Typography) -->
+                <nav class="hidden lg:flex space-x-9 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy">
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink transition py-2 border-b-2 border-transparent hover:border-brand-navy">Rings</a>
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink transition py-2 border-b-2 border-transparent hover:border-brand-navy">Earrings</a>
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink transition py-2 border-b-2 border-transparent hover:border-brand-navy">Necklaces</a>
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink transition py-2 border-b-2 border-transparent hover:border-brand-navy">Bracelets</a>
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="text-brand-accentGold font-bold hover:text-brand-navy transition py-2 border-b-2 border-transparent hover:border-brand-accentGold">Solitaires</a>
+                    <a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink transition py-2 border-b-2 border-transparent hover:border-brand-navy">Color Stone Fine</a>
+                </nav>
+
+                <!-- Search & Actions -->
+                <div class="flex items-center space-x-5">
+                    <div class="relative hidden sm:block w-44 lg:w-52">
+                        <input type="text" placeholder="Search diamonds..." class="w-full bg-brand-cream text-xs text-brand-navy rounded-full pl-8 pr-4 py-2 border border-brand-softBorder focus:outline-none focus:border-brand-navy transition">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                    </div>
+
+                    <button onclick="switchPage('account')" class="text-brand-navy hover:text-brand-accentPink transition" title="Account">
+                        <i class="fa-regular fa-user text-lg"></i>
+                    </button>
+
+                    <button class="text-brand-navy hover:text-brand-accentPink transition relative hidden sm:block" title="Wishlist">
+                        <i class="fa-regular fa-heart text-lg"></i>
+                        <span class="absolute -top-2 -right-2 bg-brand-accentPink text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">2</span>
+                    </button>
+
+                    <button onclick="switchPage('cart')" class="text-brand-navy hover:text-brand-accentPink transition relative" title="Cart">
+                        <i class="fa-solid fa-bag-shopping text-lg"></i>
+                        <span class="absolute -top-2 -right-2 bg-brand-navy text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold" id="cartCount">1</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Drawer Navigation -->
+        <div class="lg:hidden hidden bg-white border-b border-brand-softBorder py-4 px-6 space-y-3" id="mobileMenu">
+            <input type="text" placeholder="Search natural diamond rings, gold..." class="w-full bg-stone-100 text-xs rounded-full px-4 py-2 mb-3 border border-stone-300 focus:outline-none">
+            <a href="javascript:void(0)" onclick="switchPage('category')" class="block font-medium text-sm py-1 border-b border-stone-100 text-brand-navy">Diamond Rings</a>
+            <a href="javascript:void(0)" onclick="switchPage('category')" class="block font-medium text-sm py-1 border-b border-stone-100 text-brand-navy">Earrings</a>
+            <a href="javascript:void(0)" onclick="switchPage('category')" class="block font-medium text-sm py-1 border-b border-stone-100 text-brand-navy">Necklaces</a>
+            <a href="javascript:void(0)" onclick="switchPage('category')" class="block font-medium text-sm py-1 border-b border-stone-100 text-brand-navy">Bracelets</a>
+            <a href="javascript:void(0)" onclick="switchPage('account')" class="block font-medium text-sm py-1 text-brand-accentGold font-bold">My Account & Orders</a>
+            <a href="javascript:void(0)" onclick="switchPage('policies')" class="block font-medium text-sm py-1 text-gray-500">Policies & Certifications</a>
+        </div>
+    </header>
+
+    <!-- PROTOTYPE PAGE SWITCHER FLOATING CONTROL -->
+    <div class="fixed bottom-4 right-4 z-50 bg-brand-navy text-white px-4 py-2 rounded-full shadow-2xl backdrop-blur border border-brand-accentPink/40 flex items-center space-x-3 text-xs">
+        <span class="text-brand-accentPink font-bold uppercase tracking-wider hidden sm:inline">Screen Mockup Preview:</span>
+        <select id="mockupSelector" onchange="switchPage(this.value)" class="bg-brand-navyDark text-white rounded px-2 py-1 focus:outline-none text-xs border border-gray-600">
+            <option value="home">1. Home Page (Dana Rebecca Aesthetic)</option>
+            <option value="category">2. Category Page (Collapsible Filters)</option>
+            <option value="product">3. Product Details Page (14Kt/18Kt Gold)</option>
+            <option value="cart">4. Shopping Cart</option>
+            <option value="checkout">5. Checkout & Payment Page</option>
+            <option value="order-success">6. Order Confirmation Page</option>
+            <option value="account">7. User Account & Past Orders</option>
+            <option value="policies">8. Guarantees & Certifications</option>
+        </select>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main id="appContainer">
+
+        <!-- ========================================== -->
+        <!-- 1. HOME PAGE MOCKUP -->
+        <!-- ========================================== -->
+        <section id="page-home" class="page-section">
+            
+            <!-- DANA REBECCA DUAL EDITORIAL HERO (WITH GLASSMORPHISM CARDS) -->
+            <div class="bg-gradient-to-r from-brand-cream via-white to-rose-50/30 py-12 lg:py-20 border-b border-brand-softBorder">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                        
+                        <!-- Left Copy Column -->
+                        <div class="lg:col-span-5 space-y-6 text-center lg:text-left">
+                            <div class="inline-flex items-center space-x-2 bg-brand-navy/90 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-brand-accentPink"></span>
+                                <span>Fine Diamond Essentials 2026</span>
+                            </div>
+
+                            <h1 class="text-4xl sm:text-6xl font-serif font-normal text-brand-navy leading-[1.12]">
+                                Designed For Every Day. Crafted Forever.
+                            </h1>
+
+                            <p class="text-gray-600 text-xs sm:text-sm leading-relaxed font-light">
+                                Handcrafted with certified 100% natural earth-mined diamonds set in 14Kt and 18Kt solid gold. Fashionable, effortless fine jewellery designed to be worn and loved daily.
+                            </p>
+
+                            <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                                <button onclick="switchPage('category')" class="w-full sm:w-auto bg-brand-navy text-white px-9 py-4 rounded text-xs font-bold uppercase tracking-[0.2em] hover:bg-brand-accentPink transition duration-300 shadow-xl flex items-center justify-center space-x-2">
+                                    <span>Explore Collection</span>
+                                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                                </button>
+                                <button onclick="switchPage('category')" class="w-full sm:w-auto border border-brand-navy text-brand-navy px-8 py-3.5 rounded text-xs font-bold uppercase tracking-[0.2em] hover:bg-brand-navy hover:text-white transition">
+                                    Solitaire Bands
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Asymmetrical Grid with Backdrop Blur Layers -->
+                        <div class="lg:col-span-7 grid grid-cols-12 gap-4 items-center relative">
+                            <!-- Main Large Asymmetrical Image Tile -->
+                            <div class="col-span-7 relative group rounded-2xl overflow-hidden shadow-2xl border border-white/60">
+                                <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=900&auto=format&fit=crop" class="w-full h-80 sm:h-[420px] object-cover group-hover:scale-105 transition duration-700">
+                                
+                                <!-- Glassmorphism Overlay Box -->
+                                <div class="absolute inset-x-3 bottom-3 bg-white/70 backdrop-blur-md p-4 rounded-xl border border-white/50 text-brand-navy shadow-lg">
+                                    <div class="text-[10px] font-bold text-brand-accentGold uppercase tracking-[0.15em]">18Kt Solid Yellow Gold</div>
+                                    <div class="font-serif font-semibold text-sm mt-0.5">Aura Solitaire Diamond Ring</div>
+                                </div>
+                            </div>
+
+                            <!-- Right Stack Tile with Glass Card -->
+                            <div class="col-span-5 space-y-4">
+                                <div class="relative group rounded-2xl overflow-hidden shadow-xl border border-white/60">
+                                    <img src="https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=crop" class="w-full h-48 object-cover group-hover:scale-105 transition duration-700">
+                                    <div class="absolute bottom-2 left-2 right-2 bg-brand-navy/70 backdrop-blur-md p-2 rounded text-white text-[10px] font-serif text-center">
+                                        14Kt White Gold Halo Studs
+                                    </div>
+                                </div>
+
+                                <div class="bg-brand-navy/90 backdrop-blur-lg text-white p-5 rounded-2xl space-y-2 border border-brand-accentPink/30 shadow-xl">
+                                    <div class="w-7 h-7 bg-white/10 rounded-full flex items-center justify-center text-brand-accentPink text-xs mb-1">
+                                        <i class="fa-solid fa-gem"></i>
+                                    </div>
+                                    <div class="font-serif font-bold text-sm text-brand-accentPink">IGI & GIA Certified</div>
+                                    <div class="text-[11px] text-gray-300 leading-tight">Every diamond verified for 100% earth-mined origin.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRUST PROPOSITIONS BAR -->
+            <div class="bg-white py-8 border-b border-brand-softBorder">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div class="p-3 space-y-1.5 border-r last:border-r-0 border-gray-100">
+                        <div class="w-10 h-10 mx-auto bg-brand-cream rounded-full flex items-center justify-center text-brand-navy shadow-sm mb-2">
+                            <i class="fa-solid fa-gem text-brand-accentPink"></i>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-brand-navy">100% Natural Diamonds</h4>
+                        <p class="text-gray-500 text-[11px]">Earth-mined certified diamonds.</p>
+                    </div>
+                    <div class="p-3 space-y-1.5 border-r last:border-r-0 border-gray-100">
+                        <div class="w-10 h-10 mx-auto bg-brand-cream rounded-full flex items-center justify-center text-brand-navy shadow-sm mb-2">
+                            <i class="fa-solid fa-award text-brand-accentPink"></i>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-brand-navy">14Kt & 18Kt Gold</h4>
+                        <p class="text-gray-500 text-[11px]">BIS Hallmarked solid gold.</p>
+                    </div>
+                    <div class="p-3 space-y-1.5 border-r last:border-r-0 border-gray-100">
+                        <div class="w-10 h-10 mx-auto bg-brand-cream rounded-full flex items-center justify-center text-brand-navy shadow-sm mb-2">
+                            <i class="fa-solid fa-rotate-left text-brand-accentPink"></i>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-brand-navy">15-Day Money Back</h4>
+                        <p class="text-gray-500 text-[11px]">100% full refund guarantee.</p>
+                    </div>
+                    <div class="p-3 space-y-1.5">
+                        <div class="w-10 h-10 mx-auto bg-brand-cream rounded-full flex items-center justify-center text-brand-navy shadow-sm mb-2">
+                            <i class="fa-solid fa-handshake-angle text-brand-accentPink"></i>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-brand-navy">Lifetime Buyback</h4>
+                        <p class="text-gray-500 text-[11px]">Exchange or upgrade anytime.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASYMMETRICAL EDITORIAL GRID 1: SHOP BY CATEGORY -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <span class="text-brand-accentGold text-xs font-bold uppercase tracking-[0.2em]">Curated Collections</span>
+                    <h2 class="text-3xl font-serif font-normal text-brand-navy mt-1">Shop By Category</h2>
+                    <div class="w-12 h-0.5 bg-brand-navy mx-auto mt-3"></div>
+                </div>
+
+                <!-- Asymmetrical Layout: 7/5 & 5/7 Split Grid -->
+                <div class="grid grid-cols-12 gap-6">
+                    
+                    <!-- Feature 1: Solitaire & Bands -->
+                    <div class="col-span-12 md:col-span-7 group cursor-pointer relative rounded-2xl overflow-hidden border border-brand-softBorder shadow-sm h-80 sm:h-[380px]" onclick="switchPage('category')">
+                        <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-black/10 to-transparent flex flex-col justify-end p-8 text-white">
+                            <div class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full w-fit text-[10px] uppercase font-bold tracking-widest mb-2 border border-white/30">14Kt & 18Kt Gold</div>
+                            <h3 class="text-2xl sm:text-3xl font-serif font-normal">Solitaire & Eternity Rings</h3>
+                            <p class="text-xs text-gray-200 tracking-wider uppercase mt-1">Engagement Bands & Daily Stackable Rings</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2: Earrings -->
+                    <div class="col-span-12 md:col-span-5 group cursor-pointer relative rounded-2xl overflow-hidden border border-brand-softBorder shadow-sm h-80 sm:h-[380px]" onclick="switchPage('category')">
+                        <img src="https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-black/10 to-transparent flex flex-col justify-end p-8 text-white">
+                            <div class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full w-fit text-[10px] uppercase font-bold tracking-widest mb-2 border border-white/30">Certified Natural</div>
+                            <h3 class="text-2xl font-serif font-normal">Diamond Earrings</h3>
+                            <p class="text-xs text-gray-200 tracking-wider uppercase mt-1">Studs, Huggies & Drops</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3: Necklaces -->
+                    <div class="col-span-12 md:col-span-5 group cursor-pointer relative rounded-2xl overflow-hidden border border-brand-softBorder shadow-sm h-80" onclick="switchPage('category')">
+                        <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-black/10 to-transparent flex flex-col justify-end p-6 text-white">
+                            <h3 class="text-2xl font-serif font-normal">Necklaces & Pendants</h3>
+                            <p class="text-xs text-gray-200 tracking-wider uppercase mt-1">Solitaire Drops & Fine Chains</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature 4: Bracelets -->
+                    <div class="col-span-12 md:col-span-7 group cursor-pointer relative rounded-2xl overflow-hidden border border-brand-softBorder shadow-sm h-80" onclick="switchPage('category')">
+                        <img src="https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-black/10 to-transparent flex flex-col justify-end p-6 text-white">
+                            <div class="bg-brand-accentPink/30 backdrop-blur-md px-3 py-1 rounded-full w-fit text-[10px] font-bold uppercase tracking-widest mb-2 border border-white/30">Tennis Collection</div>
+                            <h3 class="text-2xl font-serif font-normal">Diamond Bracelets & Bangles</h3>
+                            <p class="text-xs text-gray-200 tracking-wider uppercase mt-1">Classic silhouettes in 14Kt & 18Kt Gold</p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ASYMMETRICAL EDITORIAL GRID 2: COLOR STONE FINE JEWELLERY -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="bg-gradient-to-r from-brand-navy via-brand-navyDark to-brand-navy rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
+                    <div class="grid grid-cols-12 gap-8 items-center relative z-10">
+                        
+                        <div class="col-span-12 lg:col-span-5 space-y-5">
+                            <span class="bg-brand-accentPink/30 text-brand-accentPink border border-brand-accentPink/40 text-[10px] font-bold uppercase tracking-[0.15em] px-3.5 py-1 rounded-full">Precious Color Accents</span>
+                            <h2 class="text-3xl sm:text-5xl font-serif font-normal leading-tight">Color Stone Fine Jewellery</h2>
+                            <p class="text-gray-300 text-xs sm:text-sm font-light leading-relaxed">
+                                Handpicked precious color stone accents paired with earth-mined natural diamonds. Set in hallmarked 18Kt solid yellow and rose gold settings.
+                            </p>
+
+                            <div class="space-y-2 pt-2">
+                                <div class="flex items-center text-xs space-x-2 text-gray-300">
+                                    <i class="fa-solid fa-circle-check text-brand-accentPink"></i>
+                                    <span>Ruby-Red & Emerald-Green Color Stone Accents</span>
+                                </div>
+                                <div class="flex items-center text-xs space-x-2 text-gray-300">
+                                    <i class="fa-solid fa-circle-check text-brand-accentPink"></i>
+                                    <span>Set in 14Kt and 18Kt Solid Gold Settings</span>
+                                </div>
+                            </div>
+
+                            <button onclick="switchPage('category')" class="bg-white text-brand-navy px-8 py-3.5 rounded text-xs font-bold uppercase tracking-[0.2em] hover:bg-brand-accentPink hover:text-white transition shadow-lg">
+                                Explore Color Stone Edit &rarr;
+                            </button>
+                        </div>
+
+                        <!-- Asymmetrical Image Offset Gallery -->
+                        <div class="col-span-12 lg:col-span-7 grid grid-cols-12 gap-4 items-center">
+                            <div class="col-span-7 transform -rotate-1 rounded-2xl overflow-hidden border border-white/20 shadow-2xl">
+                                <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=700&auto=format&fit=crop" class="w-full h-72 object-cover">
+                            </div>
+                            <div class="col-span-5 space-y-4">
+                                <div class="rounded-2xl overflow-hidden border border-white/20 shadow-2xl transform rotate-2">
+                                    <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=500&auto=format&fit=crop" class="w-full h-44 object-cover">
+                                </div>
+                                <div class="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 text-xs space-y-1">
+                                    <div class="font-serif font-bold text-brand-accentPink">Custom Color Settings</div>
+                                    <div class="text-[11px] text-gray-300">Choose between Ruby, Sapphire & Emerald Tones</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- FEATURED BESTSELLERS (DANA REBECCA CARD DESIGN) -->
+            <section class="bg-white py-16 border-t border-b border-brand-softBorder">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-end mb-10">
+                        <div>
+                            <span class="text-brand-accentGold text-xs font-semibold uppercase tracking-[0.2em]">Iconic Essentials</span>
+                            <h2 class="text-3xl font-serif font-normal text-brand-navy mt-1">Most Loved Designs</h2>
+                        </div>
+                        <a href="javascript:void(0)" onclick="switchPage('category')" class="text-xs font-bold uppercase tracking-widest text-brand-navy border-b border-brand-navy hover:text-brand-accentPink transition pb-1">View All Products &rarr;</a>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <!-- Product 1 -->
+                        <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                            <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                <span class="absolute top-3 left-3 bg-brand-navy/90 backdrop-blur-sm text-white text-[9px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full z-10">BESTSELLER</span>
+                                <button class="absolute top-3 right-3 text-gray-400 hover:text-red-500 z-10"><i class="fa-regular fa-heart text-base"></i></button>
+                                <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=600&auto=format&fit=crop" class="w-full h-64 object-cover group-hover:scale-105 transition duration-500">
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-1">18Kt Solid Gold</div>
+                                    <h3 class="font-serif text-sm font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Aura Solitaire Diamond Ring</h3>
+                                    <p class="text-xs text-gray-500 mt-1">0.50 Ct Natural Diamond (GH-VS)</p>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                    <div>
+                                        <span class="text-sm font-bold text-brand-navy">₹48,500</span>
+                                        <span class="text-[11px] text-gray-400 line-through ml-1">₹54,000</span>
+                                    </div>
+                                    <button onclick="switchPage('cart')" class="bg-brand-navy text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded hover:bg-brand-accentPink transition">
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product 2 -->
+                        <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                            <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                <span class="absolute top-3 left-3 bg-brand-accentPink text-white text-[9px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full z-10">14KT GOLD</span>
+                                <button class="absolute top-3 right-3 text-gray-400 hover:text-red-500 z-10"><i class="fa-regular fa-heart text-base"></i></button>
+                                <img src="https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=crop" class="w-full h-64 object-cover group-hover:scale-105 transition duration-500">
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-1">14Kt White Gold</div>
+                                    <h3 class="font-serif text-sm font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Celeste Halo Stud Earrings</h3>
+                                    <p class="text-xs text-gray-500 mt-1">0.75 Ct Total Natural Diamonds</p>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                    <div>
+                                        <span class="text-sm font-bold text-brand-navy">₹62,000</span>
+                                    </div>
+                                    <button onclick="switchPage('cart')" class="bg-brand-navy text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded hover:bg-brand-accentPink transition">
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product 3 -->
+                        <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                            <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                <button class="absolute top-3 right-3 text-gray-400 hover:text-red-500 z-10"><i class="fa-regular fa-heart text-base"></i></button>
+                                <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop" class="w-full h-64 object-cover group-hover:scale-105 transition duration-500">
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-1">18Kt Rose Gold</div>
+                                    <h3 class="font-serif text-sm font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Lumina Emerald Cut Pendant</h3>
+                                    <p class="text-xs text-gray-500 mt-1">0.40 Ct Solitaire Natural Diamond</p>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                    <div>
+                                        <span class="text-sm font-bold text-brand-navy">₹39,900</span>
+                                        <span class="text-[11px] text-gray-400 line-through ml-1">₹45,000</span>
+                                    </div>
+                                    <button onclick="switchPage('cart')" class="bg-brand-navy text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded hover:bg-brand-accentPink transition">
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product 4 -->
+                        <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                            <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                <button class="absolute top-3 right-3 text-gray-400 hover:text-red-500 z-10"><i class="fa-regular fa-heart text-base"></i></button>
+                                <img src="https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=600&auto=format&fit=crop" class="w-full h-64 object-cover group-hover:scale-105 transition duration-500">
+                            </div>
+                            <div class="p-4 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-1">18Kt Yellow Gold</div>
+                                    <h3 class="font-serif text-sm font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Riviera Diamond Tennis Bracelet</h3>
+                                    <p class="text-xs text-gray-500 mt-1">2.10 Ct Natural Diamonds</p>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                    <div>
+                                        <span class="text-sm font-bold text-brand-navy">₹1,35,000</span>
+                                    </div>
+                                    <button onclick="switchPage('cart')" class="bg-brand-navy text-white text-[10px] uppercase tracking-widest px-3 py-1.5 rounded hover:bg-brand-accentPink transition">
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ASYMMETRICAL SECTION 3: DIAMOND EDUCATION (THE 4Cs) -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <span class="text-brand-accentGold text-xs font-bold uppercase tracking-[0.2em]">Natural Diamond Education</span>
+                    <h2 class="text-3xl font-serif font-normal text-brand-navy mt-1">Understand Your Diamond (The 4Cs)</h2>
+                    <p class="text-xs text-gray-500 mt-2">Every YA-RA® diamond is certified by IGI & GIA so you purchase with absolute trust.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-brand-cream p-6 rounded-2xl border border-brand-softBorder space-y-2">
+                        <div class="text-brand-accentPink font-serif font-bold text-xl">01. Carat</div>
+                        <h3 class="font-bold text-sm text-brand-navy">Carat Weight</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Measures diamond weight. From subtle daily 0.20 Ct to statement 2.00+ Ct solitaires.</p>
+                    </div>
+                    <div class="bg-brand-cream p-6 rounded-2xl border border-brand-softBorder space-y-2">
+                        <div class="text-brand-accentPink font-serif font-bold text-xl">02. Cut</div>
+                        <h3 class="font-bold text-sm text-brand-navy">Cut & Brilliance</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Determines light reflection. We craft Excellent & Ideal cuts for maximal sparkle.</p>
+                    </div>
+                    <div class="bg-brand-cream p-6 rounded-2xl border border-brand-softBorder space-y-2">
+                        <div class="text-brand-accentPink font-serif font-bold text-xl">03. Clarity</div>
+                        <h3 class="font-bold text-sm text-brand-navy">Clarity Grade</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Purity rating. Choose between premium VVS or VS clarity natural earth stones.</p>
+                    </div>
+                    <div class="bg-brand-cream p-6 rounded-2xl border border-brand-softBorder space-y-2">
+                        <div class="text-brand-accentPink font-serif font-bold text-xl">04. Color</div>
+                        <h3 class="font-bold text-sm text-brand-navy">Colorless Grade</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Ranging from EF (Rare Colorless) to GH (Near Colorless) for optimal value and brilliance.</p>
+                    </div>
+                </div>
+            </section>
+
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 2. CATEGORY PAGE MOCKUP (COLLAPSIBLE FILTERS) -->
+        <!-- ========================================== -->
+        <section id="page-category" class="page-section hidden">
+            <div class="bg-brand-cream py-10 border-b border-brand-softBorder">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-widest mb-2">Home / Jewellery / Rings</div>
+                    <h2 class="text-3xl font-serif font-normal text-brand-navy">Natural Diamond & Gold Rings</h2>
+                    <p class="text-xs text-gray-600 max-w-2xl mx-auto mt-2">Explore handcrafted natural diamond rings set in 14Kt and 18Kt Solid Gold.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                <!-- TOP UTILITY BAR & COLLAPSIBLE TOGGLE -->
+                <div class="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl border border-brand-softBorder mb-6 gap-4 shadow-sm">
+                    <div class="flex items-center space-x-4">
+                        <button onclick="toggleFilterDrawer()" class="bg-brand-navy text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-brand-navyDark transition">
+                            <i class="fa-solid fa-sliders text-xs"></i>
+                            <span id="filterToggleText">Hide Filters</span>
+                        </button>
+                        <span class="text-xs text-gray-600 hidden sm:inline">Showing <strong class="text-brand-navy">24 Designs</strong></span>
+                    </div>
+
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="text-gray-500 font-semibold">Sort By:</span>
+                        <select class="bg-brand-cream border border-brand-softBorder rounded-lg px-3 py-2 focus:outline-none text-xs font-medium text-brand-navy">
+                            <option>Bestsellers First</option>
+                            <option>Price: Low to High</option>
+                            <option>Price: High to Low</option>
+                            <option>Newest Arrivals</option>
+                            <option>Carat Weight: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-8">
+
+                    <!-- COLLAPSIBLE FILTER SIDEBAR -->
+                    <aside id="filterSidebar" class="w-full lg:w-64 bg-white p-6 rounded-xl border border-brand-softBorder h-fit space-y-6 transition-all duration-300">
+                        <div class="flex justify-between items-center border-b border-brand-softBorder pb-4">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-brand-navy">Filter Products</h3>
+                            <button class="text-xs text-brand-accentPink hover:underline">Clear All</button>
+                        </div>
+
+                        <!-- Gold Purity Filter (14Kt & 18Kt Only) -->
+                        <div>
+                            <h4 class="font-semibold text-xs uppercase tracking-wider mb-3 text-brand-navy">Gold Purity & Tone</h4>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded" checked> <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block mr-1.5 border"></span> 18Kt Yellow Gold</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded" checked> <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-amber-300 inline-block mr-1.5 border"></span> 14Kt Yellow Gold</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-slate-300 inline-block mr-1.5 border"></span> 18Kt White Gold</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-rose-300 inline-block mr-1.5 border"></span> 18Kt Rose Gold</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Price Filter (INR) -->
+                        <div class="border-t border-brand-softBorder pt-4">
+                            <h4 class="font-semibold text-xs uppercase tracking-wider mb-3 text-brand-navy">Price Range (INR)</h4>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span>Under ₹25,000</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded" checked> <span>₹25,000 - ₹50,000</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span>₹50,000 - ₹1,00,000</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span>Above ₹1,00,000</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Diamond Carat Weight -->
+                        <div class="border-t border-brand-softBorder pt-4">
+                            <h4 class="font-semibold text-xs uppercase tracking-wider mb-3 text-brand-navy">Diamond Weight</h4>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <button class="p-1.5 border border-brand-softBorder rounded text-center hover:border-brand-navy">0.10 - 0.30 Ct</button>
+                                <button class="p-1.5 border border-brand-navy bg-brand-navy/10 rounded font-semibold text-center text-brand-navy">0.30 - 0.50 Ct</button>
+                                <button class="p-1.5 border border-brand-softBorder rounded text-center hover:border-brand-navy">0.50 - 1.00 Ct</button>
+                                <button class="p-1.5 border border-brand-softBorder rounded text-center hover:border-brand-navy">1.00+ Ct</button>
+                            </div>
+                        </div>
+
+                        <!-- Diamond Quality -->
+                        <div class="border-t border-brand-softBorder pt-4">
+                            <h4 class="font-semibold text-xs uppercase tracking-wider mb-3 text-brand-navy">Diamond Quality</h4>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded" checked> <span>EF - VVS (Premium Clarity)</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" class="accent-brand-navy rounded"> <span>GH - VS (Fine Quality)</span></label>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Product Grid -->
+                    <main class="flex-1">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                            <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                                <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                    <span class="absolute top-3 left-3 bg-brand-navy text-white text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded z-10">18KT GOLD</span>
+                                    <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=600&auto=format&fit=crop" class="w-full h-56 object-cover group-hover:scale-105 transition duration-500">
+                                </div>
+                                <div class="p-4 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">18Kt Solid Gold</div>
+                                        <h3 class="font-serif text-xs font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Aura Solitaire Diamond Ring</h3>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">0.50 Ct Natural Diamond</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                        <span class="text-xs font-bold text-brand-navy">₹48,500</span>
+                                        <button onclick="switchPage('product')" class="text-[10px] font-bold uppercase tracking-wider text-brand-navy hover:underline">View &rarr;</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                                <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                    <span class="absolute top-3 left-3 bg-brand-accentPink text-white text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded z-10">14KT GOLD</span>
+                                    <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=600&auto=format&fit=crop" class="w-full h-56 object-cover group-hover:scale-105 transition duration-500">
+                                </div>
+                                <div class="p-4 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">14Kt White Gold</div>
+                                        <h3 class="font-serif text-xs font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Eternity Diamond Band</h3>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">0.80 Ct Total Diamond</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                        <span class="text-xs font-bold text-brand-navy">₹72,000</span>
+                                        <button onclick="switchPage('product')" class="text-[10px] font-bold uppercase tracking-wider text-brand-navy hover:underline">View &rarr;</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="group bg-white rounded-xl border border-brand-softBorder overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between">
+                                <div class="relative overflow-hidden cursor-pointer" onclick="switchPage('product')">
+                                    <img src="https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?q=80&w=600&auto=format&fit=crop" class="w-full h-56 object-cover group-hover:scale-105 transition duration-500">
+                                </div>
+                                <div class="p-4 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">18Kt Rose Gold</div>
+                                        <h3 class="font-serif text-xs font-semibold text-brand-navy hover:text-brand-accentPink cursor-pointer" onclick="switchPage('product')">Luna Oval Solitaire Band</h3>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">0.45 Ct Solitaire</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-brand-softBorder flex justify-between items-center">
+                                        <span class="text-xs font-bold text-brand-navy">₹55,400</span>
+                                        <button onclick="switchPage('product')" class="text-[10px] font-bold uppercase tracking-wider text-brand-navy hover:underline">View &rarr;</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 3. PRODUCT DETAILS PAGE (PDP) MOCKUP -->
+        <!-- ========================================== -->
+        <section id="page-product" class="page-section hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <div class="text-xs text-gray-500 uppercase tracking-wider mb-6">
+                    Home / Rings / Solitaire Rings / <span class="text-brand-navy font-medium">Aura Solitaire Diamond Ring</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div class="lg:col-span-7 grid grid-cols-2 gap-4">
+                        <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop" class="w-full h-96 object-cover rounded-xl border border-brand-softBorder">
+                        <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=1000&auto=format&fit=crop" class="w-full h-96 object-cover rounded-xl border border-brand-softBorder">
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-6">
+                        <div>
+                            <span class="bg-brand-accentPink/20 text-brand-navy text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full">IGI Certified Natural Diamond</span>
+                            <h1 class="text-2xl sm:text-3xl font-serif font-normal text-brand-navy mt-2">Aura Solitaire Diamond Ring</h1>
+                            <p class="text-xs text-gray-500 mt-1">Available in 14Kt and 18Kt Solid Gold with hand-selected certified natural solitaire diamond.</p>
+                        </div>
+
+                        <!-- Gold Purity Selector -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-brand-navy">Select Gold Purity:</label>
+                            <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                                <button class="p-2.5 border-2 border-brand-navy bg-brand-navy/5 rounded-lg text-brand-navy">18Kt Solid Gold</button>
+                                <button class="p-2.5 border border-brand-softBorder rounded-lg text-gray-600 hover:border-brand-navy">14Kt Solid Gold</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-brand-cream p-4 rounded-xl border border-brand-softBorder">
+                            <div class="flex items-baseline space-x-3">
+                                <span class="text-2xl font-bold text-brand-navy">₹48,500</span>
+                                <span class="text-sm text-gray-400 line-through">₹54,000</span>
+                                <span class="text-xs font-bold text-green-700">10% OFF</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-1">Inclusive of all taxes. Free insured delivery in India.</p>
+                            
+                            <details class="mt-3 text-xs border-t border-brand-softBorder pt-2 cursor-pointer">
+                                <summary class="font-semibold text-brand-navy">View Transparent Price Breakdown</summary>
+                                <div class="mt-2 space-y-1 text-gray-600 bg-white p-2 rounded text-[11px]">
+                                    <div class="flex justify-between"><span>Gold (18Kt, 3.2g):</span> <span>₹18,200</span></div>
+                                    <div class="flex justify-between"><span>Natural Diamond (0.50 Ct):</span> <span>₹23,500</span></div>
+                                    <div class="flex justify-between"><span>Making Charges:</span> <span>₹4,200</span></div>
+                                    <div class="flex justify-between"><span>GST (3%):</span> <span>₹2,600</span></div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div class="space-y-3 pt-2">
+                            <button onclick="switchPage('cart')" class="w-full bg-brand-navy text-white py-4 rounded-lg text-xs font-bold uppercase tracking-[0.18em] hover:bg-brand-navyDark transition shadow-lg flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                                <span>Add To Shopping Bag</span>
+                            </button>
+                            
+                            <button onclick="switchPage('checkout')" class="w-full bg-brand-accentPink text-white py-3.5 rounded-lg text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition shadow">
+                                Buy Now (Express Checkout)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 4. CART PAGE MOCKUP -->
+        <!-- ========================================== -->
+        <section id="page-cart" class="page-section hidden">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <h2 class="text-3xl font-serif font-normal text-brand-navy mb-8">Shopping Bag (1 Item)</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-8 bg-white p-6 rounded-xl border border-brand-softBorder space-y-6">
+                        <div class="flex items-center justify-between border-b border-brand-softBorder pb-6 gap-4">
+                            <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=300&auto=format&fit=crop" class="w-20 h-20 object-cover rounded border">
+                            <div class="flex-1 space-y-1">
+                                <h3 class="font-serif font-semibold text-sm text-brand-navy">Aura Solitaire Diamond Ring</h3>
+                                <p class="text-xs text-gray-500">18Kt Solid Gold | Size 14 | 0.50 Ct Natural Diamond</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-bold text-brand-navy">₹48,500</div>
+                                <button class="text-xs text-red-500 hover:underline mt-2"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-4 bg-brand-cream p-6 rounded-xl border border-brand-softBorder space-y-4">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-brand-navy border-b pb-3">Order Summary</h3>
+                        <div class="space-y-2 text-xs text-gray-600">
+                            <div class="flex justify-between"><span>Subtotal:</span> <span>₹48,500</span></div>
+                            <div class="flex justify-between"><span>Insured Shipping:</span> <span class="text-green-700 font-bold">FREE</span></div>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between font-bold text-sm text-brand-navy">
+                            <span>Total Payable:</span>
+                            <span>₹48,500</span>
+                        </div>
+                        <button onclick="switchPage('checkout')" class="w-full bg-brand-navy text-white py-3.5 rounded-lg font-bold text-xs uppercase tracking-[0.18em] hover:bg-brand-navyDark transition shadow">
+                            Proceed To Checkout &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 5. CHECKOUT PAGE MOCKUP -->
+        <!-- ========================================== -->
+        <section id="page-checkout" class="page-section hidden">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <h2 class="text-2xl font-serif font-normal text-brand-navy text-center mb-6">Secure Checkout</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-8 space-y-6">
+                        <div class="bg-white p-6 rounded-xl border border-brand-softBorder space-y-4">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-brand-navy">1. Delivery Address</h3>
+                            <div class="grid grid-cols-2 gap-4 text-xs">
+                                <input type="text" value="Priya Sharma" class="border p-2 rounded">
+                                <input type="text" value="+91 98765 43210" class="border p-2 rounded">
+                                <input type="text" value="Flat 402, Royal Palms, M.G. Road" class="col-span-2 border p-2 rounded">
+                                <input type="text" value="110001" class="border p-2 rounded">
+                                <input type="text" value="New Delhi" class="border p-2 rounded">
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-brand-softBorder space-y-4">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-brand-navy">2. Payment Method (INR)</h3>
+                            <div class="space-y-2 text-xs">
+                                <label class="border p-3 rounded block font-bold border-brand-navy bg-brand-cream"><input type="radio" checked name="pay"> UPI / QR Code (Google Pay, PhonePe)</label>
+                                <label class="border p-3 rounded block"><input type="radio" name="pay"> Credit / Debit Card</label>
+                                <label class="border p-3 rounded block"><input type="radio" name="pay"> No Cost EMI (Starting ₹8,083/mo)</label>
+                            </div>
+                        </div>
+
+                        <button onclick="switchPage('order-success')" class="w-full bg-brand-navy text-white font-bold text-xs uppercase tracking-[0.18em] py-4 rounded-lg shadow-xl">
+                            Place Insured Order (₹48,500)
+                        </button>
+                    </div>
+
+                    <div class="lg:col-span-4 bg-white p-6 rounded-xl border border-brand-softBorder space-y-3 text-xs">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-brand-navy border-b pb-2">Summary</h3>
+                        <div class="flex justify-between"><span>Aura Diamond Ring:</span> <span>₹48,500</span></div>
+                        <div class="flex justify-between font-bold text-sm text-brand-navy border-t pt-2"><span>Total:</span> <span>₹48,500</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 6. ORDER SUCCESS MOCKUP -->
+        <!-- ========================================== -->
+        <section id="page-order-success" class="page-section hidden">
+            <div class="max-w-3xl mx-auto px-4 py-16 text-center space-y-6">
+                <div class="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-2xl mx-auto">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h2 class="text-3xl font-serif font-normal text-brand-navy">Thank You For Your Order!</h2>
+                <p class="text-xs text-gray-600">Your order <strong>#YARA-892341</strong> has been confirmed and is fully insured.</p>
+                <button onclick="switchPage('account')" class="bg-brand-navy text-white text-xs font-bold uppercase tracking-wider px-6 py-3 rounded">Track Order</button>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 7. USER ACCOUNT & ORDERS -->
+        <!-- ========================================== -->
+        <section id="page-account" class="page-section hidden">
+            <div class="max-w-5xl mx-auto px-4 py-10">
+                <h2 class="text-2xl font-serif font-normal text-brand-navy mb-6">My Account</h2>
+                <div class="bg-white p-6 rounded-xl border border-brand-softBorder space-y-4 text-xs">
+                    <h3 class="font-bold text-sm border-b pb-2 text-brand-navy">Recent Orders</h3>
+                    <div class="border p-4 rounded flex justify-between items-center">
+                        <div>
+                            <div class="font-bold">Order #YARA-892341</div>
+                            <div class="text-gray-500">Aura Solitaire Diamond Ring | ₹48,500</div>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded font-bold">In Transit (Insured)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 8. POLICIES & TERMS -->
+        <!-- ========================================== -->
+        <section id="page-policies" class="page-section hidden">
+            <div class="max-w-4xl mx-auto px-4 py-12 space-y-6 text-xs text-gray-700">
+                <h2 class="text-3xl font-serif font-normal text-brand-navy text-center">YA-RA® Guarantees & Terms</h2>
+                <div class="bg-white p-8 rounded-xl border border-brand-softBorder space-y-4">
+                    <h3 class="font-serif font-bold text-base text-brand-navy">1. 100% Certified Natural Diamonds & Hallmarked Gold</h3>
+                    <p>All diamond jewellery items at YA-RA® are certified by IGI or GIA. Gold jewellery is 100% BIS Hallmarked in 14Kt or 18Kt solid gold.</p>
+                    <h3 class="font-serif font-bold text-base text-brand-navy border-t pt-4">2. Lifetime Exchange & Buyback</h3>
+                    <p>We provide 100% gold prevailing value + 90% prevailing diamond value on lifetime exchanges across India.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER WITH YA-RA LOGO MARK -->
+    <footer class="bg-white text-brand-navy border-t border-brand-softBorder pt-16 pb-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div class="space-y-4">
+                <div class="inline-flex flex-col">
+                    <span class="text-2xl font-serif font-medium tracking-[0.2em] text-brand-navy">YA<span class="font-sans font-light mx-0.5">-</span>RA</span>
+                    <p class="text-[9px] font-bold text-brand-navy tracking-wider uppercase">Natural Diamond Fine Jewellery</p>
+                </div>
+                <p class="text-xs text-gray-500 leading-relaxed font-light">
+                    Handcrafted everyday fine jewellery in certified natural diamonds, 14Kt and 18Kt solid gold.
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-brand-navy">Categories</h4>
+                <ul class="text-xs text-gray-600 space-y-2">
+                    <li><a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink">Natural Diamond Rings</a></li>
+                    <li><a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink">Diamond Stud Earrings</a></li>
+                    <li><a href="javascript:void(0)" onclick="switchPage('category')" class="hover:text-brand-accentPink">Color Stone Fine Edit</a></li>
+                </ul>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-brand-navy">Customer Care</h4>
+                <ul class="text-xs text-gray-600 space-y-2">
+                    <li><a href="javascript:void(0)" onclick="switchPage('policies')" class="hover:text-brand-accentPink">15-Day Money Back</a></li>
+                    <li><a href="javascript:void(0)" onclick="switchPage('policies')" class="hover:text-brand-accentPink">Lifetime Exchange Policy</a></li>
+                    <li><a href="javascript:void(0)" onclick="switchPage('policies')" class="hover:text-brand-accentPink">Diamond Certification (IGI/GIA)</a></li>
+                </ul>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-brand-navy">Newsletter</h4>
+                <p class="text-xs text-gray-500">Subscribe for early access to new launches.</p>
+                <div class="flex space-x-2 pt-1">
+                    <input type="email" placeholder="Email Address" class="bg-brand-cream text-xs border border-brand-softBorder px-3 py-2 rounded flex-1 focus:outline-none">
+                    <button class="bg-brand-navy text-white px-4 py-2 text-xs font-bold uppercase rounded">Join</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-brand-softBorder mt-12 pt-6 text-center text-[10px] text-gray-400">
+            &copy; 2026 YA-RA® Fine Jewellery Pvt. Ltd. All Rights Reserved. Prices in INR (₹).
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE SCRIPT -->
+    <script>
+        function switchPage(pageId) {
+            const pages = document.querySelectorAll('.page-section');
+            pages.forEach(page => page.classList.add('hidden'));
+
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            const selector = document.getElementById('mockupSelector');
+            if (selector) {
+                selector.value = pageId;
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        /* Collapsible Filter Toggle Script */
+        function toggleFilterDrawer() {
+            const sidebar = document.getElementById('filterSidebar');
+            const toggleText = document.getElementById('filterToggleText');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                toggleText.innerText = 'Hide Filters';
+            } else {
+                sidebar.classList.add('hidden');
+                toggleText.innerText = 'Show Filters';
+            }
+        }
+    </script>
+</body>
+</html>

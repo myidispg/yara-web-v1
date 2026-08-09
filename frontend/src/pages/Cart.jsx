@@ -1,68 +1,80 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { inr } from "../utils/format";
+
+const inr = (n) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
 export default function CartPage() {
-    const { items, setQty, removeItem, subtotal } = useCart();
-    const { user } = useAuth();
+    const { items, setQty, removeItem, subtotal, count } = useCart();
     const navigate = useNavigate();
 
-    if (items.length === 0) {
+    if (!items.length)
         return (
-            <div className="py-32 text-center">
-                <p className="text-4xl text-gold">◆</p>
-                <h1 className="mt-4 font-display text-4xl">Your bag is empty</h1>
-                <p className="mt-2 text-sm text-ink/55">The collections are waiting.</p>
-                <Link to="/category/rings" className="btn-gold mt-8 inline-flex">Explore rings</Link>
+            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
+                <p className="eyebrow mb-3">Shopping Bag</p>
+                <h1 className="text-4xl font-serif mb-4">Your bag is empty</h1>
+                <p className="text-sm text-charcoal/60 mb-8">
+                    Discover certified natural diamonds, handcrafted in 14Kt &amp; 18Kt solid gold.
+                </p>
+                <Link to="/" className="btn-solid inline-block">Explore The Collection</Link>
             </div>
         );
-    }
 
     return (
-        <div className="mx-auto max-w-6xl px-5 py-14 lg:px-8">
-            <p className="eyebrow">Your selection</p>
-            <h1 className="mt-3 font-display text-5xl tracking-tight">Shopping bag</h1>
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
+            <p className="eyebrow mb-2">Shopping Bag</p>
+            <h1 className="text-4xl font-serif mb-10">
+                Your Bag <span className="italic text-charcoal/50 text-2xl">({count} Item{count > 1 ? "s" : ""})</span>
+            </h1>
 
-            <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_360px]">
-                <div className="space-y-6">
-                    {items.map((item) => (
-                        <div key={item.key} className="flex gap-5 border-b border-ink/10 pb-6">
-                            <Link to={`/product/${item.slug}`} className="h-28 w-24 shrink-0 overflow-hidden bg-parchment">
-                                {item.image && <img src={item.image} alt={item.name} className="h-full w-full object-cover" />}
-                            </Link>
-                            <div className="flex flex-1 flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <Link to={`/product/${item.slug}`} className="font-display text-lg hover:text-gold-deep">{item.name}</Link>
-                                    <p className="mt-1 text-xs text-ink/55">{item.variant.label}</p>
-                                    <button onClick={() => removeItem(item.key)} className="mt-3 text-[11px] uppercase tracking-[0.2em] text-ink/45 hover:text-rust">Remove</button>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-medium">{inr(item.unit_price * item.qty)}</p>
-                                    <div className="mt-2 inline-flex items-center border border-ink/20">
-                                        <button onClick={() => setQty(item.key, item.qty - 1)} className="px-3 py-1.5 hover:text-gold-deep">−</button>
-                                        <span className="w-7 text-center text-sm">{item.qty}</span>
-                                        <button onClick={() => setQty(item.key, item.qty + 1)} className="px-3 py-1.5 hover:text-gold-deep">+</button>
+            <div className="grid lg:grid-cols-[1fr_380px] gap-12">
+                {/* Items */}
+                <div className="space-y-8">
+                    {items.map((i) => (
+                        <div key={i.key} className="hairline border-b border-charcoal/15 pb-8 grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr_auto] gap-6">
+                            <div className="bg-cream aspect-square">
+                                <img src={i.image ?? ""} alt={i.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                                <Link to={`/product/${i.slug}`} className="font-serif text-xl hover:text-gold">{i.name}</Link>
+                                <p className="text-xs text-charcoal/60 mt-1">
+                                    {i.variant?.label ?? `${i.variant?.purity} ${i.variant?.gold_color} Gold`}
+                                    {i.variant?.ring_size ? ` | Size ${i.variant.ring_size}` : ""}
+                                </p>
+                                <p className="price-tag mt-3">{inr(i.unit_price)}</p>
+
+                                <div className="flex items-center gap-4 mt-4">
+                                    {/* Qty stepper */}
+                                    <div className="flex items-center border border-charcoal/25">
+                                        <button onClick={() => setQty(i.key, i.qty - 1)} className="px-3 py-1 text-sm hover:text-gold">−</button>
+                                        <span className="px-3 py-1 text-sm">{i.qty}</span>
+                                        <button onClick={() => setQty(i.key, i.qty + 1)} className="px-3 py-1 text-sm hover:text-gold">+</button>
                                     </div>
+                                    <button onClick={() => removeItem(i.key)} className="micro-label text-charcoal/50 underline underline-offset-4 hover:text-gold">
+                                        Remove
+                                    </button>
                                 </div>
                             </div>
+                            <p className="hidden sm:block font-serif text-lg">{inr(i.unit_price * i.qty)}</p>
                         </div>
                     ))}
                 </div>
 
-                <aside className="h-fit border border-ink/10 bg-gold-pale p-7">
-                    <h2 className="font-display text-2xl">Summary</h2>
-                    <dl className="mt-5 space-y-3 text-sm">
-                        <div className="flex justify-between"><dt className="text-ink/60">Subtotal</dt><dd>{inr(subtotal)}</dd></div>
-                        <div className="flex justify-between"><dt className="text-ink/60">Shipping</dt><dd className="text-moss">Free · insured</dd></div>
-                        <div className="flex justify-between border-t border-ink/15 pt-3 font-display text-lg"><dt>Total</dt><dd>{inr(subtotal)}</dd></div>
-                    </dl>
-                    <button onClick={() => navigate(user ? "/checkout" : "/login")}
-                        className="btn-gold mt-6 w-full">
-                        {user ? "Proceed to checkout" : "Sign in to checkout"}
+                {/* Summary */}
+                <aside className="bg-cream border border-gold/40 p-8 h-fit">
+                    <h2 className="font-serif text-2xl mb-6">Order Summary</h2>
+                    <div className="space-y-3 text-sm">
+                        <div className="flex justify-between"><span>Subtotal</span><span>{inr(subtotal)}</span></div>
+                        <div className="flex justify-between"><span>Insured Shipping</span><span className="micro-label text-gold">FREE</span></div>
+                        <div className="hairline border-t border-charcoal/15 pt-3 flex justify-between font-serif text-xl">
+                            <span>Total Payable</span><span>{inr(subtotal)}</span>
+                        </div>
+                    </div>
+                    <button onClick={() => navigate("/checkout")} className="btn-solid w-full mt-8">
+                        Proceed To Checkout →
                     </button>
-                    <p className="mt-4 text-center text-[10px] uppercase tracking-[0.22em] text-ink/45">
-                        UPI · Cards · EMI · Cash on Delivery
+                    <p className="micro-label text-charcoal/50 text-center mt-4">
+                        Secure SSL · Certified Conflict-Free Diamonds
                     </p>
                 </aside>
             </div>

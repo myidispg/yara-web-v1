@@ -11,6 +11,7 @@ import CartPage from "./pages/Cart";
 import CategoryPage from "./pages/Category";
 import CheckoutPage from "./pages/Checkout";
 import Home from "./pages/Home";
+import PoliciesPage from "./pages/Policies";
 import ProductPage from "./pages/Product";
 
 function ScrollToTop() {
@@ -22,6 +23,7 @@ function ScrollToTop() {
 function RequireAuth({ children }) {
     const { user, loading } = useAuth();
     const location = useLocation();
+
     if (loading) {
         return (
             <div className="flex min-h-[50vh] items-center justify-center">
@@ -29,6 +31,7 @@ function RequireAuth({ children }) {
             </div>
         );
     }
+
     if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
     return children;
 }
@@ -53,6 +56,7 @@ export default function App() {
                                     <Route path="/cart" element={<CartPage />} />
                                     <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
                                     <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
+                                    <Route path="/policies" element={<PoliciesPage />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>
                             </main>

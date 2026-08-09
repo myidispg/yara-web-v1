@@ -1,43 +1,66 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 export default function Footer() {
+    const [email, setEmail] = useState("");
+    const [done, setDone] = useState(false);
+
     return (
-        <footer className="relative overflow-hidden bg-pine text-ivory">
-            <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 md:grid-cols-12 lg:px-8">
-                <div className="md:col-span-5">
-                    <p className="font-display text-2xl tracking-[0.3em]">YA-RA<span className="ml-1 text-gold">◆</span></p>
-                    <p className="mt-5 max-w-sm text-sm leading-relaxed text-ivory/60">
-                        Natural, earth-mined diamonds — cut, certified and hand-set in our Jaipur atelier.
-                        Every piece ships with its IGI certificate and BIS 916 hallmark.
+        <footer className="border-t border-line mt-20">
+            <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 grid grid-cols-1 md:grid-cols-4 gap-10">
+                <div>
+                    <p className="font-serif text-2xl tracking-[0.3em] mb-3">YA-RA</p>
+                    <p className="micro-label text-charcoal/50 mb-4">Natural Diamond Fine Jewellery</p>
+                    <p className="text-xs text-charcoal/60 leading-relaxed">
+                        Handcrafted everyday fine jewellery in certified natural diamonds, 14Kt and 18Kt solid gold.
                     </p>
-                    <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-gold-light">Mumbai · Delhi · Bengaluru · Jaipur</p>
                 </div>
 
-                <div className="md:col-span-2">
-                    <p className="eyebrow !text-gold-light">Collections</p>
-                    {["Rings", "Earrings", "Pendants", "Bracelets", "Chains"].map((c) => (
-                        <Link key={c} to={`/category/${c.toLowerCase()}`} className="mt-3 block text-sm text-ivory/70 transition hover:text-gold-light">{c}</Link>
-                    ))}
+                <div>
+                    <h5 className="micro-label text-gold-dark mb-4">Categories</h5>
+                    <ul className="space-y-3 text-sm text-charcoal/70">
+                        <li><Link className="hover:text-gold-dark" to="/category/rings">Natural Diamond Rings</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/category/earrings">Diamond Stud Earrings</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/category/color-stone">Color Stone Fine Edit</Link></li>
+                    </ul>
                 </div>
 
-                <div className="md:col-span-2">
-                    <p className="eyebrow !text-gold-light">House</p>
-                    {["Our atelier", "Certification", "Ring size guide", "Care & repair", "Bespoke"].map((t) => (
-                        <a key={t} href="#" className="mt-3 block text-sm text-ivory/70 transition hover:text-gold-light">{t}</a>
-                    ))}
+                <div>
+                    <h5 className="micro-label text-gold-dark mb-4">Customer Care</h5>
+                    <ul className="space-y-3 text-sm text-charcoal/70">
+                        <li><Link className="hover:text-gold-dark" to="/policies">15-Day Money Back</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Lifetime Exchange Policy</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Diamond Certification (IGI/GIA)</Link></li>
+                    </ul>
                 </div>
 
-                <div className="md:col-span-3">
-                    <p className="eyebrow !text-gold-light">Client care</p>
-                    <p className="mt-3 text-sm text-ivory/70">care@yara.in<br />+91 98200 00000<br />Mon–Sat · 10:00–19:00 IST</p>
-                    <p className="mt-5 text-[11px] uppercase tracking-[0.25em] text-ivory/50">UPI · Cards · EMI · Cash on Delivery</p>
+                <div>
+                    <h5 className="micro-label text-gold-dark mb-4">Newsletter</h5>
+                    <p className="text-xs text-charcoal/60 mb-4">Subscribe for early access to new launches.</p>
+                    {done ? (
+                        <p className="text-xs text-gold-dark">✓ Thank you for subscribing.</p>
+                    ) : (
+                        <form
+                            className="flex"
+                            onSubmit={(e) => { e.preventDefault(); setDone(true); }}
+                        >
+                            <input
+                                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Email address"
+                                className="flex-1 min-w-0 border border-line px-3 py-3 text-xs focus:outline-none focus:border-gold-dark"
+                            />
+                            <button className="bg-charcoal text-white micro-label px-5 hover:bg-gold-dark transition-colors">
+                                Join
+                            </button>
+                        </form>
+                    )}
                 </div>
             </div>
 
-            <p aria-hidden="true" className="pointer-events-none select-none px-2 text-center font-display text-[19vw] leading-[0.75] tracking-[0.12em] text-ivory/5">YA-RA</p>
-
-            <div className="border-t border-ivory/10 px-5 py-5 text-center text-[11px] uppercase tracking-[0.25em] text-ivory/40">
-                © 2026 YA-RA Jewels Pvt Ltd · BIS Hallmarked · IGI Certified · Made in India
+            <div className="border-t border-line">
+                <p className="max-w-7xl mx-auto px-6 lg:px-10 py-6 text-[11px] text-charcoal/50">
+                    © 2026 YA-RA® Fine Jewellery Pvt. Ltd. All Rights Reserved. Prices in INR (₹).
+                </p>
             </div>
         </footer>
     );

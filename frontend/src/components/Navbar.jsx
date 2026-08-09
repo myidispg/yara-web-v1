@@ -1,92 +1,96 @@
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { useCategories } from "../context/CategoryContext";
+import { useAuth } from "../context/AuthContext";
+
+const categories = [
+    { label: "Rings", slug: "rings" },
+    { label: "Earrings", slug: "earrings" },
+    { label: "Necklaces", slug: "necklaces" },
+    { label: "Bracelets", slug: "bracelets" },
+    { label: "Solitaires", slug: "solitaires" },
+    { label: "Color Stone Fine", slug: "color-stone" },
+];
 
 export default function Navbar() {
-    const { user } = useAuth();
     const { count } = useCart();
-    const { categories } = useCategories();
-    const [open, setOpen] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
-
-    const navLink = ({ isActive }) =>
-        `text-[12px] uppercase tracking-[0.22em] transition hover:text-gold-deep ${isActive ? "text-gold-deep" : "text-ink/80"}`;
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     return (
-        <header className="sticky top-0 z-50">
-            <div className="bg-pine px-4 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-champagne">
-                Complimentary insured shipping across India · Lifetime exchange on every piece
+        <header className="sticky top-0 z-40 bg-ivory/95 backdrop-blur-sm">
+            {/* Bar 1 — certification */}
+            <div className="bg-charcoal text-white text-center py-2 px-4 micro-label">
+                ✨ 100% Certified Natural Diamonds &amp; 14Kt/18Kt Solid Gold
             </div>
 
-            <div className="border-b border-ink/10 bg-ivory/95 backdrop-blur">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 lg:px-8">
-                    <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
-                        <span className="block h-px w-6 bg-ink" /><span className="mt-1.5 block h-px w-6 bg-ink" /><span className="mt-1.5 block h-px w-4 bg-ink" />
-                    </button>
-
-                    <Link to="/" className="font-display text-2xl tracking-[0.3em]">
-                        YA-RA<span className="ml-1 text-gold">◆</span>
-                    </Link>
-
-                    <nav className="hidden items-center gap-8 md:flex">
-                        <NavLink to="/" className={navLink} end>Home</NavLink>
-                        {categories.map((cat) => (
-                            <div key={cat.slug} className="group relative">
-                                <NavLink to={`/category/${cat.slug}`} className={navLink}>{cat.name}</NavLink>
-                                {cat.subcategories?.length > 0 && (
-                                    <div className="invisible absolute left-1/2 top-full z-50 w-60 -translate-x-1/2 translate-y-3 border border-ink/10 bg-ivory p-5 opacity-0 shadow-card transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                                        <Link to={`/category/${cat.slug}`} className="eyebrow block border-b border-ink/10 pb-3">All {cat.name}</Link>
-                                        {cat.subcategories.map((s) => (
-                                            <Link key={s.slug} to={`/category/${cat.slug}?sub=${s.slug}`}
-                                                className="block py-2 text-sm text-ink/75 transition hover:translate-x-1 hover:text-gold-deep">
-                                                {s.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </nav>
-
-                    <div className="flex items-center gap-5">
-                        <button onClick={() => navigate(user ? "/account" : "/login")}
-                            className="text-[12px] uppercase tracking-[0.22em] text-ink/80 transition hover:text-gold-deep">
-                            {user ? (user.first_name || "Account") : "Sign in"}
-                        </button>
-                        <Link to="/cart" className="relative text-[12px] uppercase tracking-[0.22em] text-ink/80 transition hover:text-gold-deep">
-                            Bag
-                            {count > 0 && (
-                                <span className="absolute -right-4 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-ink">{count}</span>
-                            )}
-                        </Link>
-                    </div>
+            {/* Bar 2 — shipping + stores */}
+            <div className="relative border-b border-line py-2 px-4 text-center micro-label text-charcoal/70">
+                Complimentary Insured Shipping Across India |{" "}
+                <Link to="/category/solitaires" className="underline underline-offset-4 hover:text-gold-dark">
+                    Explore Solitaires →
+                </Link>
+                <div className="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 gap-3">
+                    <span className="hover:text-gold-dark cursor-pointer">Stores</span>
+                    <span className="text-line">|</span>
+                    <span className="hover:text-gold-dark cursor-pointer">VIP Concierge</span>
                 </div>
             </div>
 
-            {open && (
-                <div className="border-b border-ink/10 bg-ivory md:hidden">
-                    <div className="space-y-1 px-5 py-5">
-                        <Link to="/" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.2em]">Home</Link>
-                        {categories.map((cat) => (
-                            <details key={cat.slug} className="group">
-                                <summary className="cursor-pointer list-none py-2 text-sm uppercase tracking-[0.2em]">
-                                    <span className="flex justify-between">{cat.name}<span className="text-gold transition group-open:rotate-45">+</span></span>
-                                </summary>
-                                <div className="pl-4">
-                                    <Link to={`/category/${cat.slug}`} onClick={() => setOpen(false)} className="block py-1.5 text-sm text-ink/60">All {cat.name}</Link>
-                                    {cat.subcategories?.map((s) => (
-                                        <Link key={s.slug} to={`/category/${cat.slug}?sub=${s.slug}`} onClick={() => setOpen(false)}
-                                            className="block py-1.5 text-sm text-ink/60">{s.name}</Link>
-                                    ))}
-                                </div>
-                            </details>
-                        ))}
-                        <Link to={user ? "/account" : "/login"} onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.2em] text-gold-deep">
-                            {user ? "My account" : "Sign in"}
+            {/* Main row — centered logo + tagline */}
+            <div className="grid grid-cols-3 items-center px-6 lg:px-10 py-5">
+                <nav className="hidden md:flex items-center gap-6 micro-label">
+                    <Link to={user ? "/account" : "/login"} className="hover:text-gold-dark">
+                        My Account <span className="normal-case">&amp; Orders</span>
+                    </Link>
+                    <Link to="/policies" className="hover:text-gold-dark">
+                        Policies <span className="normal-case">&amp; Certifications</span>
+                    </Link>
+                </nav>
+                <button className="md:hidden micro-label" onClick={() => setMobileOpen(!mobileOpen)}>
+                    ☰ Menu
+                </button>
+
+                <Link to="/" className="text-center block">
+                    <span className="font-serif text-3xl tracking-[0.35em]">YA-RA</span>
+                    <span className="block micro-label text-charcoal/50 mt-1">
+                        Diamond, Gold and Gemstone Fine Jewellery
+                    </span>
+                </Link>
+
+                <div className="flex justify-end">
+                    <button onClick={() => navigate("/cart")} className="micro-label relative hover:text-gold-dark">
+                        Bag
+                        {count > 0 && (
+                            <span className="absolute -top-2 -right-4 bg-gold-dark text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
+                                {count}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Category nav */}
+            <nav className="border-y border-line hidden md:flex justify-center gap-10 py-3 micro-label">
+                {categories.map((c) => (
+                    <Link key={c.slug} to={`/category/${c.slug}`} className="hover:text-gold-dark">
+                        {c.label}
+                    </Link>
+                ))}
+            </nav>
+
+            {/* Mobile menu */}
+            {mobileOpen && (
+                <div className="md:hidden border-t border-line px-6 py-6 space-y-4 micro-label">
+                    {categories.map((c) => (
+                        <Link key={c.slug} to={`/category/${c.slug}`} className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
+                            {c.label}
                         </Link>
-                    </div>
+                    ))}
+                    <hr className="border-line" />
+                    <Link to={user ? "/account" : "/login"} className="block" onClick={() => setMobileOpen(false)}>My Account &amp; Orders</Link>
+                    <Link to="/policies" className="block" onClick={() => setMobileOpen(false)}>Policies &amp; Certifications</Link>
                 </div>
             )}
         </header>

@@ -1,103 +1,110 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+const inputCls =
+    "w-full bg-transparent border-b border-charcoal/25 py-3 text-sm focus:outline-none focus:border-gold placeholder-charcoal/40";
+
 export default function AuthPage() {
+    const { user, login, register } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const { login, register } = useAuth();
     const isRegister = location.pathname === "/register";
-    const from = location.state?.from || "/account";
 
-    const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+    const [loginForm, setLoginForm] = useState({ identifier: "", password: "" });
+    const [regForm, setRegForm] = useState({ first_name: "", last_name: "", email: "", phone: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
 
-    const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+    const from = location.state?.from ?? "/";
+    useEffect(() => { if (user) navigate(from, { replace: true }); }, [user, from, navigate]);
 
-    const submit = async (e) => {
+    const parseErr = (err) =>
+        Object.values(err.response?.data ?? {}).flat().join(" ") || "Something went wrong. Please try again.";
+
+    const doLogin = async (e) => {
         e.preventDefault();
-        setError("");
-        if (isRegister && !/^[6-9]\d{9}$/.test(form.phone)) {
-            setError("Phone must be a valid 10-digit Indian mobile number.");
-            return;
-        }
-        setBusy(true);
+        setBusy(true); setError("");
+        try { await login(loginForm.identifier, loginForm.password); navigate(from, { replace: true }); }
+        catch (err) { setError(parseErr(err)); setBusy(false); }
+    };
+
+    const doRegister = async (e) => {
+        e.preventDefault();
+        if (regForm.password !== regForm.confirm) { setError("Passwords do not match."); return; }
+        setBusy(true); setError("");
         try {
-            if (isRegister) {
-                const [first_name, ...rest] = form.name.trim().split(" ");
-                await register({ first_name, last_name: rest.join(" "), email: form.email, phone: form.phone, password: form.password });
-            } else {
-                await login(form.email, form.password); // email field doubles as email OR phone
-            }
+            await register({
+                first_name: regForm.first_name,
+                last_name: regForm.last_name,
+                email: regForm.email,
+                phone: regForm.phone,
+                phone_number: regForm.phone,
+                password: regForm.password,
+            });
             navigate(from, { replace: true });
-        } catch (err) {
-            const detail = err.response?.data?.detail || err.response?.data;
-            setError(typeof detail === "string" ? detail : "Something went wrong. Please check your details.");
-        } finally {
-            setBusy(false);
-        }
+        } catch (err) { setError(parseErr(err)); setBusy(false); }
     };
 
     return (
-        <div className="grid min-h-[80vh] lg:grid-cols-2">
-            <div className="hidden flex-col justify-between bg-pine p-12 text-ivory lg:flex">
-                <p className="font-display text-2xl tracking-[0.3em]">YA-RA<span className="ml-1 text-gold">◆</span></p>
-                <div>
-                    <p className="max-w-sm font-display text-4xl italic leading-snug text-champagne">
-                        “A diamond is the slowest kind of lightning — we just give it a setting.”
+        <div className="grid lg:grid-cols-2 min-h-[80vh]">
+            {/* Campaign panel */}
+            <div className="relative hidden lg:block">
+                <img
+                    src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1200&auto=format&fit=crop"
+                    alt="YA-RA fine jewellery"
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-charcoal/40 flex flex-col items-center justify-center text-ivory p-12">
+                    <p className="text-3xl font-serif tracking-[0.3em] mb-6">YA-RA</p>
+                    <p className="font-serif italic text-3xl text-center leading-snug">
+                        Every diamond<br />tells your story.
                     </p>
-                    <ul className="mt-10 space-y-3 text-[11px] uppercase tracking-[0.25em] text-ivory/60">
-                        {["IGI certificate with every stone", "BIS 916 hallmarked gold", "Free insured shipping across India", "Lifetime exchange promise"].map((t) => (
-                            <li key={t} className="flex items-center gap-3"><span className="h-1 w-1 rotate-45 bg-gold" />{t}</li>
-                        ))}
-                    </ul>
                 </div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-ivory/40">Est. 2026 · Jaipur</p>
             </div>
 
-            <div className="flex items-center justify-center px-5 py-16">
+            {/* Form panel */}
+            <div className="flex items-center justify-center px-6 py-16">
                 <div className="w-full max-w-md">
-                    <p className="eyebrow">{isRegister ? "Create account" : "Welcome back"}</p>
-                    <h1 className="mt-3 font-display text-4xl tracking-tight">
-                        {isRegister ? "Join the house" : "Sign in"}
-                    </h1>
-                    <p className="mt-2 text-sm text-ink/60">
-                        {isRegister
-                            ? "Phone is mandatory — we use it for order updates and delivery OTPs."
-                            : "Use your email or your registered phone number."}
-                    </p>
+                    <h1 className="text-4xl font-serif mb-10">{isRegister ? "Create Account" : "Welcome Back"}</h1>
 
-                    {error && <p className="mt-5 border border-rust/30 bg-rust/10 px-4 py-3 text-sm text-rust">{error}</p>}
+                    {error && <p className="text-xs text-red-700 mb-6">{error}</p>}
 
-                    <form onSubmit={submit} className="mt-7 space-y-4">
-                        {isRegister && (
-                            <input className="input" placeholder="Full name" value={form.name} onChange={set("name")} required />
-                        )}
-                        <input className="input" type={isRegister ? "email" : "text"}
-                            placeholder={isRegister ? "Email address" : "Email or phone number"}
-                            value={form.email} onChange={set("email")} required />
-                        {isRegister && (
-                            <div className="flex">
-                                <span className="flex items-center border border-r-0 border-ink/20 bg-parchment px-4 text-sm text-ink/60">+91</span>
-                                <input className="input" inputMode="numeric" maxLength={10} placeholder="10-digit mobile number *"
-                                    value={form.phone} onChange={set("phone")} required />
+                    {isRegister ? (
+                        <form onSubmit={doRegister} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <input required className={inputCls} placeholder="First Name" value={regForm.first_name} onChange={(e) => setRegForm({ ...regForm, first_name: e.target.value })} />
+                                <input required className={inputCls} placeholder="Last Name" value={regForm.last_name} onChange={(e) => setRegForm({ ...regForm, last_name: e.target.value })} />
                             </div>
-                        )}
-                        <input className="input" type="password" placeholder="Password" minLength={8}
-                            value={form.password} onChange={set("password")} required />
+                            <input required type="email" className={inputCls} placeholder="Email" value={regForm.email} onChange={(e) => setRegForm({ ...regForm, email: e.target.value })} />
+                            <input required className={inputCls} placeholder="Phone (+91)" value={regForm.phone} onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })} />
+                            <input required type="password" className={inputCls} placeholder="Password" value={regForm.password} onChange={(e) => setRegForm({ ...regForm, password: e.target.value })} />
+                            <input required type="password" className={inputCls} placeholder="Confirm Password" value={regForm.confirm} onChange={(e) => setRegForm({ ...regForm, confirm: e.target.value })} />
+                            <button type="submit" disabled={busy} className="btn-solid w-full disabled:opacity-50">
+                                {busy ? "Creating…" : "Create Account"}
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={doLogin} className="space-y-6">
+                            <input required className={inputCls} placeholder="Email" value={loginForm.identifier} onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })} />
+                            <input required type="password" className={inputCls} placeholder="Password" value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />
+                            <button type="submit" disabled={busy} className="btn-solid w-full disabled:opacity-50">
+                                {busy ? "Signing in…" : "Sign In"}
+                            </button>
+                        </form>
+                    )}
 
-                        <button disabled={busy} className="btn-gold w-full disabled:opacity-50">
-                            {busy ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
+                    <div className="hairline border-t border-charcoal/15 mt-10 pt-6 flex items-center justify-between text-sm">
+                        <Link to={isRegister ? "/login" : "/register"} className="text-gold underline underline-offset-4">
+                            {isRegister ? "Sign in instead" : "Create an account"}
+                        </Link>
+                        <button onClick={() => navigate("/")} className="text-charcoal/60 hover:text-gold">
+                            Continue as Guest
                         </button>
-                    </form>
+                    </div>
 
-                    <p className="mt-6 text-sm text-ink/60">
-                        {isRegister ? (
-                            <>Already have an account? <Link to="/login" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Sign in</Link></>
-                        ) : (
-                            <>New to YA-RA? <Link to="/register" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Create an account</Link></>
-                        )}
+                    <p className="micro-label text-charcoal/50 mt-8 text-center">
+                        Track Orders · Wishlist · Faster Checkout · Loyalty Rewards
                     </p>
                 </div>
             </div>
