@@ -1,81 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-    body {
-        @apply bg-ivory text-charcoal font-sans antialiased leading-relaxed;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4 {
-        @apply font-serif;
-    }
+  body { @apply bg-ivory text-ink font-sans antialiased leading-relaxed; }
+  h1, h2, h3, h4 { @apply font-serif text-ink; }
 }
 
 @layer components {
-    .btn-solid {
-        @apply inline-block bg-charcoal text-white uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 text-center hover:bg-gold-dark transition-colors;
-    }
-
-    .btn-outline {
-        @apply inline-block border border-charcoal bg-transparent text-charcoal uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 text-center hover:border-gold-dark hover:text-gold-dark transition-colors;
-    }
-
-    .micro-label {
-        @apply uppercase tracking-[0.16em] text-[10px] font-medium;
-    }
-
-    .eyebrow {
-        @apply uppercase tracking-[0.22em] text-[11px] font-semibold text-gold-dark;
-    }
-
-    .hairline {
-        border-color: #E7E4DE;
-    }
-
-    .price-tag {
-        @apply font-medium text-charcoal;
-    }
-
-    .price-strike {
-        @apply text-sm text-charcoal/45 line-through;
-    }
-
-    .badge-gold {
-        @apply bg-charcoal text-white uppercase tracking-[0.14em] text-[9px] font-semibold px-3 py-1 inline-block;
-    }
-
-    .card-hover {
-        @apply transition-shadow duration-300 hover:shadow-card;
-    }
+  .btn-solid {
+    @apply inline-flex items-center justify-center gap-3 bg-charcoal text-white uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 rounded-md hover:bg-gold-dark transition-colors;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center border border-charcoal bg-transparent text-charcoal uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 rounded-md hover:border-gold-dark hover:text-gold-dark transition-colors;
+  }
+  .micro-label { @apply uppercase tracking-[0.16em] text-[10px] font-medium; }
+  .eyebrow { @apply uppercase tracking-[0.22em] text-[11px] font-semibold text-gold-dark; }
+  .pill-badge {
+    @apply inline-flex items-center gap-2.5 bg-charcoal text-white rounded-full px-6 py-3 uppercase tracking-[0.22em] text-[10px] font-semibold;
+  }
+  .hairline { border-color: #E4E4E7; }
+  .price-tag { @apply font-medium text-ink; }
+  .price-strike { @apply text-sm text-ink/45 line-through; }
+  .badge-gold { @apply bg-charcoal text-white uppercase tracking-[0.14em] text-[9px] font-semibold px-3 py-1 rounded-full inline-block; }
+  .card-hover { @apply transition-shadow duration-300 hover:shadow-card; }
 }
 
 @layer utilities {
-    .grain {
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-        pointer-events: none;
-    }
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
 }
 
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #fff;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #C6A15B;
-    border-radius: 4px;
-}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #F6F6F7; }
+::-webkit-scrollbar-thumb { background: #C89B3C; border-radius: 4px; }
 
 @layer base {
-  ::selection { background: #C6A15B; color: #fff; }
-  :focus-visible { outline: 2px solid #A9853F; outline-offset: 2px; }
+  ::selection { background: #F2A7B3; color: #2E3A4C; }
+  :focus-visible { outline: 2px solid #C89B3C; outline-offset: 2px; }
 }

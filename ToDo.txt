@@ -1,0 +1,1 @@
+1. On the homepage all product cards must swap images when hovered upon. Show maybe 2-3 small bullets like Emori to allow image selection.

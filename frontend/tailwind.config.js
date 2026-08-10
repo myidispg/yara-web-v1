@@ -4,18 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        ivory: "#FFFFFF",
-        cream: "#F7F5F0",
-        charcoal: "#141414",
-        line: "#E7E4DE",
-        gold: { DEFAULT: "#C6A15B", dark: "#A9853F" },
+        ivory: "#F6F6F7",
+        cream: "#ECECF0",
+        charcoal: "#2E3A4C",
+        ink: "#2E3A4C",
+        line: "#E4E4E7",
+        blush: "#F2A7B3",
+        gold: { DEFAULT: "#C89B3C", dark: "#A87F2C" },
       },
       fontFamily: {
         serif: ['"Playfair Display"', "Georgia", "serif"],
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Poppins", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        card: "0 12px 40px rgba(20,20,20,0.08)",
+        card: "0 20px 45px rgba(46,58,76,0.12)",
+        hero: "0 30px 60px rgba(0,0,0,0.28)",
       },
     },
   },

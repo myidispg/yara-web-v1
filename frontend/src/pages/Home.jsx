@@ -5,12 +5,12 @@ import ProductCard from "../components/ProductCard";
 import usePageTitle from "../utils/usePageTitle";
 
 const IMG = {
-    hero: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop",
-    studs: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=400&auto=format&fit=crop",
-    rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
+    hero: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=900&auto=format&fit=crop",
+    studs: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=crop",
+    rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop",
     earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=800&auto=format&fit=crop",
     necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-    bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=800&auto=format&fit=crop",
+    bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=1000&auto=format&fit=crop",
     color1: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=700&auto=format&fit=crop",
     color2: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=500&auto=format&fit=crop",
 };
@@ -18,15 +18,8 @@ const IMG = {
 const TILES = [
     { slug: "rings", tag: "14Kt & 18Kt Gold", title: "Solitaire & Eternity Rings", sub: "Engagement Bands & Daily Stackable Rings", img: IMG.rings },
     { slug: "earrings", tag: "Certified Natural", title: "Diamond Earrings", sub: "Studs, Huggies & Drops", img: IMG.earrings },
-    { slug: "necklaces", tag: "Fine Chains", title: "Necklaces & Pendants", sub: "Solitaire Drops & Fine Chains", img: IMG.necklaces },
+    { slug: "necklaces", tag: null, title: "Necklaces & Pendants", sub: "Solitaire Drops & Fine Chains", img: IMG.necklaces },
     { slug: "bracelets", tag: "Tennis Collection", title: "Diamond Bracelets & Bangles", sub: "Classic silhouettes in 14Kt & 18Kt Gold", img: IMG.bracelets },
-];
-
-const TRUST = [
-    ["100% Natural Diamonds", "Earth-mined certified diamonds."],
-    ["14Kt & 18Kt Gold", "BIS Hallmarked solid gold."],
-    ["15-Day Money Back", "100% full refund guarantee."],
-    ["Lifetime Buyback", "Exchange or upgrade anytime."],
 ];
 
 const FOUR_CS = [
@@ -36,9 +29,52 @@ const FOUR_CS = [
     ["04", "Color", "Colorless Grade", "Ranging from EF (Rare Colorless) to GH (Near Colorless) for optimal value and brilliance."],
 ];
 
+/* ── Icons ────────────────────────────────────────────── */
+const ArrowIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="12" x2="20" y2="12" /><polyline points="13 5 20 12 13 19" />
+    </svg>
+);
+const GemIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 3h12l4 6-10 12L2 9l4-6z" />
+    </svg>
+);
+const StampIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-4z" />
+        <polyline points="9 12 11 14 15 10" />
+    </svg>
+);
+const RefundIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="1 4 1 10 7 10" />
+        <path d="M3.5 15a9 9 0 1 0 2-9.4L1 10" />
+    </svg>
+);
+const SwapIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="17 3 21 7 17 11" /><line x1="21" y1="7" x2="7" y2="7" />
+        <polyline points="7 21 3 17 7 13" /><line x1="3" y1="17" x2="21" y2="17" />
+    </svg>
+);
+
+const CheckIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" className="text-blush shrink-0" fill="currentColor">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 12.5l2.5 2.5L16 9.5" stroke="#2E3A4C" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const TRUST = [
+    [GemIcon, "100% Natural Diamonds", "Earth-mined certified diamonds."],
+    [StampIcon, "14Kt & 18Kt Gold", "BIS Hallmarked solid gold."],
+    [RefundIcon, "15-Day Money Back", "100% full refund guarantee."],
+    [SwapIcon, "Lifetime Buyback", "Exchange or upgrade anytime."],
+];
+
 export default function Home() {
     const [products, setProducts] = useState([]);
-
     usePageTitle();
 
     useEffect(() => {
@@ -55,113 +91,157 @@ export default function Home() {
 
     return (
         <div>
-            {/* ── HERO ── */}
-            <section className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center px-6 lg:px-10 pt-14 pb-24">
-                <div>
-                    <p className="eyebrow mb-5">Fine Diamond Essentials 2026</p>
-                    <h1 className="text-5xl md:text-6xl leading-[1.05] mb-6">
-                        Designed For Every Day. <em className="text-gold-dark">Crafted Forever.</em>
-                    </h1>
-                    <p className="text-sm text-charcoal/65 max-w-md mb-10">
-                        Handcrafted with certified 100% natural earth-mined diamonds set in 14Kt and 18Kt
-                        solid gold. Fashionable, effortless fine jewellery designed to be worn and loved daily.
-                    </p>
-                    <div className="flex flex-wrap gap-4">
-                        <Link to="/category/rings" className="btn-solid">Explore Collection</Link>
-                        <Link to="/category/solitaires" className="btn-outline">Solitaire Bands</Link>
+            {/* ── HERO (compact · ~70% height) ─────────────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 pt-7 pb-8">
+                <div className="grid lg:grid-cols-[1.05fr_0.95fr_0.62fr] gap-8 items-center">
+                    {/* Left — copy */}
+                    <div className="pr-2">
+                        <span className="pill-badge">
+                            <span className="w-2 h-2 rounded-full bg-blush inline-block" />
+                            Fine Diamond Essentials 2026
+                        </span>
+                        <h1 className="font-serif text-ink text-[40px] md:text-[54px] leading-[1.05] mt-4">
+                            Designed For<br />Every Day.<br />Crafted Forever.
+                        </h1>
+                        <p className="text-ink/60 text-sm leading-relaxed max-w-md mt-4">
+                            Handcrafted with certified 100% natural earth-mined diamonds set in 14Kt and 18Kt
+                            solid gold. Fashionable, effortless fine jewellery designed to be worn and loved daily.
+                        </p>
+                        <div className="flex flex-wrap gap-4 mt-6">
+                            <Link to="/category/rings" className="btn-solid">
+                                Explore Collection <ArrowIcon />
+                            </Link>
+                            <Link to="/category/rings" className="btn-outline">Solitaire Bands</Link>
+                        </div>
+                    </div>
+
+                    {/* Centre — main image card */}
+                    <div className="relative rounded-3xl overflow-hidden shadow-hero">
+                        <img src={IMG.hero} alt="Aura Solitaire Diamond Ring" className="w-full h-[300px] md:h-[360px] object-cover" />
+                        <div className="absolute left-4 right-4 bottom-4 rounded-xl bg-white/60 backdrop-blur-md px-5 py-3">
+                            <p className="micro-label text-gold">18Kt Solid Yellow Gold</p>
+                            <p className="font-serif text-ink text-lg mt-0.5">Aura Solitaire Diamond Ring</p>
+                        </div>
+                    </div>
+
+                    {/* Right — stacked cards */}
+                    <div className="space-y-4">
+                        <div className="relative rounded-2xl overflow-hidden shadow-card">
+                            <img src={IMG.studs} alt="14Kt White Gold Halo Studs" className="w-full h-40 object-cover" />
+                            <p className="absolute left-3 right-3 bottom-3 rounded-md bg-ink/90 text-white text-center font-serif text-sm py-2">
+                                14Kt White Gold Halo Studs
+                            </p>
+                        </div>
+
+                        <div className="bg-ink rounded-2xl p-5 shadow-card">
+                            <span className="w-9 h-9 rounded-full bg-white/10 text-blush flex items-center justify-center">
+                                <GemIcon />
+                            </span>
+                            <p className="font-serif font-semibold text-blush text-lg mt-3">IGI &amp; GIA Certified</p>
+                            <p className="text-white/70 text-xs leading-relaxed mt-1.5">
+                                Every diamond verified for 100% earth-mined origin.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="relative">
-                    <img src={IMG.hero} alt="Aura Solitaire Diamond Ring" className="w-full h-[440px] md:h-[540px] object-cover" />
-                    <div className="absolute bottom-20 left-0 bg-white px-5 py-4 shadow-card">
-                        <p className="micro-label text-gold-dark">18Kt Solid Yellow Gold</p>
-                        <p className="font-serif text-sm mt-1">Aura Solitaire Diamond Ring</p>
-                    </div>
-                    <div className="absolute -bottom-10 right-6 w-44 bg-white shadow-card">
-                        <img src={IMG.studs} alt="14Kt White Gold Halo Studs" className="h-36 w-full object-cover" />
-                        <p className="micro-label px-4 py-3 text-charcoal/70">14Kt White Gold Halo Studs</p>
-                    </div>
+                {/* ── SECTION 3 · TRUST ROW (white cards) ────────── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-10">
+                    {TRUST.map(([Icon, t, s]) => (
+                        <div key={t} className="bg-white rounded-2xl px-5 py-6 shadow-card text-center">
+                            <span className="w-9 h-9 mx-auto rounded-full bg-ink text-blush flex items-center justify-center">
+                                <Icon />
+                            </span>
+                            <p className="font-serif text-lg text-ink mt-3 mb-1">{t}</p>
+                            <p className="text-xs text-ink/55">{s}</p>
+                        </div>
+                    ))}
                 </div>
             </section>
 
-            {/* ── TRUST STRIP ── */}
-            <section className="border-y border-line">
-                <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12">
-                    <p className="text-center mb-10">
-                        <span className="eyebrow">IGI &amp; GIA Certified</span>
-                        <span className="block text-xs text-charcoal/55 mt-2">Every diamond verified for 100% earth-mined origin.</span>
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-8 md:divide-x md:divide-line text-center">
-                        {TRUST.map(([t, s]) => (
-                            <div key={t} className="px-4">
-                                <p className="font-serif text-lg mb-1">{t}</p>
-                                <p className="text-xs text-charcoal/55">{s}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ── SHOP BY CATEGORY ── */}
-            <section className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
-                <p className="eyebrow mb-2">Curated Collections</p>
-                <h2 className="text-4xl mb-10">Shop By Category</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* ── SECTION 4 · SHOP BY CATEGORY (single row) ────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <h2 className="text-4xl mb-5">Shop By Category</h2>
+                <div className="grid grid-cols-4 gap-4 lg:gap-6">
                     {TILES.map((c) => (
                         <Link key={c.slug} to={`/category/${c.slug}`} className="group block">
-                            <div className="bg-cream aspect-[3/4] mb-4 overflow-hidden">
+                            <div className="bg-cream aspect-[15/16] mb-3 overflow-hidden rounded-2xl">
                                 <img src={c.img} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                             </div>
-                            <p className="micro-label text-gold-dark mb-1">{c.tag}</p>
-                            <h3 className="font-serif text-lg leading-snug">{c.title}</h3>
-                            <p className="text-xs text-charcoal/55 mt-1">{c.sub}</p>
+                            {c.tag && <p className="micro-label text-gold-dark mb-1">{c.tag}</p>}
+                            <h3 className="font-serif text-base lg:text-lg leading-snug">{c.title}</h3>
+                            <p className="text-[11px] lg:text-xs text-ink/55 mt-1">{c.sub}</p>
                         </Link>
                     ))}
                 </div>
             </section>
 
-            {/* ── COLOR STONE ── */}
-            <section className="border-t border-line">
-                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center px-6 lg:px-10 py-20">
+            {/* ── SECTION 5 · COLOR STONE (dark panel) ─────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <div className="bg-ink rounded-3xl px-8 lg:px-14 py-12 grid lg:grid-cols-2 gap-10 items-center shadow-card">
+                    {/* Left — copy */}
                     <div>
-                        <p className="eyebrow mb-3">Precious Color Accents</p>
-                        <h2 className="text-4xl mb-5">Color Stone Fine Jewellery</h2>
-                        <p className="text-sm text-charcoal/65 max-w-md mb-8">
+                        <span className="inline-block rounded-full bg-blush/20 text-blush uppercase tracking-[0.22em] text-[10px] font-semibold px-5 py-2.5">
+                            Precious Color Accents
+                        </span>
+                        <h2 className="font-serif text-white text-4xl md:text-5xl leading-tight mt-6">
+                            Color Stone Fine Jewellery
+                        </h2>
+                        <p className="text-white/70 text-sm leading-relaxed max-w-md mt-5">
                             Handpicked precious color stone accents paired with earth-mined natural diamonds.
                             Set in hallmarked 18Kt solid yellow and rose gold settings.
                         </p>
-                        <Link to="/category/color-stone" className="micro-label text-gold-dark underline underline-offset-8 hover:text-charcoal">
-                            Explore Color Stone Edit →
+                        <ul className="mt-6 space-y-3">
+                            <li className="flex items-center gap-3 text-sm text-white/85">
+                                <CheckIcon />
+                                Ruby-Red &amp; Emerald-Green Color Stone Accents
+                            </li>
+                            <li className="flex items-center gap-3 text-sm text-white/85">
+                                <CheckIcon />
+                                Set in 14Kt and 18Kt Solid Gold Settings
+                            </li>
+                        </ul>
+                        <Link
+                            to="/category/color-stone"
+                            className="inline-flex items-center gap-3 bg-white text-ink uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 rounded-md hover:bg-blush transition-colors mt-8"
+                        >
+                            Explore Color Stone Edit <ArrowIcon />
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
-                        <figure>
-                            <img src={IMG.color1} alt="Ruby & emerald accents" className="h-64 w-full object-cover" />
-                            <figcaption className="text-xs text-charcoal/60 mt-3">
-                                <span className="font-serif text-sm text-charcoal block">Ruby-Red &amp; Emerald-Green Accents</span>
-                                Set in 14Kt and 18Kt Solid Gold Settings
-                            </figcaption>
-                        </figure>
-                        <figure className="mt-10">
-                            <img src={IMG.color2} alt="Custom color settings" className="h-64 w-full object-cover" />
-                            <figcaption className="text-xs text-charcoal/60 mt-3">
-                                <span className="font-serif text-sm text-charcoal block">Custom Color Settings</span>
-                                Choose between Ruby, Sapphire &amp; Emerald Tones
-                            </figcaption>
-                        </figure>
+
+                    {/* Right — composition */}
+                    <div className="grid grid-cols-[1.15fr_0.85fr] gap-5 items-start">
+                        <img
+                            src={IMG.color1}
+                            alt="Color stone pendant on gold chain"
+                            className="rounded-2xl w-full h-[360px] object-cover -rotate-1 shadow-hero"
+                        />
+                        <div className="space-y-5">
+                            <div className="bg-white rounded-2xl p-2.5 rotate-1 shadow-hero">
+                                <img src={IMG.color2} alt="Pink sapphire halo ring" className="rounded-xl w-full h-40 object-cover" />
+                            </div>
+                            <div className="bg-white/10 rounded-xl px-5 py-5">
+                                <p className="font-serif font-semibold text-blush text-lg">Custom Color Settings</p>
+                                <p className="text-white/75 text-sm leading-relaxed mt-1.5">
+                                    Choose between Ruby, Sapphire &amp; Emerald Tones
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* ── MOST LOVED ── */}
-            <section className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
-                <div className="flex items-end justify-between mb-10">
+            {/* ── MOST LOVED ───────────────────────────────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <div className="flex items-end justify-between mb-5">
                     <div>
-                        <p className="eyebrow mb-2">Iconic Essentials</p>
+                        <p className="eyebrow mb-2">Our best sellers</p>
                         <h2 className="text-4xl">Most Loved Designs</h2>
                     </div>
-                    <Link to="/category/rings" className="micro-label underline underline-offset-8 hover:text-gold-dark">
+                    <Link
+                        to="/category/rings"
+                        className="text-xs font-medium uppercase tracking-[0.18em] text-ink border-b border-ink/50 pb-1.5 hover:text-gold-dark hover:border-gold-dark transition-colors"
+                    >
                         View All Products →
                     </Link>
                 </div>
@@ -170,24 +250,24 @@ export default function Home() {
                         {products.map((p) => <ProductCard key={p.id ?? p.slug} product={p} />)}
                     </div>
                 ) : (
-                    <p className="text-sm text-charcoal/55">Loading curated pieces…</p>
+                    <p className="text-sm text-ink/55">Loading curated pieces…</p>
                 )}
             </section>
 
-            {/* ── 4Cs ── */}
+            {/* ── SECTION 7 · 4Cs EDUCATION ────────────────────── */}
             <section className="bg-cream border-t border-line">
-                <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
+                <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
                     <p className="eyebrow mb-2">Natural Diamond Education</p>
-                    <h2 className="text-4xl mb-2">Understand Your Diamond (The 4Cs)</h2>
-                    <p className="text-sm text-charcoal/60 mb-12">
-                        Every YA-RA® diamond is certified by IGI &amp; GIA so you purchase with absolute trust.
+                    <h2 className="text-4xl md:text-5xl mb-3">Understand Your Diamond (The 4Cs)</h2>
+                    <p className="text-base text-ink/60 mb-8">
+                        Every YA-RA® diamond is certified by renowned third party laboratories like SGL &amp; IGI so you purchase with absolute trust.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
                         {FOUR_CS.map(([n, t, h, b]) => (
-                            <div key={n} className="border-t border-charcoal pt-4">
-                                <p className="font-serif italic text-2xl mb-1">{n}. {t}</p>
-                                <p className="micro-label text-gold-dark mb-2">{h}</p>
-                                <p className="text-xs text-charcoal/65">{b}</p>
+                            <div key={n} className="border-t border-ink pt-5">
+                                <p className="font-serif italic text-3xl text-ink mb-2">{n}. {t}</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-dark mb-2">{h}</p>
+                                <p className="text-sm leading-relaxed text-ink/65">{b}</p>
                             </div>
                         ))}
                     </div>
