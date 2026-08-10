@@ -11,7 +11,7 @@ const HeartIcon = ({ filled }) => (
   </svg>
 );
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, showAddButton = true }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [wished, setWished] = useState(false);
@@ -80,12 +80,14 @@ export default function ProductCard({ product }) {
             >
               View
             </Link>
-            <button
-              onClick={handleAdd}
-              className="bg-ink text-white uppercase text-[10px] font-medium tracking-[0.12em] px-3 py-2 rounded-md hover:bg-gold-dark transition-colors whitespace-nowrap"
-            >
-              {added ? "Added ✓" : "+ Add"}
-            </button>
+            {showAddButton && (
+              <button
+                onClick={handleAdd}
+                className="bg-ink text-white uppercase text-[10px] font-medium tracking-[0.12em] px-3 py-2 rounded-md hover:bg-gold-dark transition-colors whitespace-nowrap"
+              >
+                {added ? "Added ✓" : "+ Add"}
+              </button>
+            )}
           </span>
         </div>
       </div>

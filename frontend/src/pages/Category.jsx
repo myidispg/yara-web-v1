@@ -105,42 +105,41 @@ export default function CategoryPage() {
   const FilterChip = ({ group, value }) => (
     <button
       onClick={() => toggle(group, value)}
-      className={`micro-label border px-3 py-2 transition-colors ${
-        sel[group].includes(value)
-          ? "border-gold-dark bg-gold-dark text-white"
-          : "border-charcoal/25 text-charcoal hover:border-gold-dark hover:text-gold-dark"
-      }`}
+      className={`text-xs font-medium px-4 py-2 rounded-full transition-colors ${sel[group].includes(value)
+          ? "bg-ink text-white"
+          : "bg-cream text-ink hover:bg-ink hover:text-white"
+        }`}
     >
       {value}
     </button>
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
+    <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12">
       {/* Breadcrumb + header */}
-      <p className="micro-label text-charcoal/50 mb-4">
+      <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-4">
         <Link to="/" className="hover:text-gold-dark">Home</Link> / Jewellery / {title}
       </p>
-      <h1 className="text-4xl md:text-5xl mb-2">{title}</h1>
-      <p className="text-sm text-charcoal/60 mb-10">{subtitle}</p>
+      <h1 className="font-serif text-4xl md:text-5xl mb-2">{title}</h1>
+      <p className="text-sm text-ink/60 mb-8">{subtitle}</p>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 mb-6">
         <div className="flex items-center gap-6">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="micro-label hover:text-gold-dark"
+            className="text-xs uppercase tracking-[0.16em] font-medium hover:text-gold-dark transition-colors"
           >
             {showFilters ? "Hide Filters" : "Filter Products"}
           </button>
-          <span className="text-xs text-charcoal/60">Showing {filtered.length} Designs</span>
+          <span className="text-xs text-ink/50">Showing {filtered.length} Designs</span>
         </div>
         <label className="flex items-center gap-3 text-xs">
-          <span className="micro-label">Sort By:</span>
+          <span className="uppercase tracking-[0.16em] font-medium">Sort By:</span>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="border border-charcoal/25 bg-white px-3 py-2 text-xs focus:outline-none focus:border-gold-dark"
+            className="border border-line bg-white px-4 py-2 text-sm rounded-md focus:outline-none focus:border-gold-dark"
           >
             <option value="best">Bestsellers First</option>
             <option value="price-asc">Price: Low to High</option>
@@ -151,43 +150,43 @@ export default function CategoryPage() {
         </label>
       </div>
 
-      <div className={`grid gap-10 ${showFilters ? "lg:grid-cols-[260px_1fr]" : "grid-cols-1"}`}>
+      <div className={`grid gap-10 ${showFilters ? "lg:grid-cols-[280px_1fr]" : "grid-cols-1"}`}>
         {/* Filters */}
         {showFilters && (
-          <aside className="space-y-8">
+          <aside className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="micro-label">Filter Products</h2>
+              <h2 className="text-xs uppercase tracking-[0.16em] font-semibold">Filter Products</h2>
               <button
                 onClick={() => setSel({ purity: [], price: [], carat: [], quality: [] })}
-                className="micro-label text-gold-dark underline underline-offset-4"
+                className="text-xs text-gold-dark underline underline-offset-4 hover:text-ink transition-colors"
               >
                 Clear All
               </button>
             </div>
 
             <div>
-              <h3 className="micro-label text-gold-dark mb-3">Gold Purity &amp; Tone</h3>
+              <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Gold Purity &amp; Tone</h3>
               <div className="flex flex-wrap gap-2">
                 {PURITY_OPTIONS.map((o) => <FilterChip key={o} group="purity" value={o} />)}
               </div>
             </div>
 
             <div>
-              <h3 className="micro-label text-gold-dark mb-3">Price Range (INR)</h3>
+              <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Price Range (INR)</h3>
               <div className="flex flex-wrap gap-2">
                 {PRICE_BUCKETS.map((b) => <FilterChip key={b.label} group="price" value={b.label} />)}
               </div>
             </div>
 
             <div>
-              <h3 className="micro-label text-gold-dark mb-3">Diamond Weight</h3>
+              <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Weight</h3>
               <div className="flex flex-wrap gap-2">
                 {CARAT_BUCKETS.map((b) => <FilterChip key={b.label} group="carat" value={b.label} />)}
               </div>
             </div>
 
             <div>
-              <h3 className="micro-label text-gold-dark mb-3">Diamond Quality</h3>
+              <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Quality</h3>
               <div className="flex flex-wrap gap-2">
                 {QUALITY_OPTIONS.map((o) => <FilterChip key={o} group="quality" value={o} />)}
               </div>
@@ -198,13 +197,13 @@ export default function CategoryPage() {
         {/* Grid */}
         <div>
           {filtered.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.map((p) => (
-                <ProductCard key={p.id ?? p.slug} product={p} cta="view" />
+                <ProductCard key={p.id ?? p.slug} product={p} showAddButton={false} />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-charcoal/60">No designs match your filters yet.</p>
+            <p className="text-sm text-ink/50">No designs match your filters yet.</p>
           )}
         </div>
       </div>
