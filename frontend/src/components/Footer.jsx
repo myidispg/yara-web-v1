@@ -17,43 +17,29 @@ export default function Footer() {
                 </div>
 
                 <div>
-                    <h5 className="micro-label text-gold-dark mb-4">Categories</h5>
+                    <h5 className="micro-label text-gold-dark mb-4">Contact</h5>
                     <ul className="space-y-3 text-sm text-charcoal/70">
-                        <li><Link className="hover:text-gold-dark" to="/category/rings">Natural Diamond Rings</Link></li>
-                        <li><Link className="hover:text-gold-dark" to="/category/earrings">Diamond Stud Earrings</Link></li>
-                        <li><Link className="hover:text-gold-dark" to="/category/color-stone">Color Stone Fine Edit</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/category/rings">Contact Us</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/category/earrings">Our Showroom</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/category/color-stone">yarajewels@gmail.com</Link></li>
                     </ul>
                 </div>
 
                 <div>
-                    <h5 className="micro-label text-gold-dark mb-4">Customer Care</h5>
+                    <h5 className="micro-label text-gold-dark mb-4">Explore</h5>
                     <ul className="space-y-3 text-sm text-charcoal/70">
-                        <li><Link className="hover:text-gold-dark" to="/policies">15-Day Money Back</Link></li>
-                        <li><Link className="hover:text-gold-dark" to="/policies">Lifetime Exchange Policy</Link></li>
-                        <li><Link className="hover:text-gold-dark" to="/policies">Diamond Certification (IGI/GIA)</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">About Us</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Buyback and Exchange Policy</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Privacy Policy</Link></li>
                     </ul>
                 </div>
-
                 <div>
-                    <h5 className="micro-label text-gold-dark mb-4">Newsletter</h5>
-                    <p className="text-xs text-charcoal/60 mb-4">Subscribe for early access to new launches.</p>
-                    {done ? (
-                        <p className="text-xs text-gold-dark">✓ Thank you for subscribing.</p>
-                    ) : (
-                        <form
-                            className="flex"
-                            onSubmit={(e) => { e.preventDefault(); setDone(true); }}
-                        >
-                            <input
-                                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Email address"
-                                className="flex-1 min-w-0 border border-line px-3 py-3 text-xs focus:outline-none focus:border-gold-dark"
-                            />
-                            <button className="bg-charcoal text-white micro-label px-5 hover:bg-gold-dark transition-colors">
-                                Join
-                            </button>
-                        </form>
-                    )}
+                    <h5 className="micro-label text-gold-dark mb-4">Information</h5>
+                    <ul className="space-y-3 text-sm text-charcoal/70">
+                        <li><Link className="hover:text-gold-dark" to="/policies">Diamond Certification (SGL/IGI/GIA)</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Size Guide</Link></li>
+                        <li><Link className="hover:text-gold-dark" to="/policies">Tips and Tricks</Link></li>
+                    </ul>
                 </div>
             </div>
 
