@@ -81,10 +81,10 @@ class Product(models.Model):
         first = self.images.first()
         return first.url if first else None
 
-    @property
-    def min_price(self):
-        prices = [v.price for v in self.variants.filter(is_active=True)]
-        return min(prices) if prices else None
+    # @property
+    # def min_price(self):
+    #     prices = [v.price for v in self.variants.filter(is_active=True)]
+    #     return min(prices) if prices else None
 
     def __str__(self):
         return self.name
