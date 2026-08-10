@@ -1,64 +1,70 @@
-from django.db.models import Prefetch, Q
-from rest_framework.viewsets import ReadOnlyModelViewSet
+"""
+YA-RA® — Catalog views.
+Aligned with the new models & serializers.
+Endpoints (via router):  /api/categories/  ·  /api/products/  ·  /api/products/<slug>/
+Supports the storefront query params:
+    ?category=<slug>      (also ?category_slug=)
+    ?purity=18Kt
+    ?price_min= / ?price_max=
+    ?search=
+"""
+from django.db.models import Min
+from rest_framework import viewsets
 
-from .models import Category, Product, ProductImage, ProductVariant
-from .serializers import CategorySerializer, ProductDetailSerializer, ProductListSerializer
+from .models import Category, Product
+from .serializers import (
+    CategorySerializer,
+    ProductDetailSerializer,
+    ProductListSerializer,
+)
 
 
-class CategoryViewSet(ReadOnlyModelViewSet):
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """GET /api/categories/ — active categories in sort order."""
+    queryset = Category.objects.filter(is_active=True)
     serializer_class = CategorySerializer
     lookup_field = "slug"
 
-    def get_queryset(self):
-        return (Category.objects.filter(parent__isnull=True, is_active=True)
-                .prefetch_related(Prefetch("subcategories",
-                                           queryset=Category.objects.filter(is_active=True))))
 
-
-class ProductViewSet(ReadOnlyModelViewSet):
+class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    GET /api/products/            — list (cards: variants included, no gallery)
+    GET /api/products/<slug>/     — detail (full gallery + all variants)
+    """
     lookup_field = "slug"
 
-    def get_serializer_class(self):
-        return ProductDetailSerializer if self.action == "retrieve" else ProductListSerializer
-
     def get_queryset(self):
-        p = self.request.query_params
-        qs = (Product.objects.filter(is_active=True)
-              .select_related("category", "category__parent")
-              .prefetch_related("variants", "images"))
+        qs = (
+            Product.objects.filter(is_active=True)
+            .select_related("category")
+            .prefetch_related("images", "variants")
+        )
 
-        cat_slug = p.get("category")
-        if cat_slug:
-            try:
-                cat = Category.objects.get(slug=cat_slug)
-            except Category.DoesNotExist:
-                return qs.none()
-            pks = [cat.pk] + list(cat.subcategories.values_list("pk", flat=True))
-            qs = qs.filter(category__in=pks)
+        params = self.request.query_params
+        category = params.get("category") or params.get("category_slug")
+        if category:
+            qs = qs.filter(category__slug=category)
 
-        if p.get("subcategory"):
-            qs = qs.filter(category__slug=p["subcategory"])
-        if p.get("color"):
-            qs = qs.filter(variants__gold_color=p["color"]).distinct()
-        if p.get("purity"):
-            qs = qs.filter(variants__purity=p["purity"]).distinct()
-        if p.get("featured") in ("1", "true"):
-            qs = qs.filter(is_featured=True)
-        if p.get("in_stock") in ("1", "true"):
-            qs = qs.exclude(stock_status="out_of_stock")
-        if p.get("q"):
-            qs = qs.filter(Q(name__icontains=p["q"]) | Q(description__icontains=p["q"]))
-        try:
-            if p.get("min_price"):
-                qs = qs.filter(base_price__gte=p["min_price"])
-            if p.get("max_price"):
-                qs = qs.filter(base_price__lte=p["max_price"])
-        except ValueError:
-            pass
+        purity = params.get("purity")
+        if purity:
+            qs = qs.filter(variants__purity=purity)
 
-        sort = p.get("sort", "featured")
-        return qs.order_by(**{
-            "price_asc": "base_price",
-            "price_desc": "-base_price",
-            "new": "-created_at",
-        }.get(sort, "-is_featured"))
+        price_min = params.get("price_min")
+        price_max = params.get("price_max")
+        if price_min or price_max:
+            qs = qs.annotate(min_price=Min("variants__price"))
+            if price_min:
+                qs = qs.filter(min_price__gte=price_min)
+            if price_max:
+                qs = qs.filter(min_price__lte=price_max)
+
+        search = params.get("search")
+        if search:
+            qs = qs.filter(name__icontains=search)
+
+        return qs.distinct()
+
+    def get_serializer_class(self):
+        return (
+            ProductListSerializer if self.action == "list" else ProductDetailSerializer
+        )

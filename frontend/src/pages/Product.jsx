@@ -4,6 +4,7 @@ import api from "../api/client";
 import { useCart } from "../context/CartContext";
 import { variantLabel } from "../utils/format";
 import { priceBreakdown } from "../utils/pricing"
+import usePageTitle from "../utils/usePageTitle";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
