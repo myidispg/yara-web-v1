@@ -291,7 +291,7 @@ export default function CheckoutPage() {
                     {error && <p className="text-xs text-red-700 mt-4">{error}</p>}
 
                     <button type="submit" disabled={placing || !isFormValid()} className="btn-solid w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {placing ? "Placing…" : `Place Insured Order (${inr(subtotal)})`}
+                        {placing ? "Placing…" : `Place Order (${inr(subtotal)})`}
                     </button>
                     <p className="micro-label text-charcoal/50 text-center mt-4">
                         256-bit SSL · PCI-DSS · Insured Delivery
