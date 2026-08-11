@@ -8,13 +8,14 @@ const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })
         .format(Number(n) || 0);
 
-const PURITY_ORDER = ["18Kt", "14Kt"];
+const PURITY_ORDER = ["14Kt", "18Kt"];
 const COLOR_ORDER = ["Yellow", "Rose", "White"];
 const SWATCH = {
     Yellow: "linear-gradient(135deg, #F7E27A, #D9A93B)",
     Rose: "linear-gradient(135deg, #F2C0AC, #D98D6F)",
     White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
 };
+const RING_SIZES = ["8", "10", "12", "14", "16", "18", "20"];
 
 const ChevronIcon = ({ open }) => (
     <svg
@@ -34,19 +35,19 @@ export default function ProductPage() {
     const [product, setProduct] = useState(null);
     const [notFound, setNotFound] = useState(false);
     const [purity, setPurity] = useState(null);
+    const [color, setColor] = useState(null);
     const [size, setSize] = useState(null);
     const [imgIdx, setImgIdx] = useState(0);
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [added, setAdded] = useState(false);
     const [showAllMedia, setShowAllMedia] = useState(false);
-    const [color, setColor] = useState(null);
     const carouselRef = useRef(null);
 
     usePageTitle(product?.name);
 
     useEffect(() => {
-        setProduct(null); setNotFound(false); setPurity(null); setSize(null);
-        setImgIdx(0); setShowBreakdown(false); setAdded(false); setShowAllMedia(false); setColor(null);
+        setProduct(null); setNotFound(false); setPurity(null); setColor(null); setSize(null);
+        setImgIdx(0); setShowBreakdown(false); setAdded(false); setShowAllMedia(false);
         (async () => {
             try {
                 const { data } = await api.get(`/products/${slug}/`);
@@ -83,30 +84,41 @@ export default function ProductPage() {
 
     /* ── Variants / pricing ── */
     const variants = product.variants ?? [];
-    const present = [...new Set(variants.map((v) => v.purity))];
+    const isRing = variants.some(v => v.ring_size);
+
+    // Auto-select the cheapest variant to set initial defaults
+    const cheapestVariant = variants.length > 0
+        ? variants.reduce((prev, curr) => (Number(curr.price) < Number(prev.price) ? curr : prev))
+        : null;
+
+    // Purity
+    const presentPurities = [...new Set(variants.map((v) => v.purity))];
     const purities = [
-        ...PURITY_ORDER.filter((p) => present.includes(p)),
-        ...present.filter((p) => !PURITY_ORDER.includes(p)),
+        ...PURITY_ORDER.filter((p) => presentPurities.includes(p)),
+        ...presentPurities.filter((p) => !PURITY_ORDER.includes(p)),
     ];
-    const activePurity = purities.includes(purity) ? purity : purities[0];
-    const colorOptions = [
-        ...COLOR_ORDER.filter((c) => variants.some((v) => v.gold_color === c)),
-        ...[...new Set(variants.map((v) => v.gold_color))].filter((c) => !COLOR_ORDER.includes(c)),
+    const activePurity = purities.includes(purity) ? purity : (cheapestVariant?.purity || purities[0]);
+
+    // Color
+    const presentColors = [...new Set(variants.map((v) => v.gold_color))];
+    const colors = [
+        ...COLOR_ORDER.filter((c) => presentColors.includes(c)),
+        ...presentColors.filter((c) => !COLOR_ORDER.includes(c)),
     ];
-    const activeColor = colorOptions.includes(color) ? color : colorOptions[0];
-    const sizeOptions = [
-        ...new Set(
-            variants
-                .filter((v) => v.purity === activePurity && v.gold_color === activeColor && v.ring_size)
-                .map((v) => v.ring_size)
-        ),
-    ];
-    const activeSize = sizeOptions.includes(size) ? size : sizeOptions[0] ?? null;
-    const variant =
-        variants.find((v) => v.purity === activePurity && v.gold_color === activeColor && (!sizeOptions.length || v.ring_size === activeSize)) ??
-        variants.find((v) => v.purity === activePurity && v.gold_color === activeColor) ??
-        variants.find((v) => v.purity === activePurity) ??
-        variants[0];
+    const activeColor = colors.includes(color) ? color : (cheapestVariant?.gold_color || colors[0]);
+
+    // Size
+    const sizeOptions = isRing ? RING_SIZES : [];
+    const activeSize = sizeOptions.includes(size) ? size : (cheapestVariant?.ring_size || sizeOptions[0]) ?? null;
+
+    // Find active variant (respects exact purity + color + size combination)
+    const variant = variants.find(v =>
+        v.purity === activePurity &&
+        v.gold_color === activeColor &&
+        (!sizeOptions.length || v.ring_size === activeSize)
+    ) ?? variants.find(v => v.purity === activePurity && v.gold_color === activeColor) ?? variants[0];
+
+    const isVariantInStock = variant && Number(variant.stock) > 0;
 
     const price = variant?.price ?? product.price;
     const compare = product.compare_at_price;
@@ -140,7 +152,7 @@ export default function ProductPage() {
                 </p>
             </div>
 
-            {/* 60% media · 40% info */}
+            {/* 55% media · 45% info */}
             <div className="grid lg:grid-cols-[55fr_45fr]">
                 {/* ── Media — full-bleed left ── */}
                 <div>
@@ -174,8 +186,8 @@ export default function ProductPage() {
                         </button>
                     )}
 
-                    {/* Mobile / tablet: swipe carousel + dots + thumbs (unchanged) */}
-                    <div className="lg:hidden">
+                    {/* Mobile / tablet: swipe carousel + dots + thumbs */}
+                    <div className="lg:hidden px-8">
                         <div
                             ref={carouselRef}
                             onScroll={(e) => {
@@ -247,7 +259,7 @@ export default function ProductPage() {
                     </div>
                 </div>
 
-                {/* ── Details — right 40% ── */}
+                {/* ── Details — right 45% ── */}
                 <div className="px-8 py-10 lg:py-12 lg:pl-10 xl:pr-20">
                     <p className="eyebrow">{product.certification ?? "SGL/IGI"} Certified Natural Diamond</p>
                     <h1 className="font-serif text-4xl md:text-5xl mt-3">{product.name}</h1>
@@ -274,18 +286,18 @@ export default function ProductPage() {
                         </div>
                     )}
 
-                    {/* Gold colour */}
-                    {colorOptions.length > 0 && (
+                    {/* Gold Color */}
+                    {colors.length > 0 && (
                         <div className="mt-6">
                             <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Colour:</p>
                             <div className="flex flex-wrap gap-3">
-                                {colorOptions.map((c) => (
+                                {colors.map((c) => (
                                     <button
                                         key={c}
                                         onClick={() => setColor(c)}
                                         className={`flex items-center gap-2.5 text-xs font-medium px-4 py-2.5 rounded-full border transition-colors ${c === activeColor
-                                                ? "border-ink bg-ink text-white"
-                                                : "border-line bg-white text-ink hover:border-ink"
+                                            ? "border-ink bg-ink text-white"
+                                            : "border-line bg-white text-ink hover:border-ink"
                                             }`}
                                     >
                                         <span
@@ -303,19 +315,29 @@ export default function ProductPage() {
                     {sizeOptions.length > 0 && (
                         <div className="mt-6">
                             <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Ring Size:</p>
-                            <div className="flex flex-wrap gap-2">
-                                {sizeOptions.map((s) => (
-                                    <button
-                                        key={s}
-                                        onClick={() => setSize(s)}
-                                        className={`w-11 h-11 rounded-full text-xs font-medium border transition-colors ${s === activeSize
-                                            ? "border-ink bg-ink text-white"
-                                            : "border-line bg-white text-ink hover:border-ink"
-                                            }`}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
+                            <div className="flex flex-wrap gap-3">
+                                {sizeOptions.map((s) => {
+                                    const sizeVariant = variants.find(v => v.purity === activePurity && v.gold_color === activeColor && v.ring_size === s);
+                                    const inStock = sizeVariant && Number(sizeVariant.stock) > 0;
+                                    return (
+                                        <button
+                                            key={s}
+                                            onClick={() => setSize(s)}
+                                            className={`w-24 py-3 rounded-lg border transition-all flex flex-col items-center justify-center gap-1 ${s === activeSize
+                                                    ? "border-ink bg-ink text-white"
+                                                    : "border-line bg-white text-ink hover:border-ink/40"
+                                                }`}
+                                        >
+                                            <span className="text-sm font-semibold">{s}</span>
+                                            <span className={`text-[9px] uppercase tracking-[0.08em] font-medium ${s === activeSize
+                                                    ? 'text-white/80'
+                                                    : (inStock ? 'text-[#3E5C4B]' : 'text-ink/40')
+                                                }`}>
+                                                {inStock ? 'In Stock' : 'Made to Order'}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -331,6 +353,7 @@ export default function ProductPage() {
                         )}
                     </div>
                     <p className="text-xs text-ink/50 mt-2">Inclusive of all taxes.</p>
+
 
                     {/* Product Information */}
                     <div className="mt-4 rounded-xl border border-line bg-white px-5 py-4">
