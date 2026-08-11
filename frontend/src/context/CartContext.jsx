@@ -22,6 +22,7 @@ export function CartProvider({ children }) {
         slug: product.slug,
         name: product.name,
         image: product.images?.[0]?.url || product.primary_image || null,
+        carat: product.carat ?? product.carat_weight ?? null,
         variant: {
           id: variant.id, gold_color: variant.gold_color, purity: variant.purity,
           ring_size: variant.ring_size, price: variant.price, label: variantLabel(variant)
