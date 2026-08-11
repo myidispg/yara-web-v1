@@ -23,7 +23,7 @@ export default function ProductCard({ product, showAddButton = true }) {
   };
   const price = variants.length ? Math.min(...variants.map((v) => v.price)) : product.price;
   const compare = product.compare_at_price ?? product.compareAtPrice ?? product.mrp ?? null;
-  const showRibbon = Boolean(product.badge ?? product.tag) || defaultVariant.purity === "14Kt";
+  const showRibbon = Boolean(product.badge ?? product.tag);
 
   const handleAdd = (e) => {
     e.preventDefault(); e.stopPropagation();

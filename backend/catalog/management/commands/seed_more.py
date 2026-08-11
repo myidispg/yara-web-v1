@@ -124,13 +124,14 @@ class Command(BaseCommand):
                 sizes = SIZES if cat_slug in ("rings", "solitaires") else [None]
                 for purity in ("18Kt", "14Kt"):
                     price, gold, diamond, making, gst = breakdown(carat, quality, purity)
-                    for size in sizes:
-                        ProductVariant.objects.create(
-                            product=product, purity=purity, gold_color=color,
-                            ring_size=size, price=price, gold_value=gold,
-                            diamond_value=diamond, making_charges=making,
-                            gst_amount=gst, stock=10,
-                        )
+                    for gold_color in ("Yellow", "Rose", "White"):
+                        for size in sizes:
+                            ProductVariant.objects.create(
+                                product=product, purity=purity, gold_color=gold_color,
+                                ring_size=size, price=price, gold_value=gold,
+                                diamond_value=diamond, making_charges=making,
+                                gst_amount=gst, stock=10,
+                            )
 
                 # Back-date so the original six stay "newest" on the home page
                 Product.objects.filter(pk=product.pk).update(

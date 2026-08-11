@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
 import { useCart } from "../context/CartContext";
 import usePageTitle from "../utils/usePageTitle";
@@ -9,6 +9,12 @@ const inr = (n) =>
         .format(Number(n) || 0);
 
 const PURITY_ORDER = ["18Kt", "14Kt"];
+const COLOR_ORDER = ["Yellow", "Rose", "White"];
+const SWATCH = {
+    Yellow: "linear-gradient(135deg, #F7E27A, #D9A93B)",
+    Rose: "linear-gradient(135deg, #F2C0AC, #D98D6F)",
+    White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
+};
 
 const ChevronIcon = ({ open }) => (
     <svg
@@ -32,12 +38,15 @@ export default function ProductPage() {
     const [imgIdx, setImgIdx] = useState(0);
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [added, setAdded] = useState(false);
+    const [showAllMedia, setShowAllMedia] = useState(false);
+    const [color, setColor] = useState(null);
+    const carouselRef = useRef(null);
 
     usePageTitle(product?.name);
 
     useEffect(() => {
         setProduct(null); setNotFound(false); setPurity(null); setSize(null);
-        setImgIdx(0); setShowBreakdown(false); setAdded(false);
+        setImgIdx(0); setShowBreakdown(false); setAdded(false); setShowAllMedia(false); setColor(null);
         (async () => {
             try {
                 const { data } = await api.get(`/products/${slug}/`);
@@ -64,7 +73,15 @@ export default function ProductPage() {
 
     if (!product) return <p className="text-center text-sm text-ink/50 py-24">Loading design…</p>;
 
-    const images = product.images?.length ? product.images : [{ url: product.primary_image }];
+    /* ── Media (photos + videos, any mix) ── */
+    const images = product.images?.length
+        ? product.images
+        : [{ url: product.primary_image, kind: "image" }];
+    const isVideo = (m) =>
+        m.kind === "video" || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(m.url ?? "");
+    const desktopMedia = showAllMedia ? images : images.slice(0, 6);
+
+    /* ── Variants / pricing ── */
     const variants = product.variants ?? [];
     const present = [...new Set(variants.map((v) => v.purity))];
     const purities = [
@@ -72,12 +89,23 @@ export default function ProductPage() {
         ...present.filter((p) => !PURITY_ORDER.includes(p)),
     ];
     const activePurity = purities.includes(purity) ? purity : purities[0];
+    const colorOptions = [
+        ...COLOR_ORDER.filter((c) => variants.some((v) => v.gold_color === c)),
+        ...[...new Set(variants.map((v) => v.gold_color))].filter((c) => !COLOR_ORDER.includes(c)),
+    ];
+    const activeColor = colorOptions.includes(color) ? color : colorOptions[0];
     const sizeOptions = [
-        ...new Set(variants.filter((v) => v.purity === activePurity && v.ring_size).map((v) => v.ring_size)),
+        ...new Set(
+            variants
+                .filter((v) => v.purity === activePurity && v.gold_color === activeColor && v.ring_size)
+                .map((v) => v.ring_size)
+        ),
     ];
     const activeSize = sizeOptions.includes(size) ? size : sizeOptions[0] ?? null;
     const variant =
-        variants.find((v) => v.purity === activePurity && (!sizeOptions.length || v.ring_size === activeSize)) ??
+        variants.find((v) => v.purity === activePurity && v.gold_color === activeColor && (!sizeOptions.length || v.ring_size === activeSize)) ??
+        variants.find((v) => v.purity === activePurity && v.gold_color === activeColor) ??
+        variants.find((v) => v.purity === activePurity) ??
         variants[0];
 
     const price = variant?.price ?? product.price;
@@ -99,46 +127,128 @@ export default function ProductPage() {
         );
 
     return (
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12">
+        <div>
             {/* Breadcrumb */}
-            <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-8">
-                <Link to="/" className="hover:text-gold-dark">Home</Link>
-                {" / "}
-                <Link to={`/category/${product.category?.slug}`} className="hover:text-gold-dark">
-                    {product.category?.name ?? "Jewellery"}
-                </Link>
-                {" / "}{product.name}
-            </p>
+            <div className="max-w-[1440px] mx-auto px-8 lg:px-20 pt-10 pb-8">
+                <p className="text-xs uppercase tracking-[0.16em] text-ink/50">
+                    <Link to="/" className="hover:text-gold-dark">Home</Link>
+                    {" / "}
+                    <Link to={`/category/${product.category?.slug}`} className="hover:text-gold-dark">
+                        {product.category?.name ?? "Jewellery"}
+                    </Link>
+                    {" / "}{product.name}
+                </p>
+            </div>
 
-            <div className="grid lg:grid-cols-2 gap-12">
-                {/* ── Gallery ─ */}
+            {/* 60% media · 40% info */}
+            <div className="grid lg:grid-cols-[55fr_45fr]">
+                {/* ── Media — full-bleed left ── */}
                 <div>
-                    <div className="rounded-2xl overflow-hidden shadow-card bg-cream">
-                        <img
-                            src={images[imgIdx]?.url}
-                            alt={product.name}
-                            className="w-full h-[420px] md:h-[560px] object-cover"
-                        />
+                    {/* Desktop: 2-col grid, 6 by default, rest behind Show More */}
+                    <div className="hidden lg:grid grid-cols-2 gap-1.5">
+                        {desktopMedia.map((im, i) => (
+                            <div key={i} className="overflow-hidden bg-cream">
+                                {isVideo(im) ? (
+                                    <video
+                                        src={im.url}
+                                        className="w-full aspect-square object-cover bg-charcoal"
+                                        controls muted loop playsInline preload="metadata"
+                                    />
+                                ) : (
+                                    <img
+                                        src={im.url}
+                                        alt={`${product.name} — view ${i + 1}`}
+                                        className="w-full aspect-square object-cover transition-transform duration-500 hover:scale-105"
+                                    />
+                                )}
+                            </div>
+                        ))}
                     </div>
-                    {images.length > 1 && (
-                        <div className="flex gap-3 mt-4">
+                    {images.length > 6 && (
+                        <button
+                            onClick={() => setShowAllMedia(!showAllMedia)}
+                            className="hidden lg:flex w-full items-center justify-center gap-2 py-4 bg-cream text-ink text-xs uppercase tracking-[0.16em] font-semibold hover:bg-ink hover:text-white transition-colors"
+                        >
+                            {showAllMedia ? "Show Less" : `Show More (${images.length - 6} more)`}
+                            <ChevronIcon open={showAllMedia} />
+                        </button>
+                    )}
+
+                    {/* Mobile / tablet: swipe carousel + dots + thumbs (unchanged) */}
+                    <div className="lg:hidden">
+                        <div
+                            ref={carouselRef}
+                            onScroll={(e) => {
+                                const i = Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth);
+                                if (i !== imgIdx && i >= 0 && i < images.length) setImgIdx(i);
+                            }}
+                            className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+                        >
                             {images.map((im, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setImgIdx(i)}
-                                    className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${i === imgIdx ? "border-gold-dark" : "border-transparent opacity-60 hover:opacity-100"
-                                        }`}
-                                    aria-label={`View image ${i + 1}`}
-                                >
-                                    <img src={im.url} alt="" className="w-full h-full object-cover" />
-                                </button>
+                                <div key={i} className="w-full shrink-0 snap-center">
+                                    {isVideo(im) ? (
+                                        <video
+                                            src={im.url}
+                                            className="w-full h-[380px] md:h-[460px] object-cover rounded-2xl bg-charcoal"
+                                            controls muted loop playsInline preload="metadata"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={im.url}
+                                            alt={product.name}
+                                            className="w-full h-[380px] md:h-[460px] object-cover rounded-2xl"
+                                        />
+                                    )}
+                                </div>
                             ))}
                         </div>
-                    )}
+                        {images.length > 1 && (
+                            <>
+                                <div className="flex justify-center gap-2 mt-4">
+                                    {images.map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() =>
+                                                carouselRef.current?.scrollTo({
+                                                    left: i * carouselRef.current.clientWidth,
+                                                    behavior: "smooth",
+                                                })
+                                            }
+                                            className={`h-2 rounded-full transition-all ${i === imgIdx ? "w-6 bg-ink" : "w-2 bg-line"}`}
+                                            aria-label={`Go to image ${i + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 mt-4 justify-center">
+                                    {images.map((im, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() =>
+                                                carouselRef.current?.scrollTo({
+                                                    left: i * carouselRef.current.clientWidth,
+                                                    behavior: "smooth",
+                                                })
+                                            }
+                                            className={`w-16 h-16 rounded-lg overflow-hidden border-2 bg-white transition-all ${i === imgIdx ? "border-gold-dark" : "border-line opacity-70"}`}
+                                            aria-label={`View image ${i + 1}`}
+                                        >
+                                            {isVideo(im) ? (
+                                                <span className="w-full h-full flex items-center justify-center bg-charcoal text-white">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                                </span>
+                                            ) : (
+                                                <img src={im.url} alt="" className="w-full h-full object-cover" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                {/* ── Details ── */}
-                <div>
+                {/* ── Details — right 40% ── */}
+                <div className="px-8 py-10 lg:py-12 lg:pl-10 xl:pr-20">
                     <p className="eyebrow">{product.certification ?? "SGL/IGI"} Certified Natural Diamond</p>
                     <h1 className="font-serif text-4xl md:text-5xl mt-3">{product.name}</h1>
                     <p className="text-sm text-ink/60 leading-relaxed mt-4">{product.description}</p>
@@ -158,6 +268,31 @@ export default function ProductPage() {
                                             }`}
                                     >
                                         {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Gold colour */}
+                    {colorOptions.length > 0 && (
+                        <div className="mt-6">
+                            <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Colour:</p>
+                            <div className="flex flex-wrap gap-3">
+                                {colorOptions.map((c) => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setColor(c)}
+                                        className={`flex items-center gap-2.5 text-xs font-medium px-4 py-2.5 rounded-full border transition-colors ${c === activeColor
+                                                ? "border-ink bg-ink text-white"
+                                                : "border-line bg-white text-ink hover:border-ink"
+                                            }`}
+                                    >
+                                        <span
+                                            className="w-4 h-4 rounded-full border border-black/10"
+                                            style={{ background: SWATCH[c] ?? "#ccc" }}
+                                        />
+                                        {c} Gold
                                     </button>
                                 ))}
                             </div>
@@ -213,7 +348,7 @@ export default function ProductPage() {
                             </div>
                             <div className="flex justify-between gap-3">
                                 <dt className="text-ink/60">Gold Tone</dt>
-                                <dd className="font-medium text-ink text-right">{variant?.gold_color ?? "—"}</dd>
+                                <dd className="font-medium text-ink text-right">{activeColor ?? "—"}</dd>
                             </div>
                             {sizeOptions.length > 0 && (
                                 <div className="flex justify-between gap-3">
@@ -257,6 +392,17 @@ export default function ProductPage() {
                                 <BreakRow label={`Natural Diamond (${product.carat ?? "–"} Ct)`} value={variant.diamond_value} />
                                 <BreakRow label="Making Charges" value={variant.making_charges} />
                                 <BreakRow label="GST (3%)" value={variant.gst_amount} />
+                                <div className="flex items-center justify-between text-sm border-t border-line pt-2.5">
+                                    <span className="font-semibold text-ink">Total</span>
+                                    <span className="font-semibold text-ink">
+                                        {inr(
+                                            Number(variant.gold_value ?? 0) +
+                                            Number(variant.diamond_value ?? 0) +
+                                            Number(variant.making_charges ?? 0) +
+                                            Number(variant.gst_amount ?? 0)
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -167,7 +167,9 @@ class Command(BaseCommand):
 
             product.variants.all().delete()
             for v in spec["variants"]:
-                ProductVariant.objects.create(product=product, stock=10, **v)
+                base = {k: val for k, val in v.items() if k != "gold_color"}
+                for color in ("Yellow", "Rose", "White"):
+                    ProductVariant.objects.create(product=product, stock=10, gold_color=color, **base)
 
         self.stdout.write(self.style.SUCCESS(
             f"✔ Seeded {len(CATEGORIES)} categories, {len(PRODUCTS)} products, "
