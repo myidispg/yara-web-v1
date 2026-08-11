@@ -17,41 +17,40 @@ const FAQS = [
 ];
 
 export default function PoliciesPage() {
-
     usePageTitle("Guarantees & Certifications");
 
     return (
-        <div className="max-w-5xl mx-auto px-6 lg:px-12 py-16">
-            <p className="eyebrow mb-2 text-center">Policies &amp; Certifications</p>
-            <h1 className="text-5xl font-serif text-center mb-2">YA-RA® Guarantees &amp; Terms</h1>
-            <p className="text-center micro-label text-charcoal/50 mb-14">
+        <div className="max-w-5xl mx-auto px-8 lg:px-12 py-16">
+            <p className="eyebrow mb-3 text-center">Policies &amp; Certifications</p>
+            <h1 className="font-serif text-5xl text-center mb-3">YA-RA® Guarantees &amp; Terms</h1>
+            <p className="text-center text-xs uppercase tracking-[0.16em] text-ink/50 mb-16">
                 Shipping · Returns · Certification · Warranty
             </p>
 
             <div className="space-y-0">
                 {PROMISES.map((p) => (
-                    <div key={p.num} className="hairline border-b border-charcoal/15 py-6 grid md:grid-cols-[120px_240px_1fr] gap-4 items-baseline">
-                        <span className="font-serif italic text-2xl text-gold">{p.num}</span>
-                        <h2 className="font-serif text-xl">{p.title}</h2>
-                        <p className="text-sm text-charcoal/70 leading-relaxed">{p.body}</p>
+                    <div key={p.num} className="border-b border-line py-8 grid md:grid-cols-[100px_220px_1fr] gap-6 items-baseline">
+                        <span className="font-serif italic text-3xl text-gold-dark">{p.num}</span>
+                        <h2 className="font-serif text-xl text-ink">{p.title}</h2>
+                        <p className="text-sm text-ink/60 leading-relaxed">{p.body}</p>
                     </div>
                 ))}
             </div>
 
-            <h2 className="font-serif text-3xl mt-16 mb-6">Frequently Asked</h2>
-            <div className="space-y-3">
+            <h2 className="font-serif text-3xl mt-20 mb-8">Frequently Asked</h2>
+            <div className="space-y-4">
                 {FAQS.map(([q, a]) => (
-                    <details key={q} className="group border border-charcoal/15 bg-cream">
-                        <summary className="cursor-pointer list-none px-6 py-4 text-sm font-medium flex justify-between items-center">
+                    <details key={q} className="group bg-white border border-line rounded-xl overflow-hidden shadow-card">
+                        <summary className="cursor-pointer list-none px-6 py-5 text-sm font-semibold text-ink flex justify-between items-center">
                             {q}
-                            <span className="text-gold group-open:rotate-45 transition-transform">+</span>
+                            <span className="text-gold-dark text-xl group-open:rotate-45 transition-transform">+</span>
                         </summary>
-                        <p className="px-6 pb-5 text-sm text-charcoal/70 leading-relaxed">{a}</p>
+                        <p className="px-6 pb-6 text-sm text-ink/60 leading-relaxed border-t border-line pt-4">{a}</p>
                     </details>
                 ))}
             </div>
 
-            <p className="text-center micro-label text-charcoal/50 mt-14">
+            <p className="text-center text-[10px] uppercase tracking-[0.14em] text-ink/50 mt-20">
                 Mumbai · Delhi · Bengaluru &nbsp;|&nbsp; care@ya-ra.com &nbsp;|&nbsp; +91 98765 43210
             </p>
         </div>

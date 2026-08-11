@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -10,10 +10,10 @@ const inr = (n) =>
 
 const Field = ({ label, ...props }) => (
     <label className="block">
-        <span className="micro-label text-charcoal/60">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.16em] font-medium text-ink/60 mb-1 block">{label}</span>
         <input
             {...props}
-            className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+            className="w-full bg-transparent border-b border-line py-2.5 text-sm focus:outline-none focus:border-ink transition-colors"
         />
     </label>
 );
@@ -21,6 +21,7 @@ const Field = ({ label, ...props }) => (
 export default function CheckoutPage() {
     const { items, subtotal, clear } = useCart();
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     usePageTitle("Secure Checkout");
 
@@ -36,27 +37,9 @@ export default function CheckoutPage() {
     const [upiId, setUpiId] = useState("");
     const [placing, setPlacing] = useState(false);
     const [error, setError] = useState("");
-    const [placed, setPlaced] = useState(null);
 
     const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
     const emiPerMonth = Math.ceil(subtotal / 6);
-
-    /* ── Confirmation screen ── */
-    if (placed)
-        return (
-            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <p className="eyebrow mb-3">Order Confirmed</p>
-                <h1 className="text-5xl font-serif mb-4">Thank You For Your Order!</h1>
-                <p className="text-sm text-charcoal/70 mb-10 leading-relaxed">
-                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been
-                    confirmed and is fully insured.
-                </p>
-                <div className="flex justify-center gap-4">
-                    <Link to="/account" className="btn-solid">Track Order</Link>
-                    <Link to="/" className="btn-outline">Continue Shopping</Link>
-                </div>
-            </div>
-        );
 
     if (!items.length)
         return (
@@ -79,10 +62,9 @@ export default function CheckoutPage() {
         for (const path of ["/orders/create/", "/orders/"]) {
             try {
                 const { data } = await api.post(path, payload);
-                setPlaced({
-                    number: data.order_number ?? data.reference ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}`,
-                });
+                const orderNumber = data.order_number ?? data.reference ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}`;
                 clear();
+                navigate(`/order-confirmed/${orderNumber}`);
                 return;
             } catch (err) {
                 setError(
@@ -95,16 +77,16 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-            <h1 className="text-4xl font-serif mb-2">Secure Checkout</h1>
-            <p className="micro-label text-charcoal/50 mb-10">
-                1. Delivery Address&nbsp;&nbsp;—&nbsp;&nbsp;2. Payment Method (INR)
+        <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12">
+            <h1 className="font-serif text-4xl md:text-5xl mb-2">Secure Checkout</h1>
+            <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-10">
+                1. Delivery Address &nbsp;&nbsp;—&nbsp;&nbsp; 2. Payment Method (INR)
             </p>
 
-            <form onSubmit={placeOrder} className="grid lg:grid-cols-[1fr_380px] gap-12">
+            <form onSubmit={placeOrder} className="grid lg:grid-cols-[1fr_380px] gap-10 items-start">
                 <div className="space-y-12">
                     {/* Address */}
-                    <section className="grid sm:grid-cols-2 gap-6">
+                    <section className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
                         <Field label="Full Name" required value={form.full_name} onChange={set("full_name")} />
                         <Field label="Phone (+91)" required value={form.phone} onChange={set("phone")} />
                         <div className="sm:col-span-2">
@@ -120,18 +102,26 @@ export default function CheckoutPage() {
                         {[
                             { id: "upi", title: "UPI / QR Code", sub: "Google Pay, PhonePe, Paytm" },
                             { id: "card", title: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay" },
-                            { id: "emi", title: `No Cost EMI`, sub: `Starting ${inr(emiPerMonth)}/mo` },
+                            { id: "emi", title: "No Cost EMI", sub: `Starting ${inr(emiPerMonth)}/mo` },
                         ].map((m) => (
                             <label
                                 key={m.id}
-                                className={`block border p-5 cursor-pointer transition-colors ${method === m.id ? "border-gold bg-cream" : "border-charcoal/20 hover:border-gold"
+                                className={`block border rounded-xl p-5 cursor-pointer transition-all ${method === m.id
+                                        ? "border-ink bg-cream shadow-card"
+                                        : "border-line bg-white hover:border-ink/40"
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
-                                    <input type="radio" name="pay" checked={method === m.id} onChange={() => setMethod(m.id)} className="accent-[#B08D3E]" />
+                                    <input
+                                        type="radio"
+                                        name="pay"
+                                        checked={method === m.id}
+                                        onChange={() => setMethod(m.id)}
+                                        className="w-4 h-4 accent-ink"
+                                    />
                                     <div>
-                                        <p className="text-sm font-medium">{m.title}</p>
-                                        <p className="text-xs text-charcoal/60">{m.sub}</p>
+                                        <p className="text-sm font-semibold text-ink">{m.title}</p>
+                                        <p className="text-xs text-ink/60">{m.sub}</p>
                                     </div>
                                 </div>
 
@@ -140,11 +130,11 @@ export default function CheckoutPage() {
                                         value={upiId}
                                         onChange={(e) => setUpiId(e.target.value)}
                                         placeholder="yourname@upi"
-                                        className="mt-4 w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                        className="mt-4 w-full bg-transparent border-b border-line py-2 text-sm focus:outline-none focus:border-ink"
                                     />
                                 )}
                                 {method === "emi" && m.id === "emi" && (
-                                    <p className="mt-3 text-xs text-charcoal/60">
+                                    <p className="mt-3 text-xs text-ink/60 pl-8">
                                         6 monthly instalments of {inr(emiPerMonth)} · 0% interest
                                     </p>
                                 )}
@@ -154,30 +144,37 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Summary */}
-                <aside className="bg-cream border border-gold/40 p-8 h-fit">
+                <aside className="bg-cream/40 border border-line rounded-xl p-6 lg:sticky lg:top-32">
                     <h2 className="font-serif text-2xl mb-6">Summary</h2>
-                    <div className="space-y-2 text-sm mb-6">
+                    <div className="space-y-3 text-sm mb-6 max-h-60 overflow-y-auto">
                         {items.map((i) => (
                             <div key={i.key} className="flex justify-between gap-4">
-                                <span className="text-charcoal/70">{i.name} × {i.qty}</span>
-                                <span>{inr(i.unit_price * i.qty)}</span>
+                                <span className="text-ink/70">{i.name} <span className="text-ink/40">× {i.qty}</span></span>
+                                <span className="font-medium text-ink">{inr(i.unit_price * i.qty)}</span>
                             </div>
                         ))}
                     </div>
-                    <div className="hairline border-t border-charcoal/15 pt-4 space-y-2 text-sm">
-                        <div className="flex justify-between"><span>Subtotal</span><span>{inr(subtotal)}</span></div>
-                        <div className="flex justify-between"><span>Insured Shipping</span><span className="micro-label text-gold">FREE</span></div>
-                        <div className="flex justify-between font-serif text-xl pt-2">
-                            <span>Total</span><span>{inr(subtotal)}</span>
+                    <div className="border-t border-line pt-4 space-y-3 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-ink/60">Subtotal</span>
+                            <span className="font-medium text-ink">{inr(subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-ink/60">Insured Shipping</span>
+                            <span className="font-semibold text-gold-dark">FREE</span>
+                        </div>
+                        <div className="flex justify-between text-base pt-2 border-t border-line">
+                            <span className="font-semibold text-ink">Total</span>
+                            <span className="font-semibold text-ink">{inr(subtotal)}</span>
                         </div>
                     </div>
 
-                    {error && <p className="text-xs text-red-700 mt-4">{error}</p>}
+                    {error && <p className="text-xs text-blush font-medium mt-4">{error}</p>}
 
                     <button type="submit" disabled={placing} className="btn-solid w-full mt-6 disabled:opacity-50">
-                        {placing ? "Placing…" : `Place Insured Order (${inr(subtotal)})`}
+                        {placing ? "Placing Insured Order…" : `Place Insured Order (${inr(subtotal)})`}
                     </button>
-                    <p className="micro-label text-charcoal/50 text-center mt-4">
+                    <p className="text-[10px] text-ink/50 text-center mt-4 uppercase tracking-[0.12em]">
                         256-bit SSL · PCI-DSS · Insured Delivery
                     </p>
                 </aside>

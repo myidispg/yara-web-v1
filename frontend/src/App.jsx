@@ -13,6 +13,7 @@ import CheckoutPage from "./pages/Checkout";
 import Home from "./pages/Home";
 import PoliciesPage from "./pages/Policies";
 import ProductPage from "./pages/Product";
+import OrderConfirmedPage from "./pages/OrderConfirmed";
 
 function ScrollToTop() {
     const { pathname } = useLocation();
@@ -55,6 +56,7 @@ export default function App() {
                                     <Route path="/register" element={<AuthPage />} />
                                     <Route path="/cart" element={<CartPage />} />
                                     <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+                                    <Route path="/order-confirmed/:orderNumber" element={<RequireAuth><OrderConfirmedPage /></RequireAuth>} />
                                     <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
                                     <Route path="/policies" element={<PoliciesPage />} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
