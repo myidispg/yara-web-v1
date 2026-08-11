@@ -25,7 +25,8 @@ export function CartProvider({ children }) {
         carat: product.carat ?? product.carat_weight ?? null,
         variant: {
           id: variant.id, gold_color: variant.gold_color, purity: variant.purity,
-          ring_size: variant.ring_size, price: variant.price, label: variantLabel(variant)
+          ring_size: variant.ring_size, price: variant.price, label: variantLabel(variant),
+          stock: Number(variant.stock ?? 0)
         },
         unit_price: variant.price,
         qty,

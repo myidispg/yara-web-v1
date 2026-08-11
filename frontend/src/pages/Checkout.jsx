@@ -107,8 +107,8 @@ export default function CheckoutPage() {
                             <label
                                 key={m.id}
                                 className={`block border rounded-xl p-5 cursor-pointer transition-all ${method === m.id
-                                        ? "border-ink bg-cream shadow-card"
-                                        : "border-line bg-white hover:border-ink/40"
+                                    ? "border-ink bg-cream shadow-card"
+                                    : "border-line bg-white hover:border-ink/40"
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
@@ -148,9 +148,22 @@ export default function CheckoutPage() {
                     <h2 className="font-serif text-2xl mb-6">Summary</h2>
                     <div className="space-y-3 text-sm mb-6 max-h-60 overflow-y-auto">
                         {items.map((i) => (
-                            <div key={i.key} className="flex justify-between gap-4">
-                                <span className="text-ink/70">{i.name} <span className="text-ink/40">× {i.qty}</span></span>
-                                <span className="font-medium text-ink">{inr(i.unit_price * i.qty)}</span>
+                            <div key={i.key} className="flex flex-col gap-1">
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-charcoal/80 font-medium">{i.name} <span className="text-charcoal/50 font-normal">×</span> {i.qty}</span>
+                                    <span className="font-medium">{inr(i.unit_price * i.qty)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    {Number(i.variant?.stock) > 0 ? (
+                                        <span className="text-[9px] font-medium text-[#3E5C4B] uppercase tracking-[0.1em] flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#3E5C4B]"></span> In Stock
+                                        </span>
+                                    ) : (
+                                        <span className="text-[9px] font-medium text-gold-dark uppercase tracking-[0.1em] flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-gold-dark"></span> Made to Order
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>

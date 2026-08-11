@@ -43,11 +43,22 @@ export default function CartPage() {
                                     <Link to={`/product/${i.slug}`} className="font-serif text-lg text-ink leading-snug hover:text-gold-dark transition-colors">
                                         {i.name}
                                     </Link>
-                                    <p className="text-xs text-ink/60 mt-1.5">
-                                        {i.variant?.purity} Solid Gold
+                                    <p className="text-xs text-charcoal/60 mt-1">
+                                        {i.variant?.label ?? `${i.variant?.purity} ${i.variant?.gold_color} Gold`}
                                         {i.variant?.ring_size ? ` | Size ${i.variant.ring_size}` : ""}
-                                        {i.carat ? ` | ${i.carat} Ct Natural Diamond` : ""}
                                     </p>
+                                    <div className="flex items-center gap-1.5 mt-2">
+                                        {Number(i.variant?.stock) > 0 ? (
+                                            <span className="text-[10px] font-medium text-[#3E5C4B] uppercase tracking-[0.12em] flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#3E5C4B]"></span> In Stock
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] font-medium text-gold-dark uppercase tracking-[0.12em] flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-gold-dark"></span> Made to Order
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="price-tag mt-3">{inr(i.unit_price)}</p>
                                 </div>
 
                                 <div className="flex items-center gap-4 mt-4">
