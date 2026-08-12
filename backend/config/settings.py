@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-secret-key")
+# SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-secret-key")
+SECRET_KEY = "hes&$7*v=cz!sx#x_&g_uq7!13@3fp!x!o#^6zpypanbc=6%-2"
 DEBUG = os.getenv("DEBUG", "1") == "1"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 

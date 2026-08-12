@@ -1,38 +1,35 @@
-from rest_framework import status
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
-
 from .models import Address, Order
-from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer
+from .serializers import AddressSerializer, OrderSerializer, OrderCreateSerializer
 
-
-class AddressViewSet(ModelViewSet):
+class AddressViewSet(viewsets.ModelViewSet):
+    """
+    GET  /api/addresses/  -> List current user's addresses
+    POST /api/addresses/  -> Create a new address for current user
+    """
     serializer_class = AddressSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        # Automatically attach the logged-in user to the address
         serializer.save(user=self.request.user)
 
-
-class OrderViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
-    permission_classes = [IsAuthenticated]
-    lookup_field = "order_number"
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    GET  /api/orders/     -> List current user's past orders
+    POST /api/orders/     -> Create a new order (Checkout)
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return (Order.objects.filter(user=self.request.user)
-                .select_related("address").prefetch_related("items"))
+        # CRITICAL: Only return orders belonging to the logged-in user
+        return Order.objects.filter(user=self.request.user).prefetch_related('items')
 
     def get_serializer_class(self):
-        return OrderCreateSerializer if self.action == "create" else OrderSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        order = serializer.save()
-        data = OrderSerializer(order, context=self.get_serializer_context()).data
-        return Response(data, status=status.HTTP_201_CREATED)
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
