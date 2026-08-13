@@ -15,20 +15,17 @@ const TITLES = {
   "color-stone": ["Color Stone Fine Jewellery", "Ruby, sapphire & emerald accents with natural diamonds."],
 };
 
-const PURITY_OPTIONS = ["18Kt Yellow Gold", "14Kt Yellow Gold", "18Kt White Gold", "18Kt Rose Gold"];
-const PRICE_OPTIONS = ["Under ₹25,000", "₹25,000 - ₹50,000", "₹50,000 - ₹1,00,000", "Above ₹1,00,000"];
-const CARAT_OPTIONS = ["0.10 - 0.30 Ct", "0.30 - 0.50 Ct", "0.50 - 1.00 Ct", "1.00+ Ct"];
-const QUALITY_OPTIONS = [
-  { code: "EF-VVS", label: "EF - VVS (Premium Clarity)" },
-  { code: "GH-VS", label: "GH - VS (Fine Quality)" },
-];
-
+const KARAT_OPTIONS = ["18Kt", "14Kt"];
+const COLOR_OPTIONS = ["Yellow", "Rose", "White"];
+const SWATCH = {
+  Yellow: "linear-gradient(135deg, #F7E27A, #D9A93B)",
+  Rose: "linear-gradient(135deg, #F2C0AC, #D98D6F)",
+  White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
+};
 const SORT_OPTIONS = [
-  { value: "best", label: "Bestsellers First" },
+  { value: "newest", label: "Newest Arrivals" },
   { value: "price-asc", label: "Price: Low to High" },
   { value: "price-desc", label: "Price: High to Low" },
-  { value: "newest", label: "Newest Arrivals" },
-  { value: "carat-desc", label: "Carat Weight: High to Low" },
 ];
 
 const BANNERS = [
@@ -38,43 +35,17 @@ const BANNERS = [
   { position: 22, image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop", title: "Worn every day.", subtitle: "Effortless fine jewellery for the modern woman." },
 ];
 
-/* ── Icons ── */
-const FilterIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
-    <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
-    <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
-    <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
-  </svg>
-);
-const SortIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 5h10M11 9h7M11 13h4M3 17l3 3 3-3M6 18V4" />
-  </svg>
-);
-const CloseIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
 export default function CategoryPage() {
   const { slug } = useParams();
-  const [sort, setSort] = useState("best");
-  const [sel, setSel] = useState({ purity: [], price: [], carat: [], quality: [] });
-
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showMobileSort, setShowMobileSort] = useState(false);
-
+  const [sel, setSel] = useState({ karat: [], color: [] });
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [sort, setSort] = useState("newest");
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showMobileSort, setShowMobileSort] = useState(false);
   const sentinelRef = useRef(null);
   const seqRef = useRef(0);
 
@@ -82,15 +53,21 @@ export default function CategoryPage() {
   usePageTitle(title);
 
   const hasMore = items.length < total;
-  const activeFilterCount = sel.purity.length + sel.price.length + sel.carat.length + sel.quality.length;
-  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sort)?.label || "Sort";
+  const activeCount = sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0);
+
+  const toggle = (group, value) =>
+    setSel((s) => ({
+      ...s,
+      [group]: s[group].includes(value) ? s[group].filter((v) => v !== value) : [...s[group], value],
+    }));
+
+  const clearAll = () => { setSel({ karat: [], color: [] }); setInStockOnly(false); };
 
   const buildParams = (offset) => {
     const p = { category: slug, limit: PAGE, offset, sort };
-    if (sel.purity.length) p.purity = sel.purity;
-    if (sel.price.length) p.price = sel.price;
-    if (sel.carat.length) p.carat = sel.carat;
-    if (sel.quality.length) p.quality = sel.quality;
+    if (sel.karat.length) p.purity = sel.karat;
+    if (sel.color.length) p.color = sel.color;
+    if (inStockOnly) p.in_stock = "1";
     return p;
   };
 
@@ -110,9 +87,10 @@ export default function CategoryPage() {
   };
 
   useEffect(() => {
-    setItems([]); setTotal(0); fetchPage(0, false);
+    setItems([]); setTotal(0);
+    fetchPage(0, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, sel, sort]);
+  }, [slug, sel, inStockOnly, sort]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -127,10 +105,7 @@ export default function CategoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length, hasMore, loading, loadingMore]);
 
-  const toggle = (group, value) =>
-    setSel((s) => ({ ...s, [group]: s[group].includes(value) ? s[group].filter((v) => v !== value) : [...s[group], value] }));
-
-  const FilterChip = ({ group, value, children }) => (
+  const Chip = ({ group, value, children }) => (
     <button
       onClick={() => toggle(group, value)}
       className={`text-xs font-medium px-4 py-2 rounded-full transition-colors ${sel[group].includes(value) ? "bg-ink text-white" : "bg-cream text-ink hover:bg-ink hover:text-white"
@@ -140,17 +115,42 @@ export default function CategoryPage() {
     </button>
   );
 
-  const BannerCard = ({ banner }) => (
-    <div className="relative rounded-xl overflow-hidden shadow-card h-full group flex flex-col">
-      <div className="relative flex-1 overflow-hidden">
-        <img src={banner.image} alt={banner.title} loading="lazy" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent" />
+  /* Shared between desktop sidebar and mobile sheet */
+  const filterBody = (
+    <>
+      <div>
+        <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Gold Purity</h3>
+        <div className="flex flex-wrap gap-2">
+          {KARAT_OPTIONS.map((k) => <Chip key={k} group="karat" value={k} />)}
+        </div>
       </div>
-      <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
-        <p className="font-serif text-2xl md:text-3xl leading-tight mb-2">{banner.title}</p>
-        <p className="text-xs md:text-sm text-white/80">{banner.subtitle}</p>
+      <div>
+        <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Gold Colour</h3>
+        <div className="flex flex-wrap gap-2">
+          {COLOR_OPTIONS.map((c) => (
+            <Chip key={c} group="color" value={c}>
+              <span className="inline-flex items-center gap-2">
+                <span className="w-3.5 h-3.5 rounded-full border border-black/10" style={{ background: SWATCH[c] }} />
+                {c} Gold
+              </span>
+            </Chip>
+          ))}
+        </div>
       </div>
-    </div>
+      <div>
+        <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Availability</h3>
+        <button
+          onClick={() => setInStockOnly(!inStockOnly)}
+          className={`w-full flex items-center justify-between text-xs font-medium px-4 py-3 rounded-lg border transition-colors ${inStockOnly ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink/40"
+            }`}
+        >
+          In Stock Only
+          <span className={`w-9 h-5 rounded-full relative transition-colors ${inStockOnly ? "bg-gold-dark" : "bg-line"}`}>
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${inStockOnly ? "left-4" : "left-0.5"}`} />
+          </span>
+        </button>
+      </div>
+    </>
   );
 
   const cells = [];
@@ -159,61 +159,53 @@ export default function CategoryPage() {
     const pos = cells.length;
     const banner = BANNERS.find((b) => b.position === pos);
     if (banner) {
-      cells.push(<BannerCard key={`banner-${banner.position}`} banner={banner} />);
+      cells.push(
+        <div key={`banner-${banner.position}`} className="relative rounded-xl overflow-hidden shadow-card">
+          <img src={banner.image} alt={banner.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent" />
+          <div className="relative aspect-square flex flex-col justify-end p-6 text-white">
+            <p className="font-serif text-2xl leading-tight mb-1">{banner.title}</p>
+            <p className="text-xs text-white/80">{banner.subtitle}</p>
+          </div>
+        </div>
+      );
     } else {
-      cells.push(<ProductCard key={items[p].id ?? items[p].slug} product={items[p]} showAddButton={false} />);
+      cells.push(<ProductCard key={items[p].id ?? items[p].slug} product={items[p]} />);
       p++;
     }
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-8 lg:px-20 pt-12 pb-28 lg:pb-12">
-      {/* Breadcrumb + header */}
+    <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12 pb-28 lg:pb-12">
       <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-4">
         <Link to="/" className="hover:text-gold-dark">Home</Link> / Jewellery / {title}
       </p>
       <h1 className="font-serif text-4xl md:text-5xl mb-2">{title}</h1>
       <p className="text-sm text-ink/60 mb-8">{subtitle}</p>
 
-      {/* Desktop Toolbar (lg+ only) */}
-      <div className="hidden lg:flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 mb-6">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 mb-6">
         <span className="text-xs text-ink/50">Showing {items.length} of {total} Designs</span>
-        <label className="flex items-center gap-3 text-xs">
+        <label className="hidden lg:flex items-center gap-3 text-xs">
           <span className="uppercase tracking-[0.16em] font-medium">Sort By:</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value)} className="border border-line bg-white px-4 py-2 text-sm rounded-md focus:outline-none focus:border-gold-dark">
-            {SORT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          <select value={sort} onChange={(e) => setSort(e.target.value)}
+            className="border border-line bg-white px-4 py-2 text-sm rounded-md focus:outline-none focus:border-gold-dark">
+            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        {/* Desktop Sidebar Filters — always visible */}
+        {/* Desktop sidebar */}
         <aside className="hidden lg:block space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xs uppercase tracking-[0.16em] font-semibold">Filter Products</h2>
-            <button onClick={() => setSel({ purity: [], price: [], carat: [], quality: [] })} className="text-xs text-gold-dark underline underline-offset-4 hover:text-ink transition-colors">Clear All</button>
+            <button onClick={clearAll} className="text-xs text-gold-dark underline underline-offset-4 hover:text-ink transition-colors">Clear All</button>
           </div>
-          <div>
-            <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Gold Purity &amp; Tone</h3>
-            <div className="flex flex-wrap gap-2">{PURITY_OPTIONS.map((o) => <FilterChip key={o} group="purity" value={o} />)}</div>
-          </div>
-          <div>
-            <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Price Range (INR)</h3>
-            <div className="flex flex-wrap gap-2">{PRICE_OPTIONS.map((o) => <FilterChip key={o} group="price" value={o} />)}</div>
-          </div>
-          <div>
-            <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Weight</h3>
-            <div className="flex flex-wrap gap-2">{CARAT_OPTIONS.map((o) => <FilterChip key={o} group="carat" value={o} />)}</div>
-          </div>
-          <div>
-            <h3 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Quality</h3>
-            <div className="flex flex-wrap gap-2">
-              {QUALITY_OPTIONS.map((o) => <FilterChip key={o.code} group="quality" value={o.code}>{o.label}</FilterChip>)}
-            </div>
-          </div>
+          {filterBody}
         </aside>
 
-        {/* Grid + infinite scroll */}
+        {/* Grid */}
         <div>
           {loading ? (
             <p className="text-sm text-ink/50">Loading designs…</p>
@@ -230,83 +222,51 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* ── MOBILE BOTTOM ACTION BAR ── */}
+      {/* Mobile bottom bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-line px-4 py-3.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <button onClick={() => setShowMobileFilters(true)} className="flex items-center gap-2.5 text-ink font-medium text-sm">
-          <FilterIcon />
-          <span>Filter</span>
-          {activeFilterCount > 0 && (
-            <span className="bg-blush text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-              {activeFilterCount}
-            </span>
+          Filter
+          {activeCount > 0 && (
+            <span className="bg-blush text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{activeCount}</span>
           )}
         </button>
         <div className="w-px h-6 bg-line" />
         <button onClick={() => setShowMobileSort(true)} className="flex items-center gap-2.5 text-ink font-medium text-sm">
-          <SortIcon />
-          <span>Sort: <span className="text-gold-dark">{currentSortLabel}</span></span>
+          Sort: <span className="text-gold-dark">{SORT_OPTIONS.find((o) => o.value === sort)?.label}</span>
         </button>
       </div>
 
-      {/* ── MOBILE FILTER MODAL ── */}
+      {/* Mobile filter sheet */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
           <div className="absolute inset-0 bg-ink/40" onClick={() => setShowMobileFilters(false)} />
           <div className="relative bg-white w-full max-h-[85vh] rounded-t-2xl flex flex-col shadow-hero animate-slide-up">
             <div className="flex items-center justify-between p-5 border-b border-line">
               <h3 className="font-serif text-xl">Filter Products</h3>
-              <button onClick={() => setShowMobileFilters(false)} className="text-ink/60 hover:text-ink"><CloseIcon /></button>
+              <button onClick={() => setShowMobileFilters(false)} className="text-ink/60 hover:text-ink">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              <div>
-                <h4 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Gold Purity &amp; Tone</h4>
-                <div className="flex flex-wrap gap-2">{PURITY_OPTIONS.map((o) => <FilterChip key={o} group="purity" value={o} />)}</div>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Price Range (INR)</h4>
-                <div className="flex flex-wrap gap-2">{PRICE_OPTIONS.map((o) => <FilterChip key={o} group="price" value={o} />)}</div>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Weight</h4>
-                <div className="flex flex-wrap gap-2">{CARAT_OPTIONS.map((o) => <FilterChip key={o} group="carat" value={o} />)}</div>
-              </div>
-              <div>
-                <h4 className="text-xs uppercase tracking-[0.16em] font-semibold text-gold-dark mb-3">Diamond Quality</h4>
-                <div className="flex flex-wrap gap-2">
-                  {QUALITY_OPTIONS.map((o) => <FilterChip key={o.code} group="quality" value={o.code}>{o.label}</FilterChip>)}
-                </div>
-              </div>
-            </div>
-            <div className="p-5 border-t border-line flex items-center justify-between gap-4 bg-white">
-              <button onClick={() => setSel({ purity: [], price: [], carat: [], quality: [] })} className="text-xs uppercase tracking-[0.16em] font-medium text-gold-dark underline underline-offset-4">Clear All</button>
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">{filterBody}</div>
+            <div className="p-5 border-t border-line flex items-center justify-between gap-4">
+              <button onClick={clearAll} className="text-xs uppercase tracking-[0.16em] font-medium text-gold-dark underline underline-offset-4">Clear All</button>
               <button onClick={() => setShowMobileFilters(false)} className="btn-solid flex-1 max-w-xs justify-center">Show {total} Results</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MOBILE SORT MODAL ── */}
+      {/* Mobile sort sheet */}
       {showMobileSort && (
         <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
           <div className="absolute inset-0 bg-ink/40" onClick={() => setShowMobileSort(false)} />
-          <div className="relative bg-white w-full max-h-[70vh] rounded-t-2xl flex flex-col shadow-hero animate-slide-up">
-            <div className="flex items-center justify-between p-5 border-b border-line">
-              <h3 className="font-serif text-xl">Sort By</h3>
-              <button onClick={() => setShowMobileSort(false)} className="text-ink/60 hover:text-ink"><CloseIcon /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2">
-              {SORT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setSort(opt.value); setShowMobileSort(false); }}
-                  className={`w-full text-left px-4 py-4 text-sm flex items-center justify-between hover:bg-cream rounded-lg transition-colors ${sort === opt.value ? 'text-gold-dark font-semibold' : 'text-ink'
-                    }`}
-                >
-                  {opt.label}
-                  {sort === opt.value && <CheckIcon />}
-                </button>
-              ))}
-            </div>
+          <div className="relative bg-white w-full rounded-t-2xl shadow-hero animate-slide-up p-2">
+            {SORT_OPTIONS.map((o) => (
+              <button key={o.value}
+                onClick={() => { setSort(o.value); setShowMobileSort(false); }}
+                className={`w-full text-left px-4 py-4 text-sm flex items-center justify-between rounded-lg ${sort === o.value ? "text-gold-dark font-semibold" : "text-ink"}`}>
+                {o.label}
+                {sort === o.value && <span>✓</span>}
+              </button>
+            ))}
           </div>
         </div>
       )}

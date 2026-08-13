@@ -124,7 +124,13 @@ export default function CheckoutPage() {
             const orderPayload = {
                 address: addressId,
                 payment_method: method,
-                items: items.map((i) => ({ variant: i.variant.id, quantity: i.qty })),
+                items: items.map((i) => ({
+                    design: i.product_id,
+                    karat: i.karat,
+                    gold_color: i.gold_color,
+                    ring_size: i.ring_size,
+                    quantity: i.qty,
+                })),
             };
             const { data } = await api.post("/orders/", orderPayload);
             setPlaced({

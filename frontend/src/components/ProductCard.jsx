@@ -1,96 +1,35 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { useCart } from "../context/CartContext";
 
 const inr = (n) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
-const HeartIcon = ({ filled }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" />
-  </svg>
-);
-
-export default function ProductCard({ product, showAddButton = true }) {
-  const { addItem } = useCart();
-  const [added, setAdded] = useState(false);
-  const [wished, setWished] = useState(false);
-
-  const image = product.images?.[0]?.url || product.primary_image || product.image || "";
-  const variants = product.variants || [];
-  const defaultVariant = variants[0] ?? {
-    id: product.id ?? product.slug, gold_color: "Yellow", purity: "18Kt", ring_size: null, price: product.price,
-  };
-  const price = variants.length ? Math.min(...variants.map((v) => v.price)) : product.price;
-  const compare = product.compare_at_price ?? product.compareAtPrice ?? product.mrp ?? null;
-  const showRibbon = Boolean(product.badge ?? product.tag);
-
-  const handleAdd = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    addItem(product, defaultVariant, 1);
-    setAdded(true); setTimeout(() => setAdded(false), 1500);
-  };
-
-  return (
-    <div className="relative group h-full bg-white rounded-xl border border-line shadow-card overflow-hidden flex flex-col">
-      {/* Image — clickable */}
-      <Link to={`/product/${product.slug}`} className="block relative">
-        <div className="aspect-square overflow-hidden bg-cream">
-          <img
-            src={image}
-            alt={product.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        </div>
-        {showRibbon && (
-          <span className="absolute top-3 left-3 bg-ink text-white text-[10px] font-semibold tracking-[0.14em] px-4 py-1.5 rounded-full">
-            Best Seller
-          </span>
-        )}
-      </Link>
-
-      {/* Wishlist heart */}
-      <button
-        onClick={() => setWished(!wished)}
-        aria-label="Add to wishlist"
-        className={`absolute top-3 right-3 drop-shadow ${wished ? "text-blush" : "text-white/90 hover:text-blush"} transition-colors`}
-      >
-        <HeartIcon filled={wished} />
-      </button>
-
-      {/* Body */}
-      <div className="p-5 flex flex-col flex-1">
-        {/* Name — clickable */}
-        <Link to={`/product/${product.slug}`} className="block mb-4 hover:text-gold-dark transition-colors">
-          <h3 className="font-serif text-lg text-ink leading-snug">{product.name}</h3>
+export default function ProductCard({ product }) {
+    const img = product.media?.[0]?.url;
+    return (
+        <Link to={`/product/${product.slug}`} className="group block bg-white rounded-xl overflow-hidden border border-line shadow-card hover:shadow-hero transition-shadow">
+            <div className="relative bg-cream aspect-square overflow-hidden">
+                {img ? (
+                    <img src={img} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-ink/30 text-xs uppercase tracking-[0.2em]">No media</div>
+                )}
+                <span className="absolute top-3 left-3 text-[9px] uppercase tracking-[0.14em] font-semibold bg-white/90 text-ink px-2 py-1 rounded">
+                    {product.design_code}
+                </span>
+                {!product.in_stock && (
+                    <span className="absolute bottom-3 left-3 text-[9px] uppercase tracking-[0.12em] font-semibold bg-ink/80 text-white px-2 py-1 rounded">
+                        Made to Order
+                    </span>
+                )}
+            </div>
+            <div className="p-4">
+                <p className="font-serif text-ink leading-snug">{product.name}</p>
+                <p className="text-xs text-ink/55 mt-1">
+                    {product.category_name}
+                    {product.total_diamond_weight ? ` · ${product.total_diamond_weight} Ct` : ""}
+                </p>
+                <p className="text-sm font-semibold text-ink mt-2">{inr(product.base_price)}</p>
+            </div>
         </Link>
-
-        {/* Bottom row — pinned; one line at xl+, identical stack below so all cards align */}
-        <div className="mt-auto flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between border-t border-line pt-3">
-          <span className="font-semibold text-ink whitespace-nowrap xl:min-w-0 xl:truncate">
-            {inr(price)}
-            {compare && <s className="ml-1.5 text-xs font-normal text-ink/40">{inr(compare)}</s>}
-          </span>
-
-          <span className="flex items-center gap-1.5 shrink-0">
-            <Link
-              to={`/product/${product.slug}`}
-              className="border border-ink text-ink uppercase text-[10px] font-medium tracking-[0.12em] px-2.5 py-2 rounded-md hover:border-gold-dark hover:text-gold-dark transition-colors whitespace-nowrap"
-            >
-              View
-            </Link>
-            {showAddButton && (
-              <button
-                onClick={handleAdd}
-                className="bg-ink text-white uppercase text-[10px] font-medium tracking-[0.12em] px-3 py-2 rounded-md hover:bg-gold-dark transition-colors whitespace-nowrap"
-              >
-                {added ? "Added ✓" : "+ Add"}
-              </button>
-            )}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }

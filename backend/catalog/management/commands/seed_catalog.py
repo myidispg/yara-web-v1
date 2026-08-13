@@ -1,177 +1,157 @@
-"""
-Seed the YA-RA catalog with the six-piece mockup collection.
-Usage:  python manage.py seed_catalog
-Idempotent — safe to run repeatedly.
-"""
+import random
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
+from django.utils import timezone
+from django.utils.text import slugify
 
-from catalog.models import Category, Product, ProductImage, ProductVariant
+from catalog.models import Category, Product, ProductMedia, ProductInstance
 
-U = "https://images.unsplash.com/{}?q=80&w={}&auto=format&fit=crop"
-
-CATEGORIES = [
-    ("rings", "Rings", "Natural diamond & gold rings."),
-    ("earrings", "Earrings", "Studs, huggies & drops."),
-    ("necklaces", "Necklaces", "Solitaire drops & fine chains."),
-    ("bracelets", "Bracelets", "Tennis bracelets & bangles."),
-    ("solitaires", "Solitaires", "Engagement rings & solitaire bands."),
-    ("color-stone", "Color Stone Fine", "Ruby, sapphire & emerald accents."),
+CATS = [
+    ("rings", "Rings", "RG", "Diamond Ring"),
+    ("earrings", "Earrings", "ER", "Diamond Earrings"),
+    ("necklaces", "Necklaces & Pendants", "NK", "Diamond Pendant"),
+    ("bracelets", "Bracelets & Bangles", "BR", "Diamond Bracelet"),
+    ("solitaires", "Solitaires", "SO", "Solitaire Ring"),
+    ("color-stone", "Color Stone Jewellery", "CS", "Color Stone Ring"),
 ]
 
-PRODUCTS = [
-    {
-        "slug": "aura-solitaire-diamond-ring",
-        "name": "Aura Solitaire Diamond Ring",
-        "category": "rings",
-        "description": "Available in 14Kt and 18Kt Solid Gold with hand-selected certified natural solitaire diamond.",
-        "carat": "0.50", "diamond_quality": "GH-VS", "certification": "IGI",
-        "compare_at_price": "54000", "badge": "BESTSELLER",
-        "images": [("photo-1605100804763-247f67b3557e", 1000),
-                   ("photo-1603561591411-07134e71a2a9", 1000)],
-        "variants": [
-            dict(purity="18Kt", gold_color="Yellow", ring_size=s, price="48500",
-                 gold_weight_grams="3.2", gold_value="18200", diamond_value="23500",
-                 making_charges="4200", gst_amount="2600")
-            for s in ("12", "14", "16")
-        ] + [
-            dict(purity="14Kt", gold_color="Yellow", ring_size=s, price="42500",
-                 gold_weight_grams="3.2", gold_value="14200", diamond_value="23500",
-                 making_charges="3200", gst_amount="1600")
-            for s in ("12", "14", "16")
-        ],
-    },
-    {
-        "slug": "celeste-halo-stud-earrings",
-        "name": "Celeste Halo Stud Earrings",
-        "category": "earrings",
-        "description": "Halo-set stud earrings with pavé surround in certified natural diamonds.",
-        "carat": "0.75", "diamond_quality": "GH-VS", "certification": "IGI",
-        "compare_at_price": None, "badge": "",
-        "images": [("photo-1635767798638-3e25273a8236", 1000)],
-        "variants": [
-            dict(purity="14Kt", gold_color="White", price="62000",
-                 gold_weight_grams="2.8", gold_value="16000", diamond_value="38000",
-                 making_charges="5000", gst_amount="3000"),
-            dict(purity="18Kt", gold_color="White", price="68500",
-                 gold_weight_grams="2.8", gold_value="20500", diamond_value="38000",
-                 making_charges="6500", gst_amount="3500"),
-        ],
-    },
-    {
-        "slug": "lumina-emerald-cut-pendant",
-        "name": "Lumina Emerald Cut Pendant",
-        "category": "necklaces",
-        "description": "Emerald-cut solitaire pendant on a fine cable chain.",
-        "carat": "0.40", "diamond_quality": "EF-VVS", "certification": "GIA",
-        "compare_at_price": "45000", "badge": "",
-        "images": [("photo-1599643478518-a784e5dc4c8f", 1000)],
-        "variants": [
-            dict(purity="18Kt", gold_color="Rose", price="39900",
-                 gold_weight_grams="2.2", gold_value="12400", diamond_value="22000",
-                 making_charges="3500", gst_amount="2000"),
-            dict(purity="14Kt", gold_color="Rose", price="35500",
-                 gold_weight_grams="2.2", gold_value="9500", diamond_value="22000",
-                 making_charges="2500", gst_amount="1500"),
-        ],
-    },
-    {
-        "slug": "riviera-diamond-tennis-bracelet",
-        "name": "Riviera Diamond Tennis Bracelet",
-        "category": "bracelets",
-        "description": "Classic four-prong tennis bracelet in a continuous line of natural diamonds.",
-        "carat": "2.10", "diamond_quality": "GH-VS", "certification": "IGI",
-        "compare_at_price": None, "badge": "",
-        "images": [("photo-1611591475119-232145e143b4", 1000)],
-        "variants": [
-            dict(purity="18Kt", gold_color="Yellow", price="135000",
-                 gold_weight_grams="8.0", gold_value="45000", diamond_value="78000",
-                 making_charges="8000", gst_amount="4000"),
-            dict(purity="14Kt", gold_color="Yellow", price="118000",
-                 gold_weight_grams="8.0", gold_value="34000", diamond_value="72000",
-                 making_charges="7000", gst_amount="5000"),
-        ],
-    },
-    {
-        "slug": "eternity-diamond-band",
-        "name": "Eternity Diamond Band",
-        "category": "rings",
-        "description": "Full-eternity band with shared-prong round brilliant diamonds.",
-        "carat": "0.80", "diamond_quality": "GH-VS", "certification": "IGI",
-        "compare_at_price": None, "badge": "",
-        "images": [("photo-1603561591411-07134e71a2a9", 1000)],
-        "variants": [
-            dict(purity="14Kt", gold_color="White", ring_size=s, price="72000",
-                 gold_weight_grams="3.0", gold_value="24000", diamond_value="40000",
-                 making_charges="5000", gst_amount="3000")
-            for s in ("12", "14", "16")
-        ] + [
-            dict(purity="18Kt", gold_color="White", ring_size=s, price="79500",
-                 gold_weight_grams="3.0", gold_value="29500", diamond_value="40000",
-                 making_charges="6500", gst_amount="3500")
-            for s in ("12", "14", "16")
-        ],
-    },
-    {
-        "slug": "luna-oval-solitaire-band",
-        "name": "Luna Oval Solitaire Band",
-        "category": "rings",
-        "description": "Oval-cut solitaire on a slim knife-edge band.",
-        "carat": "0.45", "diamond_quality": "EF-VVS", "certification": "GIA",
-        "compare_at_price": None, "badge": "",
-        "images": [("photo-1602751584552-8ba73aad10e1", 1000)],
-        "variants": [
-            dict(purity="18Kt", gold_color="Rose", ring_size=s, price="55400",
-                 gold_weight_grams="2.6", gold_value="17400", diamond_value="31000",
-                 making_charges="4500", gst_amount="2500")
-            for s in ("12", "14", "16")
-        ] + [
-            dict(purity="14Kt", gold_color="Rose", ring_size=s, price="49900",
-                 gold_weight_grams="2.6", gold_value="13900", diamond_value="31000",
-                 making_charges="3000", gst_amount="2000")
-            for s in ("12", "14", "16")
-        ],
-    },
+ADJ = ["Aura", "Celeste", "Vega", "Ira", "Zoya", "Meera", "Tara", "Kiara", "Nyla", "Rhea",
+       "Sana", "Diya", "Aria", "Luna", "Ivy", "Maya", "Nora", "Pia", "Riya", "Sia",
+       "Avni", "Bela", "Cia", "Dua", "Ela", "Fia", "Gia", "Hia", "Isha", "Jia"]
+
+IMAGES = [
+    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1515562108358-a04467e2014b?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1573408301182-24bc27b8058d?q=80&w=1000&auto=format&fit=crop",
 ]
+
+VIDEOS = [
+    "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+    "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+]
+
+KARATS = ["14Kt", "18Kt"]
+COLORS = ["Yellow", "Rose", "White"]
+RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"]
+LABS = ["IGI", "GIA"]
+GRADES = [("EF", "VVS"), ("GH", "VS"), ("IJ", "SI")]
+
+GOLD_RATE = 7000    # INR per gram (14Kt)
+DIA_RATE = 45000    # INR per carat
+MAKING = 3000       # flat making charges
+
+
+def q3(x): return Decimal(str(round(x, 3)))   # gold: 3 decimals
+def q2(x): return Decimal(str(round(x, 2)))   # diamond: 2 decimals
+
+
+def price_for(net_g, dia_ct):
+    return Decimal(str(int((net_g * GOLD_RATE + dia_ct * DIA_RATE + MAKING) / 100) * 100))
 
 
 class Command(BaseCommand):
-    help = "Seeds the YA-RA catalog with the mockup collection (idempotent)."
+    help = "Seeds 6 categories x 30 products with sequenced media and physical instances"
 
     def handle(self, *args, **options):
-        cats = {}
-        for i, (slug, name, desc) in enumerate(CATEGORIES):
-            cats[slug], _ = Category.objects.update_or_create(
-                slug=slug,
-                defaults={"name": name, "description": desc,
-                          "sort_order": i, "is_active": True},
-            )
+        rng = random.Random(7)
 
-        for spec in PRODUCTS:
-            product, _ = Product.objects.update_or_create(
-                slug=spec["slug"],
-                defaults={
-                    "name": spec["name"],
-                    "category": cats[spec["category"]],
-                    "description": spec["description"],
-                    "carat": spec["carat"],
-                    "diamond_quality": spec["diamond_quality"],
-                    "certification": spec["certification"],
-                    "compare_at_price": spec["compare_at_price"],
-                    "badge": spec["badge"],
-                    "is_active": True,
-                },
-            )
-            product.images.all().delete()
-            for j, (pid, w) in enumerate(spec["images"]):
-                ProductImage.objects.create(product=product, url=U.format(pid, w), sort_order=j)
+        ProductInstance.objects.all().delete()
+        ProductMedia.objects.all().delete()
+        Product.objects.all().delete()
+        Category.objects.all().delete()
 
-            product.variants.all().delete()
-            for v in spec["variants"]:
-                base = {k: val for k, val in v.items() if k != "gold_color"}
-                for color in ("Yellow", "Rose", "White"):
-                    ProductVariant.objects.create(product=product, stock=10, gold_color=color, **base)
+        media_rows, instance_rows = [], []
+        prod_no = 0
+
+        for slug, cat_name, prefix, noun in CATS:
+            cat = Category.objects.create(name=cat_name, slug=slug)
+
+            for i in range(1, 31):
+                pname = f"{ADJ[(i - 1) % len(ADJ)]} {noun}"
+                is_ring = slug in ("rings", "solitaires")
+
+                # Blueprint weights
+                net14 = q3(rng.uniform(2.0, 6.5))
+                melle = q2(rng.uniform(0.05, 0.40))
+                pointer = q2(rng.uniform(0.30, 1.00)) if (is_ring or rng.random() < 0.4) else Decimal("0.00")
+                fancy = q2(rng.uniform(0.10, 0.50)) if rng.random() < 0.35 else Decimal("0.00")
+                cstone = q2(rng.uniform(0.20, 1.20)) if slug == "color-stone" else Decimal("0.00")
+                dcolor, dclarity = rng.choice(GRADES)
+                total_dia = float(melle + pointer + fancy)
+
+                product = Product.objects.create(
+                    design_code=f"{prefix}-{i:03d}",
+                    slug=slugify(pname),
+                    name=pname,
+                    category=cat,
+                    description=f"{pname} handcrafted in solid gold with natural {dcolor}-{dclarity} diamonds.",
+                    base_net_weight_14kt=net14,
+                    base_price=price_for(float(net14), total_dia),
+                    diamond_weight_round_melle=melle,
+                    pointer_solitaire_weight=pointer,
+                    fancy_cut_weight=fancy,
+                    color_stone_weight=cstone,
+                    diamond_color=dcolor,
+                    diamond_clarity=dclarity,
+                    has_solitaire_pointer=pointer > 0,
+                    has_fancy_cut=fancy > 0,
+                    has_color_stone=cstone > 0,
+                )
+                prod_no += 1
+
+                # Media: 3-4 images + 1 video, in display sequence
+                order = 1
+                start = rng.randint(0, len(IMAGES) - 1)
+                for j in range(rng.randint(3, 4)):
+                    media_rows.append(ProductMedia(
+                        product=product, url=IMAGES[(start + j) % len(IMAGES)],
+                        kind="image", sort_order=order))
+                    order += 1
+                media_rows.append(ProductMedia(
+                    product=product, url=VIDEOS[rng.randint(0, len(VIDEOS) - 1)],
+                    kind="video", sort_order=order))
+
+                # Physical instances
+                sizes = rng.sample(RING_SIZES, k=rng.randint(3, 5)) if is_ring else [None]
+                batch_start = len(instance_rows)
+                for karat in KARATS:
+                    for color in rng.sample(COLORS, k=2):
+                        chosen_sizes = rng.sample(sizes, k=min(3, len(sizes))) if is_ring else [None]
+                        for size in chosen_sizes:
+                            kfactor = 1.2 if karat == "18Kt" else 1.0
+                            sfactor = (1.0 + (int(size) - 12) * 0.015) if size else 1.0
+                            net = q3(float(net14) * kfactor * sfactor)
+                            dia = q2(max(0.01, total_dia + rng.uniform(-0.02, 0.02)))
+                            sold = rng.random() >= 0.75
+                            instance_rows.append(ProductInstance(
+                                item_code=f"YRA-{prod_no:04d}-{karat[:2]}{color[0].upper()}-{size or 'OS'}",
+                                design=product, karat=karat, gold_color=color, ring_size=size,
+                                actual_net_weight=net, actual_diamond_weight=dia,
+                                actual_color_stone_weight=cstone,
+                                price=price_for(float(net), float(dia)),
+                                report_lab=rng.choice(LABS),
+                                report_number=str(rng.randint(100000000, 999999999)),
+                                report_color=dcolor, report_clarity=dclarity,
+                                status="sold" if sold else "in_stock",
+                                sold_at=timezone.now() if sold else None,
+                            ))
+                # Guarantee at least one purchasable piece per design
+                if not any(r.status == "in_stock" for r in instance_rows[batch_start:]):
+                    instance_rows[batch_start].status = "in_stock"
+                    instance_rows[batch_start].sold_at = None
+
+        ProductMedia.objects.bulk_create(media_rows)
+        ProductInstance.objects.bulk_create(instance_rows)
 
         self.stdout.write(self.style.SUCCESS(
-            f"✔ Seeded {len(CATEGORIES)} categories, {len(PRODUCTS)} products, "
-            f"{sum(len(p['variants']) for p in PRODUCTS)} variants."
+            f"Seeded {Category.objects.count()} categories, {Product.objects.count()} products, "
+            f"{len(media_rows)} media items, {len(instance_rows)} physical instances."
         ))
