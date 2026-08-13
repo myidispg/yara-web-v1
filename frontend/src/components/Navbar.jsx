@@ -1,92 +1,198 @@
-import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "../api/client";
 import { useCart } from "../context/CartContext";
-import { useCategories } from "../context/CategoryContext";
+import { useAuth } from "../context/AuthContext";
+
+const categories = [
+    { label: "Rings", slug: "rings" },
+    { label: "Earrings", slug: "earrings" },
+    { label: "Necklaces & Pendants", slug: "necklaces" },
+    { label: "Bracelets", slug: "bracelets" },
+];
+
+const inr = (n) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })
+        .format(Number(n) || 0);
+
+/* ── Icons (doubled: 36px default; `size` prop for compact spots) ── */
+const SearchIcon = ({ size = 27 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+);
+const UserIcon = ({ size = 27 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 5-5.5 8-5.5s6.5 1.5 8 5.5" />
+    </svg>
+);
+const BagIcon = ({ size = 27 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 8h12l-1 12H7L6 8z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </svg>
+);
+const CloseIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+    </svg>
+);
 
 export default function Navbar() {
-    const { user } = useAuth();
     const { count } = useCart();
-    const { categories } = useCategories();
-    const [open, setOpen] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
 
-    const navLink = ({ isActive }) =>
-        `text-[12px] uppercase tracking-[0.22em] transition hover:text-gold-deep ${isActive ? "text-gold-deep" : "text-ink/80"}`;
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState([]);
+    const [searching, setSearching] = useState(false);
+
+    /* Live search (debounced) against /api/products/?search= */
+    useEffect(() => {
+        if (query.trim().length < 2) { setResults([]); return; }
+        setSearching(true);
+        const t = setTimeout(async () => {
+            try {
+                const { data } = await api.get("/products/", { params: { search: query.trim() } });
+                setResults((data?.results ?? data).slice(0, 6));
+            } catch { setResults([]); }
+            setSearching(false);
+        }, 350);
+        return () => clearTimeout(t);
+    }, [query]);
+
+    const closeSearch = () => { setSearchOpen(false); setQuery(""); setResults([]); };
 
     return (
-        <header className="sticky top-0 z-50">
-            <div className="bg-pine px-4 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-champagne">
-                Complimentary insured shipping across India · Lifetime exchange on every piece
+        <header className="sticky top-0 z-40 bg-ivory/95 backdrop-blur-sm">
+            {/* Announcement bar */}
+            <div className="bg-charcoal text-white text-center py-2 px-4 micro-label">
+                ✨ 100% Certified Natural Diamonds &amp; 14Kt/18Kt Solid Gold
             </div>
 
-            <div className="border-b border-ink/10 bg-ivory/95 backdrop-blur">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 lg:px-8">
-                    <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
-                        <span className="block h-px w-6 bg-ink" /><span className="mt-1.5 block h-px w-6 bg-ink" /><span className="mt-1.5 block h-px w-4 bg-ink" />
+            {/* Main row: Logo | Categories | Search · Account · Bag */}
+            <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-5">
+                {/* Mobile hamburger */}
+                <button className="md:hidden text-charcoal text-2xl" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
+                    ☰
+                </button>
+
+                {/* Logo — left */}
+                <Link to="/" className="shrink-0 block">
+                    <span className="font-serif text-2xl lg:text-3xl tracking-[0.3em]">YA-RA</span>
+                    <span className="hidden xl:block micro-label text-ink/50 mt-1">
+                        Diamond, Gold and Gemstone Fine Jewellery
+                    </span>
+                </Link>
+
+                {/* Categories — centre (doubled type) */}
+                <nav className="hidden md:flex flex-1 justify-center gap-6 lg:gap-10 uppercase tracking-[0.16em] text-[13px] lg:text-[15px] xl:text-[14px] font-medium">
+                    {categories.map((c) => (
+                        <Link key={c.slug} to={`/category/${c.slug}`} className="hover:text-gold-dark transition-colors whitespace-nowrap">
+                            {c.label}
+                        </Link>
+                    ))}
+                </nav>
+                <div className="flex-1 md:hidden" />
+
+                {/* Icons — right (doubled) */}
+                <div className="flex items-center gap-5">
+                    <button
+                        onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+                        className="text-charcoal hover:text-gold-dark transition-colors"
+                        aria-label="Search"
+                    >
+                        <SearchIcon />
                     </button>
 
-                    <Link to="/" className="font-display text-2xl tracking-[0.3em]">
-                        YA-RA<span className="ml-1 text-gold">◆</span>
+                    <Link
+                        to={user ? "/account" : "/login"}
+                        className="text-charcoal hover:text-gold-dark transition-colors"
+                        aria-label="Account & Orders"
+                    >
+                        <UserIcon />
                     </Link>
 
-                    <nav className="hidden items-center gap-8 md:flex">
-                        <NavLink to="/" className={navLink} end>Home</NavLink>
-                        {categories.map((cat) => (
-                            <div key={cat.slug} className="group relative">
-                                <NavLink to={`/category/${cat.slug}`} className={navLink}>{cat.name}</NavLink>
-                                {cat.subcategories?.length > 0 && (
-                                    <div className="invisible absolute left-1/2 top-full z-50 w-60 -translate-x-1/2 translate-y-3 border border-ink/10 bg-ivory p-5 opacity-0 shadow-card transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                                        <Link to={`/category/${cat.slug}`} className="eyebrow block border-b border-ink/10 pb-3">All {cat.name}</Link>
-                                        {cat.subcategories.map((s) => (
-                                            <Link key={s.slug} to={`/category/${cat.slug}?sub=${s.slug}`}
-                                                className="block py-2 text-sm text-ink/75 transition hover:translate-x-1 hover:text-gold-deep">
-                                                {s.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </nav>
-
-                    <div className="flex items-center gap-5">
-                        <button onClick={() => navigate(user ? "/account" : "/login")}
-                            className="text-[12px] uppercase tracking-[0.22em] text-ink/80 transition hover:text-gold-deep">
-                            {user ? (user.first_name || "Account") : "Sign in"}
-                        </button>
-                        <Link to="/cart" className="relative text-[12px] uppercase tracking-[0.22em] text-ink/80 transition hover:text-gold-deep">
-                            Bag
-                            {count > 0 && (
-                                <span className="absolute -right-4 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-ink">{count}</span>
-                            )}
-                        </Link>
-                    </div>
+                    <button
+                        onClick={() => navigate("/cart")}
+                        className="relative text-charcoal hover:text-gold-dark transition-colors"
+                        aria-label="Shopping Bag"
+                    >
+                        <BagIcon />
+                        {count > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-blush text-ink text-[11px] font-semibold w-5 h-5 rounded-full flex items-center justify-center">
+                                {count}
+                            </span>
+                        )}
+                    </button>
                 </div>
             </div>
 
-            {open && (
-                <div className="border-b border-ink/10 bg-ivory md:hidden">
-                    <div className="space-y-1 px-5 py-5">
-                        <Link to="/" onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.2em]">Home</Link>
-                        {categories.map((cat) => (
-                            <details key={cat.slug} className="group">
-                                <summary className="cursor-pointer list-none py-2 text-sm uppercase tracking-[0.2em]">
-                                    <span className="flex justify-between">{cat.name}<span className="text-gold transition group-open:rotate-45">+</span></span>
-                                </summary>
-                                <div className="pl-4">
-                                    <Link to={`/category/${cat.slug}`} onClick={() => setOpen(false)} className="block py-1.5 text-sm text-ink/60">All {cat.name}</Link>
-                                    {cat.subcategories?.map((s) => (
-                                        <Link key={s.slug} to={`/category/${cat.slug}?sub=${s.slug}`} onClick={() => setOpen(false)}
-                                            className="block py-1.5 text-sm text-ink/60">{s.name}</Link>
-                                    ))}
-                                </div>
-                            </details>
-                        ))}
-                        <Link to={user ? "/account" : "/login"} onClick={() => setOpen(false)} className="block py-2 text-sm uppercase tracking-[0.2em] text-gold-deep">
-                            {user ? "My account" : "Sign in"}
-                        </Link>
+            {/* Search tray */}
+            {searchOpen && (
+                <div className="border-t border-line bg-ivory px-6 lg:px-10 py-5">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="flex items-center gap-4">
+                            <SearchIcon size={20} />
+                            <input
+                                autoFocus
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+                                placeholder="Search rings, earrings, pendants…"
+                                className="flex-1 bg-transparent border-b border-charcoal/30 py-2 text-base focus:outline-none focus:border-gold-dark"
+                            />
+                            <button onClick={closeSearch} className="text-charcoal hover:text-gold-dark" aria-label="Close search">
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        {searching && <p className="micro-label text-ink/50 mt-4">Searching…</p>}
+
+                        {!searching && results.length > 0 && (
+                            <ul className="mt-4 divide-y divide-line">
+                                {results.map((p) => (
+                                    <li key={p.id ?? p.slug}>
+                                        <Link
+                                            to={`/product/${p.slug}`}
+                                            onClick={closeSearch}
+                                            className="flex items-center gap-4 py-3 px-2 hover:bg-cream"
+                                        >
+                                            <img src={p.primary_image ?? ""} alt={p.name} className="w-12 h-12 object-cover bg-cream rounded-md" />
+                                            <span className="flex-1">
+                                                <span className="block font-serif text-base">{p.name}</span>
+                                                <span className="block text-xs text-ink/55">{p.category?.name}</span>
+                                            </span>
+                                            <span className="text-sm font-medium">{inr(p.min_price ?? p.price)}</span>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {!searching && query.trim().length >= 2 && results.length === 0 && (
+                            <p className="text-sm text-ink/55 mt-4">No pieces match “{query}”.</p>
+                        )}
                     </div>
+                </div>
+            )}
+
+            {/* Mobile menu */}
+            {mobileOpen && (
+                <div className="md:hidden border-t border-line px-6 py-6 space-y-4 uppercase tracking-[0.16em] text-[15px] font-medium">
+                    {categories.map((c) => (
+                        <Link key={c.slug} to={`/category/${c.slug}`} className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
+                            {c.label}
+                        </Link>
+                    ))}
+                    <hr className="border-line" />
+                    <Link to={user ? "/account" : "/login"} className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
+                        My Account &amp; Orders
+                    </Link>
+                    <Link to="/policies" className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
+                        Policies &amp; Certifications
+                    </Link>
                 </div>
             )}
         </header>

@@ -1,118 +1,159 @@
-import uuid
-
+"""
+YA-RA® — Catalog models (default-safe: migrations never prompt).
+"""
 from django.db import models
 from django.utils.text import slugify
 
-GOLD_COLORS = [("yellow", "Yellow"), ("rose", "Rose"), ("white", "White")]
-PURITIES = [("14K", "14 KT"), ("18K", "18 KT")]
-RING_SIZES = [(s, f"Size {s}") for s in
-              ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "11", "12", "13"]]
+
+# ────────────────────────────────────────────────────────────
+# Choices
+# ────────────────────────────────────────────────────────────
+PURITY_CHOICES = [("18Kt", "18Kt"), ("14Kt", "14Kt")]
+GOLD_COLOR_CHOICES = [("Yellow", "Yellow"), ("White", "White"), ("Rose", "Rose")]
+CERTIFICATION_CHOICES = [("IGI", "IGI"), ("GIA", "GIA")]
+QUALITY_CHOICES = [
+    ("EF-VVS", "EF - VVS (Premium Clarity)"),
+    ("GH-VS", "GH - VS (Fine Quality)"),
+]
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=120, unique=True)
-    parent = models.ForeignKey("self", null=True, blank=True,
-                               related_name="subcategories", on_delete=models.CASCADE)
-    description = models.TextField(blank=True)
-    image_url = models.URLField(blank=True)
-    ordering = models.PositiveIntegerField(default=0)
+    name = models.CharField(max_length=80, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
-        ordering = ["ordering", "name"]
+        ordering = ["sort_order", "name"]
         verbose_name_plural = "categories"
-
-    def __str__(self):
-        return f"{self.parent.name} › {self.name}" if self.parent else self.name
-
-
-class Product(models.Model):
-    STOCK = [("in_stock", "In stock"), ("low_stock", "Low stock"),
-             ("out_of_stock", "Out of stock"), ("made_to_order", "Made to order")]
-
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=220, unique=True)
-    category = models.ForeignKey(Category, related_name="products", on_delete=models.PROTECT)
-    sku = models.CharField(max_length=40, unique=True, blank=True)
-    short_description = models.CharField(max_length=300, blank=True)
-    description = models.TextField(blank=True)
-    diamond_info = models.CharField(max_length=300, blank=True)
-    base_price = models.DecimalField(max_digits=10, decimal_places=2)
-    mrp = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    stock_status = models.CharField(max_length=20, choices=STOCK, default="in_stock")
-    is_featured = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
-        if not self.sku:
-            self.sku = f"VR-{uuid.uuid4().hex[:8].upper()}"
         super().save(*args, **kwargs)
-
-
-class ProductVariant(models.Model):
-    product = models.ForeignKey(Product, related_name="variants", on_delete=models.CASCADE)
-    gold_color = models.CharField(max_length=10, choices=GOLD_COLORS, default="yellow")
-    purity = models.CharField(max_length=6, choices=PURITIES, default="18K")
-    ring_size = models.CharField(max_length=5, blank=True, null=True, choices=RING_SIZES)
-    price_delta = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    stock_quantity = models.PositiveIntegerField(default=10)
-    sku = models.CharField(max_length=60, unique=True, blank=True)
-
-    class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=["product", "gold_color", "purity", "ring_size"], name="uniq_variant")]
 
     def __str__(self):
-        return self.label
+        return self.name
 
-    @property
-    def price(self):
-        return self.product.base_price + self.price_delta
 
-    @property
-    def in_stock(self):
-        return self.stock_quantity > 0
+class Product(models.Model):
+    name = models.CharField(max_length=200, default="")
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    category = models.ForeignKey(
+        Category, on_delete=models.PROTECT, related_name="products",
+        null=True, blank=True,
+    )
 
-    @property
-    def label(self):
-        base = f"{self.get_gold_color_display()} gold · {self.get_purity_display()}"
-        return f"{base} · Size {self.ring_size}" if self.ring_size else base
+    carat = models.DecimalField(
+        "Total diamond weight (ct)",
+        max_digits=5, decimal_places=2, null=True, blank=True,
+    )
+    diamond_quality = models.CharField(
+        max_length=20, choices=QUALITY_CHOICES, default="GH-VS", blank=True
+    )
+    certification = models.CharField(
+        max_length=10, choices=CERTIFICATION_CHOICES, default="IGI"
+    )
+
+    compare_at_price = models.DecimalField(
+        "Strikethrough price (INR)",
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    badge = models.CharField("Badge e.g. BESTSELLER", max_length=30, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
-        if not self.sku:
-            size = f"-S{self.ring_size}" if self.ring_size else ""
-            self.sku = f"{self.product.sku}-{self.gold_color[:2].upper()}-{self.purity}{size}"
+        if not self.slug:
+            self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    @property
+    def primary_image(self):
+        first = self.images.first()
+        return first.url if first else None
+
+    # @property
+    # def min_price(self):
+    #     prices = [v.price for v in self.variants.filter(is_active=True)]
+    #     return min(prices) if prices else None
+
+    def __str__(self):
+        return self.name
 
 
 class ProductImage(models.Model):
-    product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="products/", blank=True)
-    remote_url = models.URLField(blank=True)   # handy for seeds / CDN images
-    alt = models.CharField(max_length=200, blank=True)
-    ordering = models.PositiveIntegerField(default=0)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
+    url = models.URLField(max_length=500, blank=True, default="")
+    alt_text = models.CharField(max_length=200, blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["ordering"]
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.product.name} · image {self.id}"
 
 
 class ProductVideo(models.Model):
-    product = models.ForeignKey(Product, related_name="videos", on_delete=models.CASCADE)
-    title = models.CharField(max_length=200, blank=True)
-    video_url = models.URLField()
-    is_primary = models.BooleanField(default=False)
-    ordering = models.PositiveIntegerField(default=0)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="videos")
+    url = models.URLField(max_length=500, blank=True, default="")
+    title = models.CharField(max_length=200, blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["ordering"]
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.product.name} · video {self.id}"
+
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
+    purity = models.CharField(max_length=10, choices=PURITY_CHOICES, default="18Kt")
+    gold_color = models.CharField(max_length=10, choices=GOLD_COLOR_CHOICES, default="Yellow")
+    ring_size = models.CharField(max_length=10, null=True, blank=True)
+
+    price = models.DecimalField(
+        "Selling price (INR)", max_digits=12, decimal_places=2, default=0
+    )
+    gold_weight_grams = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+
+    gold_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    diamond_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    making_charges = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    gst_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
+    stock = models.PositiveIntegerField(default=0)
+    sku = models.CharField(max_length=60, unique=True, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["product", "purity", "gold_color"]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.sku:
+            self.sku = (
+                f"YRA-{self.product_id:05d}-"
+                f"{self.purity}{self.gold_color[:1].upper()}{self.ring_size or 'OS'}"
+            )
+            super().save(update_fields=["sku"])
+
+    @property
+    def label(self):
+        base = f"{self.purity} {self.gold_color} Gold"
+        return f"{base} | Size {self.ring_size}" if self.ring_size else base
+
+    def __str__(self):
+        return f"{self.product.name} · {self.label}"

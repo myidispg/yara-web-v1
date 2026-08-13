@@ -1,104 +1,187 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../utils/usePageTitle";
 
 export default function AuthPage() {
+    const { user, login, register } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const { login, register } = useAuth();
     const isRegister = location.pathname === "/register";
-    const from = location.state?.from || "/account";
 
-    const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+    usePageTitle(isRegister ? "Create Account" : "Welcome Back");
+
+    const [loginForm, setLoginForm] = useState({ identifier: "", password: "" });
+    const [regForm, setRegForm] = useState({ first_name: "", last_name: "", email: "", phone: "", password: "", confirm: "" });
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
 
-    const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+    const from = location.state?.from ?? "/";
+    useEffect(() => { if (user) navigate(from, { replace: true }); }, [user, from, navigate]);
 
-    const submit = async (e) => {
+    const parseErr = (err) => {
+        const data = err.response?.data ?? {};
+        if (typeof data === 'string') return data;
+        // Handle nested DRF errors (e.g., { email: ["This field must be unique."] })
+        return Object.values(data).flat().join(" ") || "Something went wrong. Please try again.";
+    };
+
+    const doLogin = async (e) => {
         e.preventDefault();
-        setError("");
-        if (isRegister && !/^[6-9]\d{9}$/.test(form.phone)) {
-            setError("Phone must be a valid 10-digit Indian mobile number.");
-            return;
-        }
-        setBusy(true);
+        setBusy(true); setError("");
         try {
-            if (isRegister) {
-                const [first_name, ...rest] = form.name.trim().split(" ");
-                await register({ first_name, last_name: rest.join(" "), email: form.email, phone: form.phone, password: form.password });
-            } else {
-                await login(form.email, form.password); // email field doubles as email OR phone
-            }
+            await login(loginForm.identifier, loginForm.password);
             navigate(from, { replace: true });
         } catch (err) {
-            const detail = err.response?.data?.detail || err.response?.data;
-            setError(typeof detail === "string" ? detail : "Something went wrong. Please check your details.");
-        } finally {
+            setError(parseErr(err));
             setBusy(false);
         }
     };
 
+    const doRegister = async (e) => {
+        e.preventDefault();
+        if (regForm.password !== regForm.confirm) {
+            setError("Passwords do not match.");
+            return;
+        }
+        if (regForm.phone && !/^[6-9]\d{9}$/.test(regForm.phone)) {
+            setError("Please enter a valid 10-digit Indian phone number.");
+            return;
+        }
+        setBusy(true); setError("");
+        try {
+            await register({
+                first_name: regForm.first_name,
+                last_name: regForm.last_name,
+                email: regForm.email,
+                phone: regForm.phone,
+                password: regForm.password,
+            });
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError(parseErr(err));
+            setBusy(false);
+        }
+    };
+
+    const inputCls = "w-full bg-transparent border-b border-line py-3 text-sm text-ink placeholder-ink/40 focus:outline-none focus:border-ink transition-colors";
+    const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1.5";
+
     return (
-        <div className="grid min-h-[80vh] lg:grid-cols-2">
-            <div className="hidden flex-col justify-between bg-pine p-12 text-ivory lg:flex">
-                <p className="font-display text-2xl tracking-[0.3em]">YA-RA<span className="ml-1 text-gold">◆</span></p>
-                <div>
-                    <p className="max-w-sm font-display text-4xl italic leading-snug text-champagne">
-                        “A diamond is the slowest kind of lightning — we just give it a setting.”
+        <div className="grid lg:grid-cols-[55fr_45fr] min-h-[calc(100vh-100px)]">
+            {/* Campaign panel */}
+            <div className="relative hidden lg:block bg-ink">
+                <img
+                    src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1200&auto=format&fit=crop"
+                    alt="YA-RA fine jewellery"
+                    className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+                <div className="relative h-full flex flex-col items-center justify-center text-white p-16 text-center">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dark mb-6 font-semibold">YA-RA® Fine Jewellery</p>
+                    <p className="font-serif text-5xl leading-tight mb-6">
+                        Every diamond<br />tells your story.
                     </p>
-                    <ul className="mt-10 space-y-3 text-[11px] uppercase tracking-[0.25em] text-ivory/60">
-                        {["IGI certificate with every stone", "BIS 916 hallmarked gold", "Free insured shipping across India", "Lifetime exchange promise"].map((t) => (
-                            <li key={t} className="flex items-center gap-3"><span className="h-1 w-1 rotate-45 bg-gold" />{t}</li>
-                        ))}
-                    </ul>
+                    <p className="text-sm text-white/70 max-w-xs leading-relaxed">
+                        Discover certified natural diamonds, handcrafted in 14Kt & 18Kt solid gold. Join us to track your orders, save your wishlist, and enjoy faster checkout.
+                    </p>
+                    <div className="mt-12 flex items-center gap-6 text-[10px] uppercase tracking-[0.16em] text-white/50">
+                        <span>IGI Certified</span>
+                        <span className="w-1 h-1 rounded-full bg-gold-dark"></span>
+                        <span>BIS Hallmarked</span>
+                        <span className="w-1 h-1 rounded-full bg-gold-dark"></span>
+                        <span>Insured Delivery</span>
+                    </div>
                 </div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-ivory/40">Est. 2026 · Jaipur</p>
             </div>
 
-            <div className="flex items-center justify-center px-5 py-16">
+            {/* Form panel */}
+            <div className="flex items-center justify-center px-8 py-16 bg-cream/20">
                 <div className="w-full max-w-md">
-                    <p className="eyebrow">{isRegister ? "Create account" : "Welcome back"}</p>
-                    <h1 className="mt-3 font-display text-4xl tracking-tight">
-                        {isRegister ? "Join the house" : "Sign in"}
-                    </h1>
-                    <p className="mt-2 text-sm text-ink/60">
-                        {isRegister
-                            ? "Phone is mandatory — we use it for order updates and delivery OTPs."
-                            : "Use your email or your registered phone number."}
-                    </p>
+                    <div className="mb-10">
+                        <p className="eyebrow mb-2">{isRegister ? "Join YA-RA" : "Welcome Back"}</p>
+                        <h1 className="font-serif text-4xl md:text-5xl text-ink">
+                            {isRegister ? "Create Account" : "Sign In"}
+                        </h1>
+                    </div>
 
-                    {error && <p className="mt-5 border border-rust/30 bg-rust/10 px-4 py-3 text-sm text-rust">{error}</p>}
+                    {error && (
+                        <div className="bg-blush/10 border border-blush/30 text-blush text-xs px-4 py-3 rounded-lg mb-6">
+                            {error}
+                        </div>
+                    )}
 
-                    <form onSubmit={submit} className="mt-7 space-y-4">
-                        {isRegister && (
-                            <input className="input" placeholder="Full name" value={form.name} onChange={set("name")} required />
-                        )}
-                        <input className="input" type={isRegister ? "email" : "text"}
-                            placeholder={isRegister ? "Email address" : "Email or phone number"}
-                            value={form.email} onChange={set("email")} required />
-                        {isRegister && (
-                            <div className="flex">
-                                <span className="flex items-center border border-r-0 border-ink/20 bg-parchment px-4 text-sm text-ink/60">+91</span>
-                                <input className="input" inputMode="numeric" maxLength={10} placeholder="10-digit mobile number *"
-                                    value={form.phone} onChange={set("phone")} required />
+                    {isRegister ? (
+                        <form onSubmit={doRegister} className="space-y-5">
+                            <div className="grid grid-cols-2 gap-5">
+                                <div>
+                                    <label className={labelCls}>First Name</label>
+                                    <input required className={inputCls} value={regForm.first_name} onChange={(e) => setRegForm({ ...regForm, first_name: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Last Name</label>
+                                    <input required className={inputCls} value={regForm.last_name} onChange={(e) => setRegForm({ ...regForm, last_name: e.target.value })} />
+                                </div>
                             </div>
-                        )}
-                        <input className="input" type="password" placeholder="Password" minLength={8}
-                            value={form.password} onChange={set("password")} required />
+                            <div>
+                                <label className={labelCls}>Email Address</label>
+                                <input required type="email" className={inputCls} value={regForm.email} onChange={(e) => setRegForm({ ...regForm, email: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Phone (+91)</label>
+                                <input
+                                    required
+                                    type="tel"
+                                    className={inputCls}
+                                    value={regForm.phone}
+                                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-5">
+                                <div>
+                                    <label className={labelCls}>Password</label>
+                                    <input required type="password" className={inputCls} value={regForm.password} onChange={(e) => setRegForm({ ...regForm, password: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Confirm</label>
+                                    <input required type="password" className={inputCls} value={regForm.confirm} onChange={(e) => setRegForm({ ...regForm, confirm: e.target.value })} />
+                                </div>
+                            </div>
+                            <button type="submit" disabled={busy} className="btn-solid w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {busy ? "Creating Account…" : "Create Account"}
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={doLogin} className="space-y-6">
+                            <div>
+                                <label className={labelCls}>Email Address</label>
+                                <input required className={inputCls} value={loginForm.identifier} onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })} />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <label className={labelCls} style={{ marginBottom: 0 }}>Password</label>
+                                    <button type="button" className="text-[10px] uppercase tracking-[0.12em] text-gold-dark hover:text-ink transition-colors">
+                                        Forgot?
+                                    </button>
+                                </div>
+                                <input required type="password" className={inputCls} value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />
+                            </div>
+                            <button type="submit" disabled={busy} className="btn-solid w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {busy ? "Signing In…" : "Sign In"}
+                            </button>
+                        </form>
+                    )}
 
-                        <button disabled={busy} className="btn-gold w-full disabled:opacity-50">
-                            {busy ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
+                    <div className="border-t border-line mt-10 pt-6 text-center">
+                        <p className="text-sm text-ink/60 mb-4">
+                            {isRegister ? "Already have an account?" : "New to YA-RA?"}{" "}
+                            <Link to={isRegister ? "/login" : "/register"} className="text-ink font-semibold underline underline-offset-4 hover:text-gold-dark transition-colors">
+                                {isRegister ? "Sign In" : "Create an Account"}
+                            </Link>
+                        </p>
+                        <button onClick={() => navigate("/")} className="text-xs uppercase tracking-[0.14em] text-ink/50 hover:text-ink transition-colors">
+                            Continue as Guest
                         </button>
-                    </form>
-
-                    <p className="mt-6 text-sm text-ink/60">
-                        {isRegister ? (
-                            <>Already have an account? <Link to="/login" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Sign in</Link></>
-                        ) : (
-                            <>New to YA-RA? <Link to="/register" state={{ from }} className="text-gold-deep underline-offset-4 hover:underline">Create an account</Link></>
-                        )}
-                    </p>
+                    </div>
                 </div>
             </div>
         </div>

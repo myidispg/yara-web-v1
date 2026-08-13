@@ -1,35 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#0f1c15",
-        pine: "#173227",
-        moss: "#2e5a44",
-        ivory: "#f7f3e9",
-        parchment: "#ece3cf",
-        champagne: "#f0e4c9",
-        rust: "#a24b2a",
-        gold: { DEFAULT: "#c19a4b", deep: "#96712c", light: "#e3cd9b", pale: "#f5eedd" },
+        ivory: "#F6F6F7",
+        cream: "#ECECF0",
+        charcoal: "#2E3A4C",
+        ink: "#2E3A4C",
+        line: "#E4E4E7",
+        blush: "#F2A7B3",
+        gold: { DEFAULT: "#C89B3C", dark: "#A87F2C" },
       },
       fontFamily: {
-        display: ['"Fraunces"', "Georgia", "serif"],
-        body: ['"Jost"', "system-ui", "sans-serif"],
+        serif: ['"Playfair Display"', "Georgia", "serif"],
+        sans: ["Poppins", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        luxe: "0 24px 60px -24px rgba(15,28,21,.35)",
-        card: "0 10px 30px -12px rgba(15,28,21,.18)",
-      },
-      keyframes: {
-        marquee: { from: { transform: "translateX(0)" }, to: { transform: "translateX(-50%)" } },
-        "spin-slow": { to: { transform: "rotate(360deg)" } },
-        breathe: { "0%,100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.045)" } },
-      },
-      animation: {
-        marquee: "marquee 30s linear infinite",
-        "spin-slow": "spin-slow 22s linear infinite",
-        breathe: "breathe 16s ease-in-out infinite",
+        card: "0 20px 45px rgba(46,58,76,0.12)",
+        hero: "0 30px 60px rgba(0,0,0,0.28)",
       },
     },
   },
