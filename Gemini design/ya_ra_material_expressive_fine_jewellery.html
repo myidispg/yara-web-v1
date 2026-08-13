@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YA-RA | Natural Diamond & Fine Gold Jewellery</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Editorial Serif + Modern Clean Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            m3: {
+              // Material Expressive Luxury Palette
+              primary: '#0F1F2C',
+              onPrimary: '#FFFFFF',
+              primaryContainer: '#1F3447',
+              onPrimaryContainer: '#D1E5F8',
+              secondary: '#9E685E',
+              secondaryContainer: '#F7E2DD',
+              onSecondaryContainer: '#3C1D18',
+              tertiary: '#93732D',
+              tertiaryContainer: '#FCECB9',
+              onTertiaryContainer: '#2D2000',
+              surface: '#FDF8F6',
+              onSurface: '#1C1B1F',
+              surfaceVariant: '#EBE0DC',
+              onSurfaceVariant: '#4C4543',
+              outline: '#7E7572',
+              glassLight: 'rgba(255, 255, 255, 0.65)',
+              glassDark: 'rgba(15, 31, 44, 0.75)',
+              gold: '#D4AF37',
+              roseGold: '#E8A598'
+            }
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          borderRadius: {
+            'm3-xl': '28px',
+            'm3-2xl': '36px',
+            'm3-full': '9999px'
+          },
+          boxShadow: {
+            'm3-1': '0px 2px 6px rgba(15, 31, 44, 0.06), 0px 1px 2px rgba(15, 31, 44, 0.04)',
+            'm3-2': '0px 6px 16px rgba(15, 31, 44, 0.08), 0px 2px 6px rgba(15, 31, 44, 0.04)',
+            'm3-3': '0px 12px 32px rgba(15, 31, 44, 0.12), 0px 4px 12px rgba(15, 31, 44, 0.06)',
+            'm3-glass': '0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* MATERIAL EXPRESSIVE + LIQUID GLASS HYBRID STYLING */
+    body {
+      background-color: #FDF8F6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #1C1B1F;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .m3-liquid-glass {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .m3-liquid-dark {
+      background: rgba(15, 31, 44, 0.82);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .m3-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .m3-card:hover {
+      transform: translateY(-8px) scale(1.01);
+      box-shadow: 0 24px 48px rgba(158, 104, 94, 0.15);
+      border-color: rgba(232, 165, 152, 0.6);
+    }
+
+    .m3-chip {
+      transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .m3-chip.active {
+      background-color: #0F1F2C;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(15, 31, 44, 0.25);
+    }
+
+    /* Ambient Liquid Canvas Orbs */
+    .m3-ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.55;
+    }
+
+    /* Expressive Ripple Effect Simulation */
+    .m3-press-effect {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .m3-press-effect:active {
+      transform: scale(0.96);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FDF8F6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #E8A598;
+      border-radius: 99px;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-m3-secondaryContainer selection:text-m3-onSecondaryContainer">
+
+  <!-- BACKGROUND AMBIENT LIQUID COLOR BLURS -->
+  <div class="m3-ambient-orb w-[600px] h-[600px] bg-m3-secondaryContainer top-[-150px] left-[-150px]"></div>
+  <div class="m3-ambient-orb w-[700px] h-[700px] bg-m3-tertiaryContainer top-[35%] right-[-200px]"></div>
+  <div class="m3-ambient-orb w-[500px] h-[500px] bg-rose-200 bottom-10 left-[15%]"></div>
+
+  <!-- TOP EXPRESSIVE ANNOUNCEMENT PILL -->
+  <div class="relative z-50 pt-2 px-4">
+    <div class="max-w-7xl mx-auto bg-m3-primary text-m3-onPrimary text-[11px] font-medium py-2.5 px-6 rounded-m3-full flex justify-between items-center tracking-wide shadow-m3-1">
+      <div class="hidden md:flex items-center space-x-2 text-m3-roseGold">
+        <i class="fa-solid fa-gem text-xs"></i>
+        <span>100% Certified Natural Diamonds & 100% BIS Hallmarked Gold</span>
+      </div>
+      <div class="w-full md:w-auto text-center font-medium">
+        ✨ Free Insured Express Courier Across India | 15-Day Guaranteed Easy Returns
+      </div>
+      <div class="hidden md:flex items-center space-x-4 text-xs">
+        <a href="#" onclick="switchView('policies')" class="hover:underline">Boutiques</a>
+        <span>•</span>
+        <a href="#" onclick="switchView('policies')" class="hover:underline">Virtual Try-On</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION BAR (LIQUID GLASS + M3 EXPRESSIVE SHAPES) -->
+  <header class="sticky top-0 z-40 my-3 px-4 md:px-8">
+    <nav class="m3-liquid-glass max-w-7xl mx-auto rounded-m3-2xl px-6 py-4 flex items-center justify-between shadow-m3-glass">
+      
+      <!-- Mobile Drawer Toggle -->
+      <button class="md:hidden text-2xl text-m3-primary focus:outline-none m3-press-effect" onclick="toggleMobileNav()">
+        <i class="fa-solid fa-bars-staggered"></i>
+      </button>
+
+      <!-- BRAND LOGO (MATCHING ATTACHED YA-RA LOGO STYLE) -->
+      <div class="cursor-pointer flex items-center space-x-3" onclick="switchView('home')">
+        <div class="flex flex-col items-center md:items-start">
+          <div class="flex items-center space-x-2">
+            <span class="font-serif text-3xl md:text-4xl font-bold tracking-[0.22em] text-m3-primary leading-none">YA-RA</span>
+            <span class="text-[9px] border border-m3-primary px-1 rounded-full relative -top-2 font-sans font-bold">R</span>
+          </div>
+          <div class="flex items-center space-x-2 mt-1">
+            <div class="h-[1px] w-5 bg-m3-roseGold"></div>
+            <svg class="w-4 h-4 text-m3-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="12 2 2 9 12 22 22 9 12 2" fill="rgba(232,165,152,0.35)" stroke="#0F1F2C"/>
+              <line x1="2" y1="9" x2="22" y2="9"/>
+              <line x1="12" y1="2" x2="12" y2="22"/>
+            </svg>
+            <div class="h-[1px] w-5 bg-m3-roseGold"></div>
+          </div>
+          <span class="text-[9px] uppercase tracking-[0.2em] font-semibold text-m3-onSurfaceVariant mt-0.5">Diamond & Gold Jewellery</span>
+        </div>
+      </div>
+
+      <!-- DESKTOP EXPRESSIVE NAV SEGMENTS -->
+      <div class="hidden lg:flex items-center space-x-1 bg-white/50 p-1.5 rounded-m3-full border border-white">
+        <button onclick="switchView('category', 'all')" class="px-5 py-2 rounded-m3-full text-xs font-semibold uppercase tracking-wider text-m3-primary hover:bg-m3-secondaryContainer transition-all">All</button>
+        <button onclick="switchView('category', 'rings')" class="px-5 py-2 rounded-m3-full text-xs font-semibold uppercase tracking-wider text-m3-primary hover:bg-m3-secondaryContainer transition-all">Rings</button>
+        <button onclick="switchView('category', 'earrings')" class="px-5 py-2 rounded-m3-full text-xs font-semibold uppercase tracking-wider text-m3-primary hover:bg-m3-secondaryContainer transition-all">Earrings</button>
+        <button onclick="switchView('category', 'necklaces')" class="px-5 py-2 rounded-m3-full text-xs font-semibold uppercase tracking-wider text-m3-primary hover:bg-m3-secondaryContainer transition-all">Necklaces</button>
+        <button onclick="switchView('category', 'bracelets')" class="px-5 py-2 rounded-m3-full text-xs font-semibold uppercase tracking-wider text-m3-primary hover:bg-m3-secondaryContainer transition-all">Bracelets</button>
+        <button onclick="switchView('category', 'solitaires')" class="px-5 py-2 rounded-m3-full text-xs font-bold uppercase tracking-wider text-m3-tertiary bg-m3-tertiaryContainer hover:shadow-m3-1 transition-all">Solitaires</button>
+      </div>
+
+      <!-- RIGHT UTILITY ACTIONS -->
+      <div class="flex items-center space-x-3">
+        <button onclick="openSearchModal()" class="w-11 h-11 rounded-m3-full bg-white/80 hover:bg-m3-primary hover:text-white text-m3-primary transition-all flex items-center justify-center shadow-m3-1 m3-press-effect">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+        <button onclick="switchView('account')" class="w-11 h-11 rounded-m3-full bg-white/80 hover:bg-m3-primary hover:text-white text-m3-primary transition-all flex items-center justify-center shadow-m3-1 m3-press-effect">
+          <i class="fa-regular fa-user"></i>
+        </button>
+        <button onclick="switchView('cart')" class="w-11 h-11 rounded-m3-full bg-m3-primary text-m3-onPrimary hover:bg-m3-secondary transition-all flex items-center justify-center shadow-m3-2 relative m3-press-effect">
+          <i class="fa-solid fa-bag-shopping text-base"></i>
+          <span id="cart-badge" class="absolute -top-1 -right-1 bg-m3-roseGold text-m3-primary text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">2</span>
+        </button>
+      </div>
+
+    </nav>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div id="mobile-drawer" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md hidden transition-opacity duration-300">
+    <div class="w-4/5 max-w-sm h-full bg-m3-surface p-6 flex flex-col justify-between overflow-y-auto rounded-r-m3-2xl shadow-2xl">
+      <div>
+        <div class="flex justify-between items-center mb-8 border-b border-m3-surfaceVariant pb-4">
+          <span class="font-serif text-2xl font-bold tracking-widest text-m3-primary">YA-RA</span>
+          <button onclick="toggleMobileNav()" class="w-10 h-10 rounded-full bg-m3-surfaceVariant text-m3-onSurface text-xl">&times;</button>
+        </div>
+        <div class="flex flex-col space-y-3 font-semibold uppercase text-xs tracking-wider">
+          <a href="#" onclick="switchView('home'); toggleMobileNav();" class="p-3 rounded-xl bg-white shadow-sm">Home</a>
+          <a href="#" onclick="switchView('category','all'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">All Fine Jewellery</a>
+          <a href="#" onclick="switchView('category','rings'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">Diamond Rings</a>
+          <a href="#" onclick="switchView('category','earrings'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">Earrings</a>
+          <a href="#" onclick="switchView('category','necklaces'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">Necklaces & Pendants</a>
+          <a href="#" onclick="switchView('category','bracelets'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">Bracelets</a>
+          <a href="#" onclick="switchView('category','solitaires'); toggleMobileNav();" class="p-3 rounded-xl bg-m3-tertiaryContainer text-m3-onTertiaryContainer font-bold">Natural Solitaires</a>
+          <a href="#" onclick="switchView('account'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">My Account & Orders</a>
+          <a href="#" onclick="switchView('policies'); toggleMobileNav();" class="p-3 rounded-xl hover:bg-white">Certifications & Policies</a>
+        </div>
+      </div>
+      <div class="text-xs text-m3-onSurfaceVariant pt-6 border-t border-m3-surfaceVariant space-y-1">
+        <p class="font-bold text-m3-primary">YA-RA Concierge Desk</p>
+        <p>+91 98765 43210 (10 AM - 7 PM IST)</p>
+        <p>concierge@yara.com</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER FOR DYNAMIC VIEWS -->
+  <main id="app-view" class="min-h-screen">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: HOME PAGE (DEFAULT) -->
+    <!-- ========================================== -->
+    <section id="view-home" class="view-section">
+      
+      <!-- HERO BANNER (DANA REBECCA HIGH LUXURY EDITORIAL + MATERIAL EXPRESSIVE SHAPES) -->
+      <div class="relative min-h-[85vh] flex items-center justify-center px-4 md:px-8 max-w-7xl mx-auto my-4">
+        <div class="w-full h-[82vh] rounded-m3-2xl overflow-hidden relative shadow-m3-3">
+          
+          <!-- Editorial Image -->
+          <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=2000" class="absolute inset-0 w-full h-full object-cover object-center scale-105 transform hover:scale-100 transition-transform duration-1000" alt="YA-RA Luxury Fine Diamond Jewellery">
+          
+          <div class="absolute inset-0 bg-gradient-to-r from-m3-primary/80 via-m3-primary/40 to-transparent"></div>
+
+          <!-- Material Expressive Floating Glass Card -->
+          <div class="absolute inset-y-0 left-0 flex items-center p-6 md:p-14 max-w-2xl">
+            <div class="m3-liquid-glass rounded-m3-2xl p-8 md:p-12 shadow-m3-glass border border-white/80 space-y-6">
+              
+              <div class="inline-flex items-center space-x-2 bg-m3-secondaryContainer text-m3-onSecondaryContainer px-4 py-1.5 rounded-m3-full text-xs font-bold uppercase tracking-widest shadow-sm">
+                <span>Natural Diamond Collection 2026</span>
+              </div>
+
+              <h1 class="font-serif text-4xl md:text-6xl font-light tracking-wide leading-tight text-m3-primary">
+                Elegance <br>
+                <span class="italic text-m3-secondary font-normal">Redefined in Pure Gold</span>
+              </h1>
+
+              <p class="text-xs md:text-sm text-m3-onSurfaceVariant leading-relaxed font-normal max-w-lg">
+                Handcrafted for everyday distinction. Solid 14kt & 18kt gold adorned with hand-selected, conflict-free natural diamonds. Certified by SGL & IGI.
+              </p>
+
+              <div class="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                <button onclick="switchView('category', 'all')" class="w-full sm:w-auto bg-m3-primary text-m3-onPrimary px-8 py-4 rounded-m3-full text-xs font-bold uppercase tracking-widest shadow-m3-2 hover:bg-m3-secondary transition-all m3-press-effect">
+                  Explore Collection
+                </button>
+                <button onclick="switchView('category', 'solitaires')" class="w-full sm:w-auto bg-white/90 hover:bg-white text-m3-primary border border-m3-outline/30 px-8 py-4 rounded-m3-full text-xs font-bold uppercase tracking-widest transition-all backdrop-blur-md m3-press-effect">
+                  Shop Solitaires
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- EXPRESSIVE CATEGORY GRID (CARATLANE RICHNESS + MATERIAL EXPRESSIVE CONTAINER SHAPES) -->
+      <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="text-center mb-10">
+          <span class="text-xs uppercase tracking-[0.3em] font-bold text-m3-secondary">Curated For You</span>
+          <h2 class="font-serif text-3xl md:text-4xl text-m3-primary mt-1">Shop By Category</h2>
+          <div class="w-12 h-[3px] bg-m3-roseGold mx-auto mt-3 rounded-full"></div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-7">
+          
+          <!-- Category 1 -->
+          <div onclick="switchView('category', 'rings')" class="m3-card rounded-m3-2xl p-4 cursor-pointer text-center group m3-press-effect">
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-4 bg-m3-surfaceVariant relative">
+              <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Rings">
+            </div>
+            <h3 class="font-serif text-2xl font-medium text-m3-primary group-hover:text-m3-secondary transition-colors">Rings</h3>
+            <p class="text-xs text-m3-onSurfaceVariant font-normal mt-0.5">Stackable, Solitaires & Eternity</p>
+          </div>
+
+          <!-- Category 2 -->
+          <div onclick="switchView('category', 'earrings')" class="m3-card rounded-m3-2xl p-4 cursor-pointer text-center group m3-press-effect">
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-4 bg-m3-surfaceVariant relative">
+              <img src="https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Earrings">
+            </div>
+            <h3 class="font-serif text-2xl font-medium text-m3-primary group-hover:text-m3-secondary transition-colors">Earrings</h3>
+            <p class="text-xs text-m3-onSurfaceVariant font-normal mt-0.5">Studs, Hoops & Drops</p>
+          </div>
+
+          <!-- Category 3 -->
+          <div onclick="switchView('category', 'necklaces')" class="m3-card rounded-m3-2xl p-4 cursor-pointer text-center group m3-press-effect">
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-4 bg-m3-surfaceVariant relative">
+              <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Necklaces">
+            </div>
+            <h3 class="font-serif text-2xl font-medium text-m3-primary group-hover:text-m3-secondary transition-colors">Necklaces</h3>
+            <p class="text-xs text-m3-onSurfaceVariant font-normal mt-0.5">Pendants & Chokers</p>
+          </div>
+
+          <!-- Category 4 -->
+          <div onclick="switchView('category', 'bracelets')" class="m3-card rounded-m3-2xl p-4 cursor-pointer text-center group m3-press-effect">
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-4 bg-m3-surfaceVariant relative">
+              <img src="https://images.unsplash.com/photo-1611591475155-4282fc289e84?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Bracelets">
+            </div>
+            <h3 class="font-serif text-2xl font-medium text-m3-primary group-hover:text-m3-secondary transition-colors">Bracelets</h3>
+            <p class="text-xs text-m3-onSurfaceVariant font-normal mt-0.5">Tennis, Bangles & Cuffs</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- EDITORIAL CURATED HIGHLIGHT (DANA REBECCA HIGH LUXURY EDITORIAL) -->
+      <div class="max-w-7xl mx-auto px-4 my-12">
+        <div class="bg-m3-secondaryContainer/60 rounded-m3-2xl p-8 md:p-14 relative overflow-hidden border border-m3-secondaryContainer">
+          <div class="flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+            
+            <div class="w-full md:w-1/2 space-y-6">
+              <span class="text-xs font-bold tracking-widest uppercase text-m3-onSecondaryContainer bg-white/80 px-4 py-2 rounded-m3-full shadow-sm">The Editorial Edit</span>
+              <h2 class="font-serif text-4xl md:text-5xl font-light text-m3-primary leading-tight">
+                Everyday Fine Luxury, <br>
+                <span class="italic text-m3-secondary">Designed to be Lived In.</span>
+              </h2>
+              <p class="text-m3-onSurfaceVariant font-normal text-xs md:text-sm leading-relaxed">
+                We believe natural diamonds aren't just reserved for red carpets or grand weddings. Our signature 18kt gold everyday diamond pieces are light, effortless, and intended to be layered seamlessly.
+              </p>
+
+              <div class="grid grid-cols-2 gap-4 py-2 text-xs font-semibold">
+                <div class="flex items-center space-x-3 bg-white/80 p-3.5 rounded-m3-xl shadow-m3-1">
+                  <i class="fa-solid fa-gem text-m3-secondary text-xl"></i>
+                  <span>100% Conflict-Free Natural Diamonds</span>
+                </div>
+                <div class="flex items-center space-x-3 bg-white/80 p-3.5 rounded-m3-xl shadow-m3-1">
+                  <i class="fa-solid fa-certificate text-m3-secondary text-xl"></i>
+                  <span>SGL & IGI Certified Stones</span>
+                </div>
+              </div>
+
+              <button onclick="switchView('category', 'all')" class="bg-m3-primary text-white px-8 py-4 rounded-m3-full text-xs font-bold uppercase tracking-widest shadow-m3-2 hover:bg-m3-secondary transition-all m3-press-effect">
+                Explore Everyday Diamonds
+              </button>
+            </div>
+
+            <div class="w-full md:w-1/2">
+              <div class="grid grid-cols-2 gap-4">
+                <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800" class="rounded-m3-2xl shadow-m3-3 w-full h-80 object-cover transform translate-y-4" alt="Jewellery Lifestyle">
+                <img src="https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&q=80&w=800" class="rounded-m3-2xl shadow-m3-3 w-full h-80 object-cover" alt="Jewellery Lifestyle Close-up">
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- BESTSELLERS GRID -->
+      <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="flex justify-between items-end mb-8">
+          <div>
+            <span class="text-xs uppercase tracking-widest text-m3-secondary font-bold">Most Loved</span>
+            <h2 class="font-serif text-3xl md:text-4xl font-light text-m3-primary">Trending Fine Designs</h2>
+          </div>
+          <button onclick="switchView('category', 'all')" class="text-xs font-bold uppercase tracking-widest border-b-2 border-m3-primary pb-1 hover:text-m3-secondary hover:border-m3-secondary transition-colors">View All</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="home-bestsellers-grid">
+          <!-- Bestsellers rendered dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- CARATLANE TRUST ASSURANCE (MATERIAL EXPRESSIVE CONTAINERS) -->
+      <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="m3-liquid-glass rounded-m3-2xl p-8 md:p-12 shadow-m3-glass">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            
+            <div class="flex flex-col items-center space-y-3">
+              <div class="w-16 h-16 rounded-m3-full bg-m3-secondaryContainer text-m3-onSecondaryContainer flex items-center justify-center text-2xl shadow-sm">
+                <i class="fa-solid fa-gem"></i>
+              </div>
+              <h4 class="font-serif font-bold text-xl text-m3-primary">100% Natural Diamonds</h4>
+              <p class="text-xs text-m3-onSurfaceVariant">Ethically mined, hand-selected diamonds. Zero lab-created stones.</p>
+            </div>
+
+            <div class="flex flex-col items-center space-y-3">
+              <div class="w-16 h-16 rounded-m3-full bg-m3-secondaryContainer text-m3-onSecondaryContainer flex items-center justify-center text-2xl shadow-sm">
+                <i class="fa-solid fa-stamp"></i>
+              </div>
+              <h4 class="font-serif font-bold text-xl text-m3-primary">BIS 100% Hallmarked</h4>
+              <p class="text-xs text-m3-onSurfaceVariant">Certified 14kt & 18kt Gold with HUID authentication.</p>
+            </div>
+
+            <div class="flex flex-col items-center space-y-3">
+              <div class="w-16 h-16 rounded-m3-full bg-m3-secondaryContainer text-m3-onSecondaryContainer flex items-center justify-center text-2xl shadow-sm">
+                <i class="fa-solid fa-rotate-left"></i>
+              </div>
+              <h4 class="font-serif font-bold text-xl text-m3-primary">15-Day Exchange</h4>
+              <p class="text-xs text-m3-onSurfaceVariant">100% refund guarantee & lifetime buyback options.</p>
+            </div>
+
+            <div class="flex flex-col items-center space-y-3">
+              <div class="w-16 h-16 rounded-m3-full bg-m3-secondaryContainer text-m3-onSecondaryContainer flex items-center justify-center text-2xl shadow-sm">
+                <i class="fa-solid fa-truck-fast"></i>
+              </div>
+              <h4 class="font-serif font-bold text-xl text-m3-primary">Insured Courier</h4>
+              <p class="text-xs text-m3-onSurfaceVariant">Doorstep delivery across 19,000+ pincodes in India.</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: CATEGORY / LISTING PAGE WITH FILTERS -->
+    <!-- ========================================== -->
+    <section id="view-category" class="view-section hidden py-8 px-4 md:px-8 max-w-7xl mx-auto">
+      
+      <!-- BREADCRUMB & HEADER -->
+      <div class="mb-6">
+        <p class="text-xs text-m3-onSurfaceVariant uppercase tracking-widest">Home / <span id="category-breadcrumb-name" class="text-m3-primary font-bold">All Jewellery</span></p>
+        <h1 id="category-title" class="font-serif text-3xl md:text-5xl text-m3-primary mt-1">Natural Diamond Fine Jewellery</h1>
+        <p class="text-xs md:text-sm text-m3-onSurfaceVariant mt-1">Showing <span id="product-count">8</span> handcrafted designs in 14kt & 18kt Gold</p>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-8">
+        
+        <!-- SIDEBAR FILTERS (M3 EXPRESSIVE CONTAINERS) -->
+        <aside class="w-full lg:w-72 space-y-6">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 sticky top-28 space-y-6 shadow-m3-glass">
+            <div class="flex justify-between items-center border-b border-m3-surfaceVariant pb-3">
+              <h3 class="font-serif text-xl font-bold text-m3-primary">Filters</h3>
+              <button onclick="resetFilters()" class="text-xs uppercase font-bold text-m3-secondary hover:underline">Clear All</button>
+            </div>
+
+            <!-- Filter: Metal & Purity -->
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-m3-primary mb-3">Metal & Gold Purity</h4>
+              <div class="space-y-2 text-xs">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" onchange="applyFilters()" value="18K Gold" class="filter-metal w-4 h-4 rounded text-m3-primary focus:ring-m3-secondary">
+                  <span>18kt Yellow Gold</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" onchange="applyFilters()" value="14K Gold" class="filter-metal w-4 h-4 rounded text-m3-primary focus:ring-m3-secondary">
+                  <span>14kt Yellow Gold</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" onchange="applyFilters()" value="Rose Gold" class="filter-metal w-4 h-4 rounded text-m3-primary focus:ring-m3-secondary">
+                  <span>18kt Rose Gold</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" onchange="applyFilters()" value="White Gold" class="filter-metal w-4 h-4 rounded text-m3-primary focus:ring-m3-secondary">
+                  <span>18kt White Gold</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Filter: Price Range (INR) -->
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-m3-primary mb-3">Price Range (INR)</h4>
+              <div class="space-y-2 text-xs">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="price" onchange="applyFilters()" value="under-30" class="filter-price text-m3-primary">
+                  <span>Under ₹30,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="price" onchange="applyFilters()" value="30-75" class="filter-price text-m3-primary">
+                  <span>₹30,000 - ₹75,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="price" onchange="applyFilters()" value="75-150" class="filter-price text-m3-primary">
+                  <span>₹75,000 - ₹1,50,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="price" onchange="applyFilters()" value="above-150" class="filter-price text-m3-primary">
+                  <span>Above ₹1,50,000</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Filter: Diamond Quality -->
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-m3-primary mb-3">Diamond Clarity / Color</h4>
+              <div class="space-y-2 text-xs">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" class="w-4 h-4 rounded text-m3-primary">
+                  <span>SI - IJ (Standard)</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" class="w-4 h-4 rounded text-m3-primary">
+                  <span>VVS - EF (High Brilliance)</span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </aside>
+
+        <!-- PRODUCT GRID & SORTING -->
+        <main class="flex-1">
+          <div class="flex justify-between items-center mb-6 bg-white/70 p-4 rounded-m3-xl border border-white shadow-m3-1">
+            <div class="text-xs text-m3-onSurfaceVariant">
+              Filtered by: <span class="font-bold text-m3-primary">Natural Diamonds & Solid Gold</span>
+            </div>
+            <div class="flex items-center space-x-3 text-xs">
+              <span class="text-m3-onSurfaceVariant">Sort By:</span>
+              <select onchange="sortProducts(this.value)" class="bg-white border border-m3-surfaceVariant rounded-m3-full px-4 py-2 focus:outline-none focus:border-m3-primary text-xs font-semibold">
+                <option value="featured">Featured Popularity</option>
+                <option value="low-high">Price: Low to High</option>
+                <option value="high-low">Price: High to Low</option>
+                <option value="newest">Newest Designs</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- LISTING GRID -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="category-product-grid">
+            <!-- Rendered via JS -->
+          </div>
+        </main>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: PRODUCT DETAIL PAGE (PDP) -->
+    <!-- ========================================== -->
+    <section id="view-product" class="view-section hidden py-8 px-4 md:px-12 max-w-7xl mx-auto">
+      
+      <!-- BREADCRUMB -->
+      <div class="mb-6 text-xs text-m3-onSurfaceVariant uppercase tracking-widest">
+        Home / <span id="pdp-category-link" class="cursor-pointer hover:underline" onclick="switchView('category', 'all')">Jewellery</span> / <span id="pdp-title-crumb" class="text-m3-primary font-bold">Product Name</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        
+        <!-- LEFT: GALLERY & VIRTUAL TRY-ON (7 COLS) -->
+        <div class="lg:col-span-7 space-y-5">
+          <div class="relative aspect-square rounded-m3-2xl overflow-hidden m3-liquid-glass border border-white shadow-m3-3">
+            <img id="pdp-main-image" src="" class="w-full h-full object-cover transition-all duration-500" alt="Jewellery Design">
+            <div class="absolute top-4 left-4 bg-m3-primary/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-m3-full">
+              Natural Diamond Certified
+            </div>
+            <button onclick="toggleWishlistPDP()" class="absolute top-4 right-4 bg-white/80 p-3.5 rounded-m3-full hover:bg-white text-m3-primary transition-all shadow-m3-1 m3-press-effect">
+              <i class="fa-regular fa-heart text-lg"></i>
+            </button>
+          </div>
+
+          <!-- THUMBNAILS & VIRTUAL TRY-ON CTA -->
+          <div class="flex justify-between items-center gap-4">
+            <div class="flex space-x-3 overflow-x-auto pb-2" id="pdp-thumbnails">
+              <!-- Rendered dynamically -->
+            </div>
+            
+            <button onclick="alert('Virtual AR Try-On activated! Requesting Camera Access...')" class="m3-liquid-glass hover:bg-m3-primary hover:text-white transition-all text-xs font-bold px-5 py-3.5 rounded-m3-full flex items-center space-x-2 border border-m3-secondary shrink-0 shadow-m3-1 m3-press-effect">
+              <i class="fa-solid fa-camera text-m3-secondary"></i>
+              <span>3D AR Virtual Try-On</span>
+            </button>
+          </div>
+
+          <!-- CERTIFICATION BADGES (CARATLANE VALUE) -->
+          <div class="bg-m3-secondaryContainer/50 rounded-m3-xl p-5 flex items-center justify-around text-center text-xs border border-m3-secondaryContainer">
+            <div>
+              <i class="fa-solid fa-certificate text-m3-tertiary text-xl mb-1"></i>
+              <p class="font-bold text-m3-primary">IGI / SGL Certified</p>
+              <p class="text-[10px] text-m3-onSurfaceVariant">100% Natural Diamond</p>
+            </div>
+            <div class="h-8 w-[1px] bg-m3-outline/20"></div>
+            <div>
+              <i class="fa-solid fa-award text-m3-tertiary text-xl mb-1"></i>
+              <p class="font-bold text-m3-primary">BIS Hallmarked Gold</p>
+              <p class="text-[10px] text-m3-onSurfaceVariant">14kt / 18kt HUID Stamped</p>
+            </div>
+            <div class="h-8 w-[1px] bg-m3-outline/20"></div>
+            <div>
+              <i class="fa-solid fa-shield-halved text-m3-tertiary text-xl mb-1"></i>
+              <p class="font-bold text-m3-primary">Lifetime Buyback</p>
+              <p class="text-[10px] text-m3-onSurfaceVariant">Exchange Anytime</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: PRODUCT OPTIONS & SPECIFICATIONS (5 COLS) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div>
+            <span id="pdp-subtitle" class="text-xs uppercase tracking-[0.2em] font-bold text-m3-secondary">18kt Yellow Gold</span>
+            <h1 id="pdp-title" class="font-serif text-3xl md:text-4xl text-m3-primary font-light mt-1">Celestial Solitaire Diamond Ring</h1>
+            <div class="flex items-center space-x-3 mt-2">
+              <div class="flex text-amber-400 text-xs">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+              </div>
+              <span class="text-xs text-m3-onSurfaceVariant font-medium">(4.9/5 based on 48 reviews)</span>
+            </div>
+          </div>
+
+          <!-- PRICING & BREAKDOWN -->
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-3 shadow-m3-glass">
+            <div class="flex items-baseline space-x-3">
+              <span id="pdp-price" class="font-serif text-3xl md:text-4xl font-bold text-m3-primary">₹64,500</span>
+              <span id="pdp-old-price" class="text-sm text-m3-outline line-through">₹72,000</span>
+              <span class="text-xs bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-m3-full">10% OFF</span>
+            </div>
+            <p class="text-[11px] text-m3-onSurfaceVariant">Inclusive of all taxes (3% GST). Free insured shipping in India.</p>
+            
+            <button onclick="togglePriceBreakdown()" class="text-xs text-m3-secondary font-bold underline mt-2 inline-block">
+              View Transparent Price Breakdown (Gold vs Diamond Rate)
+            </button>
+            <div id="price-breakdown-box" class="hidden mt-3 pt-3 border-t border-m3-surfaceVariant text-xs space-y-2 text-m3-onSurfaceVariant bg-white/70 p-4 rounded-m3-xl">
+              <div class="flex justify-between"><span>18kt Gold (3.4 grams @ ₹5,850/g):</span><span>₹19,890</span></div>
+              <div class="flex justify-between"><span>Natural Diamond (0.42 Carat, VVS-EF):</span><span>₹32,000</span></div>
+              <div class="flex justify-between"><span>Making Charges:</span><span>₹8,500</span></div>
+              <div class="flex justify-between"><span>GST (3%):</span><span>₹4,110</span></div>
+              <div class="flex justify-between font-bold border-t border-gray-200 pt-1.5 text-m3-primary"><span>Total Price:</span><span>₹64,500</span></div>
+            </div>
+          </div>
+
+          <!-- METAL SELECTION (M3 EXPRESSIVE SEGMENTED CHIPS) -->
+          <div>
+            <label class="block text-xs uppercase tracking-wider font-bold text-m3-primary mb-3">Select Metal Purity & Color:</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <button onclick="selectMetalOption(this)" class="pdp-metal-btn active bg-m3-primary text-white rounded-m3-xl p-3 text-center transition-all m3-press-effect shadow-m3-1">
+                <div class="w-4 h-4 rounded-full bg-amber-400 mx-auto mb-1 border border-white"></div>
+                <span class="block text-[11px] font-bold">18KT Yellow Gold</span>
+              </button>
+              <button onclick="selectMetalOption(this)" class="pdp-metal-btn bg-white border border-m3-surfaceVariant rounded-m3-xl p-3 text-center hover:border-m3-primary transition-all m3-press-effect">
+                <div class="w-4 h-4 rounded-full bg-amber-200 mx-auto mb-1 border border-gray-300"></div>
+                <span class="block text-[11px] font-bold">14KT Yellow Gold</span>
+              </button>
+              <button onclick="selectMetalOption(this)" class="pdp-metal-btn bg-white border border-m3-surfaceVariant rounded-m3-xl p-3 text-center hover:border-m3-primary transition-all m3-press-effect">
+                <div class="w-4 h-4 rounded-full bg-rose-300 mx-auto mb-1 border border-gray-300"></div>
+                <span class="block text-[11px] font-bold">18KT Rose Gold</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- SIZE SELECTION -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <label class="text-xs uppercase tracking-wider font-bold text-m3-primary">Select Size (Indian Standard):</label>
+              <button onclick="alert('Ring Size Guide: Measure circumference in mm.')" class="text-xs text-m3-secondary underline">Size Guide</button>
+            </div>
+            <div class="flex space-x-3">
+              <button class="w-12 h-12 rounded-m3-full border border-m3-surfaceVariant bg-white font-bold text-xs hover:border-m3-primary">12</button>
+              <button class="w-12 h-12 rounded-m3-full bg-m3-primary text-white font-bold text-xs shadow-m3-1">14</button>
+              <button class="w-12 h-12 rounded-m3-full border border-m3-surfaceVariant bg-white font-bold text-xs hover:border-m3-primary">16</button>
+              <button class="w-12 h-12 rounded-m3-full border border-m3-surfaceVariant bg-white font-bold text-xs hover:border-m3-primary">18</button>
+            </div>
+          </div>
+
+          <!-- PINCODE CHECKER -->
+          <div class="bg-white/80 p-5 rounded-m3-2xl border border-m3-surfaceVariant space-y-3">
+            <label class="block text-xs font-bold uppercase tracking-wider text-m3-primary">Delivery & Store Availability</label>
+            <div class="flex space-x-2">
+              <input id="pincode-input" type="text" placeholder="Enter 6-Digit Indian Pincode" class="w-full text-xs px-4 py-3 rounded-m3-full border focus:outline-none focus:border-m3-primary bg-m3-surface">
+              <button onclick="checkPincode()" class="bg-m3-primary text-white px-5 py-3 text-xs uppercase tracking-wider rounded-m3-full font-bold shrink-0 m3-press-effect">Check</button>
+            </div>
+            <p id="pincode-result" class="text-[11px] text-green-700 font-medium hidden"><i class="fa-solid fa-circle-check"></i> Express Delivery Available by Tomorrow! Cash on Delivery Accepted.</p>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="flex space-x-4 pt-2">
+            <button onclick="addToCartCurrentPDP()" class="flex-1 bg-m3-primary text-white py-4 rounded-m3-full text-xs uppercase tracking-widest font-bold shadow-m3-2 hover:bg-m3-secondary transition-all m3-press-effect">
+              Add to Shopping Bag
+            </button>
+            <button onclick="addToCartCurrentPDP(); switchView('cart')" class="flex-1 border-2 border-m3-primary text-m3-primary py-4 rounded-m3-full text-xs uppercase tracking-widest font-bold hover:bg-m3-primary hover:text-white transition-all m3-press-effect">
+              Buy Now
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 4: SHOPPING CART PAGE -->
+    <!-- ========================================== -->
+    <section id="view-cart" class="view-section hidden py-8 px-4 md:px-12 max-w-6xl mx-auto">
+      <h1 class="font-serif text-3xl md:text-4xl text-m3-primary mb-6">Your Shopping Bag</h1>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- CART ITEMS (8 COLS) -->
+        <div class="lg:col-span-8 space-y-4" id="cart-items-container">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- SUMMARY (4 COLS) -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-5 sticky top-28 shadow-m3-glass">
+            <h3 class="font-serif text-2xl font-bold text-m3-primary border-b border-m3-surfaceVariant pb-3">Order Summary</h3>
+
+            <div class="space-y-2.5 text-xs text-m3-onSurfaceVariant">
+              <div class="flex justify-between">
+                <span>Subtotal:</span>
+                <span id="cart-subtotal" class="font-bold text-m3-primary">₹1,18,500</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Estimated GST (3%):</span>
+                <span id="cart-gst">₹3,555</span>
+              </div>
+              <div class="flex justify-between text-green-700 font-bold">
+                <span>Insured Express Shipping:</span>
+                <span>FREE</span>
+              </div>
+            </div>
+
+            <div class="border-t border-m3-surfaceVariant pt-4 flex justify-between items-baseline">
+              <span class="font-serif text-xl font-bold text-m3-primary">Grand Total:</span>
+              <span id="cart-grand-total" class="font-serif text-3xl font-bold text-m3-primary">₹1,22,055</span>
+            </div>
+
+            <button onclick="switchView('checkout')" class="w-full bg-m3-primary text-white py-4 rounded-m3-full text-xs uppercase tracking-widest font-bold shadow-m3-2 hover:bg-m3-secondary transition-all m3-press-effect">
+              Proceed to Checkout
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 5: CHECKOUT PAGE -->
+    <!-- ========================================== -->
+    <section id="view-checkout" class="view-section hidden py-8 px-4 md:px-12 max-w-5xl mx-auto">
+      <div class="text-center mb-8">
+        <span class="text-xs uppercase tracking-widest text-m3-secondary font-bold">Safe & Encrypted</span>
+        <h1 class="font-serif text-3xl md:text-4xl text-m3-primary">Checkout & Payment</h1>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <div class="lg:col-span-7 space-y-6">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-4 shadow-m3-glass">
+            <h3 class="font-serif text-xl font-bold text-m3-primary border-b border-m3-surfaceVariant pb-3">Shipping Address</h3>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <input type="text" placeholder="First Name *" value="Priya" class="p-3.5 rounded-m3-xl border bg-white">
+              <input type="text" placeholder="Last Name *" value="Sharma" class="p-3.5 rounded-m3-xl border bg-white">
+              <input type="text" placeholder="Mobile Number *" value="+91 9876543210" class="col-span-2 p-3.5 rounded-m3-xl border bg-white">
+              <input type="text" placeholder="Flat / Building *" value="Flat 402, Signature Towers" class="col-span-2 p-3.5 rounded-m3-xl border bg-white">
+              <input type="text" placeholder="Pincode *" value="122002" class="p-3.5 rounded-m3-xl border bg-white">
+              <input type="text" placeholder="City *" value="Gurugram" class="p-3.5 rounded-m3-xl border bg-white">
+            </div>
+          </div>
+
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-4 shadow-m3-glass">
+            <h3 class="font-serif text-xl font-bold text-m3-primary border-b border-m3-surfaceVariant pb-3">Payment Method (INR)</h3>
+            <div class="space-y-3 text-xs">
+              <label class="block border-2 border-m3-primary bg-m3-secondaryContainer/40 p-4 rounded-m3-xl cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <input type="radio" name="payment" checked class="text-m3-primary">
+                    <span class="font-bold text-m3-primary">UPI / Google Pay / PhonePe</span>
+                  </div>
+                  <i class="fa-solid fa-qrcode text-xl text-m3-primary"></i>
+                </div>
+              </label>
+              <label class="block border p-4 rounded-m3-xl cursor-pointer bg-white">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <input type="radio" name="payment" class="text-m3-primary">
+                    <span class="font-bold text-m3-primary">Credit / Debit Cards</span>
+                  </div>
+                  <i class="fa-regular fa-credit-card text-xl text-m3-outline"></i>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <button onclick="switchView('account'); alert('Order #YARA-89201 Placed Successfully!')" class="w-full bg-m3-primary text-white py-5 rounded-m3-full text-xs uppercase tracking-widest font-bold shadow-m3-3 hover:bg-m3-secondary transition-all m3-press-effect">
+            Pay ₹1,22,055 & Complete Order
+          </button>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-4 shadow-m3-glass">
+            <h3 class="font-serif text-xl font-bold text-m3-primary border-b border-m3-surfaceVariant pb-3">Order Items</h3>
+            <div id="checkout-items-preview" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 6: USER ACCOUNT & ORDERS -->
+    <!-- ========================================== -->
+    <section id="view-account" class="view-section hidden py-8 px-4 md:px-12 max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row gap-8">
+        
+        <aside class="w-full md:w-64 space-y-2">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-4 shadow-m3-glass text-center">
+            <div class="w-20 h-20 rounded-m3-full bg-m3-secondaryContainer text-m3-onSecondaryContainer font-serif font-bold text-3xl flex items-center justify-center mx-auto mb-2 shadow-sm">PS</div>
+            <h3 class="font-serif font-bold text-xl text-m3-primary">Priya Sharma</h3>
+            <p class="text-xs text-m3-onSurfaceVariant">priya.s@example.com</p>
+          </div>
+        </aside>
+
+        <main class="flex-1">
+          <div class="m3-liquid-glass rounded-m3-2xl p-6 space-y-4 shadow-m3-glass">
+            <h2 class="font-serif text-2xl font-bold text-m3-primary">Past Orders & Diamond Certificates</h2>
+
+            <div class="bg-white rounded-m3-2xl p-5 border border-m3-surfaceVariant space-y-4 shadow-sm">
+              <div class="flex justify-between items-center border-b border-m3-surfaceVariant pb-3 text-xs">
+                <span class="font-bold text-m3-primary">Order ID: #YARA-89201</span>
+                <span class="bg-blue-100 text-blue-900 font-bold px-3 py-1 rounded-m3-full text-[10px]">IN TRANSIT (INSURED)</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=200" class="w-16 h-16 object-cover rounded-m3-xl border">
+                <div class="flex-1 text-xs">
+                  <h4 class="font-serif font-bold text-base text-m3-primary">Celestial Solitaire Diamond Ring</h4>
+                  <p class="text-m3-onSurfaceVariant">18kt Yellow Gold | 0.42ct VVS-EF</p>
+                  <p class="font-bold text-m3-primary mt-1">₹64,500</p>
+                </div>
+                <button onclick="alert('Downloading Digital IGI Diamond Certificate PDF...')" class="bg-m3-secondaryContainer text-m3-onSecondaryContainer px-4 py-2 rounded-m3-full text-xs font-bold shadow-sm">
+                  IGI Certificate
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 7: POLICIES -->
+    <!-- ========================================== -->
+    <section id="view-policies" class="view-section hidden py-8 px-4 md:px-12 max-w-4xl mx-auto space-y-6">
+      <div class="text-center">
+        <h1 class="font-serif text-3xl md:text-5xl text-m3-primary mb-2">Authenticity & Standards</h1>
+        <p class="text-xs md:text-sm text-m3-onSurfaceVariant">The YA-RA Assurance of Purity & Value</p>
+      </div>
+
+      <div class="m3-liquid-glass rounded-m3-2xl p-8 space-y-6 text-xs text-m3-onSurfaceVariant leading-relaxed shadow-m3-glass">
+        <div>
+          <h3 class="font-serif text-2xl font-bold text-m3-primary mb-2">100% Natural Diamond Guarantee</h3>
+          <p>Every diamond in YA-RA jewellery is a guaranteed 100% natural diamond, mined ethically from conflict-free sources. We do NOT use synthetic or lab-grown diamonds.</p>
+        </div>
+        <div class="border-t border-m3-surfaceVariant pt-4">
+          <h3 class="font-serif text-2xl font-bold text-m3-primary mb-2">BIS 100% Hallmarked Gold</h3>
+          <p>All our gold items are made strictly in 14kt or 18kt solid gold with official BIS Hallmark and unique HUID stamping.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FLOATING CONCIERGE / QUICK CART FAB (MATERIAL EXPRESSIVE FLOATING ACTION BUTTON) -->
+  <div class="fixed bottom-6 right-6 z-40 flex flex-col space-y-3">
+    <button onclick="alert('Opening WhatsApp YA-RA Luxury Concierge (+91 98765 43210)...')" class="w-14 h-14 rounded-m3-full bg-emerald-600 text-white shadow-m3-3 flex items-center justify-center text-2xl hover:scale-105 transition-all m3-press-effect">
+      <i class="fa-brands fa-whatsapp"></i>
+    </button>
+  </div>
+
+  <!-- SEARCH MODAL OVERLAY -->
+  <div id="search-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-start justify-center pt-20 px-4">
+    <div class="m3-liquid-glass rounded-m3-2xl p-6 w-full max-w-2xl relative space-y-4 shadow-m3-3">
+      <button onclick="closeSearchModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-m3-surfaceVariant text-xl text-m3-primary">&times;</button>
+      <h3 class="font-serif text-2xl font-bold text-m3-primary">Search YA-RA Fine Jewellery</h3>
+      <div class="relative">
+        <input type="text" id="search-input" onkeyup="handleSearch(this.value)" placeholder="Search 'solitaire ring', '18kt hoop', 'pendant'..." class="w-full text-sm p-4 pl-12 rounded-m3-full border border-m3-outline/30 focus:outline-none focus:border-m3-primary bg-white">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-m3-outline"></i>
+      </div>
+      <div id="search-results-box" class="space-y-2 max-h-60 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-m3-primary text-m3-onPrimary text-xs pt-16 pb-8 px-6 md:px-12 mt-20 relative z-20">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-gray-700">
+      
+      <div class="space-y-4">
+        <span class="font-serif text-3xl font-bold tracking-[0.2em] text-white">YA-RA</span>
+        <p class="text-gray-400 leading-relaxed text-[11px]">
+          India’s premiere boutique for modern 14kt & 18kt natural diamond fine jewellery. Material Expressive aesthetics matched with high-end editorial luxury.
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <h4 class="font-serif text-base font-bold text-m3-roseGold uppercase tracking-wider">Collections</h4>
+        <ul class="space-y-2 text-gray-300 text-[11px]">
+          <li><a href="#" onclick="switchView('category', 'rings')" class="hover:text-white">Natural Diamond Rings</a></li>
+          <li><a href="#" onclick="switchView('category', 'solitaires')" class="hover:text-white">Solitaire Engagement Rings</a></li>
+          <li><a href="#" onclick="switchView('category', 'earrings')" class="hover:text-white">Everyday Gold Earrings</a></li>
+          <li><a href="#" onclick="switchView('category', 'necklaces')" class="hover:text-white">Pendants & Chains</a></li>
+        </ul>
+      </div>
+
+      <div class="space-y-3">
+        <h4 class="font-serif text-base font-bold text-m3-roseGold uppercase tracking-wider">Customer Experience</h4>
+        <ul class="space-y-2 text-gray-300 text-[11px]">
+          <li><a href="#" onclick="switchView('policies')" class="hover:text-white">SGL & IGI Certificates</a></li>
+          <li><a href="#" onclick="switchView('policies')" class="hover:text-white">BIS Hallmarking (HUID)</a></li>
+          <li><a href="#" onclick="switchView('policies')" class="hover:text-white">15-Day Guaranteed Returns</a></li>
+          <li><a href="#" onclick="switchView('policies')" class="hover:text-white">Lifetime Exchange Program</a></li>
+        </ul>
+      </div>
+
+      <div class="space-y-4">
+        <h4 class="font-serif text-base font-bold text-m3-roseGold uppercase tracking-wider">YA-RA Private Club</h4>
+        <p class="text-gray-400 text-[11px]">Receive early preview invites to new diamond drops.</p>
+        <div class="flex">
+          <input type="email" placeholder="Enter your email" class="bg-gray-800 text-white text-xs p-3 rounded-l-m3-full w-full focus:outline-none pl-4">
+          <button onclick="alert('Subscribed to YA-RA Private Club!')" class="bg-m3-roseGold text-m3-primary font-bold px-5 rounded-r-m3-full uppercase text-[10px] tracking-wider shrink-0">Join</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="max-w-7xl mx-auto pt-6 flex flex-col md:flex-row justify-between items-center text-[11px] text-gray-400 gap-4">
+      <p>© 2026 YA-RA Fine Diamond Jewellery India Pvt. Ltd. All Rights Reserved.</p>
+      <div class="flex items-center space-x-4 text-lg">
+        <i class="fa-brands fa-cc-visa"></i>
+        <i class="fa-brands fa-cc-mastercard"></i>
+        <i class="fa-solid fa-qrcode" title="UPI"></i>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT APP STATE & INTERACTION LOGIC -->
+  <script>
+    const products = [
+      {
+        id: "yr-101",
+        title: "Celestial Diamond Solitaire Ring",
+        category: "rings",
+        price: 64500,
+        oldPrice: 72000,
+        metal: "18K Gold",
+        image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800",
+        badge: "Bestseller",
+        diamondInfo: "0.42ct VVS-EF Natural Diamond"
+      },
+      {
+        id: "yr-102",
+        title: "Aura Petite Diamond Pendant",
+        category: "necklaces",
+        price: 38200,
+        oldPrice: 42000,
+        metal: "Rose Gold",
+        image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800",
+        badge: "New Arrival",
+        diamondInfo: "0.25ct SI-GH Natural Diamonds"
+      },
+      {
+        id: "yr-103",
+        title: "Eternity Stacking Diamond Band",
+        category: "rings",
+        price: 48900,
+        oldPrice: 55000,
+        metal: "18K Gold",
+        image: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&q=80&w=800",
+        badge: "Editorial Pick",
+        diamondInfo: "0.55ct Natural Pavé Diamonds"
+      },
+      {
+        id: "yr-104",
+        title: "Serenade Diamond Hoop Earrings",
+        category: "earrings",
+        price: 82000,
+        oldPrice: 91000,
+        metal: "18K Gold",
+        image: "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&q=80&w=800",
+        badge: "Trending",
+        diamondInfo: "0.80ct VVS Natural Diamonds"
+      },
+      {
+        id: "yr-105",
+        title: "Lumière Natural Tennis Bracelet",
+        category: "bracelets",
+        price: 185000,
+        oldPrice: 205000,
+        metal: "White Gold",
+        image: "https://images.unsplash.com/photo-1611591475155-4282fc289e84?auto=format&fit=crop&q=80&w=800",
+        badge: "High Luxury",
+        diamondInfo: "2.10ct Total Natural Diamond Weight"
+      },
+      {
+        id: "yr-106",
+        title: "Princess Cut Engagement Ring",
+        category: "solitaires",
+        price: 128000,
+        oldPrice: 140000,
+        metal: "18K Gold",
+        image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=800",
+        badge: "IGI Certified",
+        diamondInfo: "0.75ct Princess Cut Natural Solitaire"
+      }
+    ];
+
+    let cart = [
+      { product: products[0], qty: 1, metalSelected: "18KT Yellow Gold", sizeSelected: "14" },
+      { product: products[1], qty: 1, metalSelected: "18KT Rose Gold", sizeSelected: "Standard" }
+    ];
+
+    let currentPDPProduct = products[0];
+
+    window.onload = function() {
+      renderBestsellers();
+      renderCart();
+    };
+
+    function switchView(viewName, filterCategory = null) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) target.classList.remove('hidden');
+
+      if (viewName === 'category') setupCategoryView(filterCategory);
+    }
+
+    function renderBestsellers() {
+      const container = document.getElementById('home-bestsellers-grid');
+      container.innerHTML = products.slice(0, 4).map(p => `
+        <div class="m3-card rounded-m3-2xl p-4 cursor-pointer group flex flex-col justify-between m3-press-effect" onclick="openPDP('${p.id}')">
+          <div>
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-3 relative bg-m3-surfaceVariant">
+              <img src="${p.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${p.title}">
+              <span class="absolute top-3 left-3 bg-white/90 text-m3-primary font-bold text-[10px] uppercase tracking-wider px-3 py-1 rounded-m3-full shadow-sm">${p.badge}</span>
+            </div>
+            <span class="text-[10px] uppercase font-bold text-m3-secondary tracking-widest">${p.metal}</span>
+            <h3 class="font-serif font-semibold text-lg text-m3-primary group-hover:text-m3-secondary transition-colors">${p.title}</h3>
+            <p class="text-xs text-m3-onSurfaceVariant mt-0.5">${p.diamondInfo}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-m3-surfaceVariant flex justify-between items-baseline">
+            <div>
+              <span class="font-bold text-m3-primary text-sm">₹${p.price.toLocaleString('en-IN')}</span>
+              <span class="text-xs text-m3-outline line-through ml-1">₹${p.oldPrice.toLocaleString('en-IN')}</span>
+            </div>
+            <span class="text-xs text-m3-primary font-bold">View →</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function setupCategoryView(cat) {
+      let filtered = products;
+      if (cat && cat !== 'all') {
+        filtered = products.filter(p => p.category === cat);
+        document.getElementById('category-title').innerText = cat.toUpperCase() + " COLLECTION";
+        document.getElementById('category-breadcrumb-name').innerText = cat;
+      } else {
+        document.getElementById('category-title').innerText = "Natural Diamond Fine Jewellery";
+        document.getElementById('category-breadcrumb-name').innerText = "All Jewellery";
+      }
+
+      document.getElementById('product-count').innerText = filtered.length;
+      renderProductGrid(filtered);
+    }
+
+    function renderProductGrid(items) {
+      const grid = document.getElementById('category-product-grid');
+      grid.innerHTML = items.map(p => `
+        <div class="m3-card rounded-m3-2xl p-4 cursor-pointer group flex flex-col justify-between m3-press-effect" onclick="openPDP('${p.id}')">
+          <div>
+            <div class="aspect-square rounded-m3-xl overflow-hidden mb-3 relative bg-m3-surfaceVariant">
+              <img src="${p.image}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${p.title}">
+              <span class="absolute top-3 left-3 bg-m3-primary text-white font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-m3-full shadow-sm">${p.badge}</span>
+            </div>
+            <span class="text-[10px] uppercase font-bold text-m3-secondary tracking-widest">${p.metal}</span>
+            <h3 class="font-serif font-semibold text-lg text-m3-primary group-hover:text-m3-secondary transition-colors">${p.title}</h3>
+            <p class="text-xs text-m3-onSurfaceVariant mt-0.5">${p.diamondInfo}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-m3-surfaceVariant flex justify-between items-center">
+            <div>
+              <span class="font-bold text-m3-primary text-sm">₹${p.price.toLocaleString('en-IN')}</span>
+            </div>
+            <button onclick="event.stopPropagation(); openPDP('${p.id}')" class="bg-m3-primary text-white text-xs px-4 py-2 rounded-m3-full font-bold shadow-sm hover:bg-m3-secondary transition-colors">
+              Explore
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openPDP(productId) {
+      const prod = products.find(p => p.id === productId) || products[0];
+      currentPDPProduct = prod;
+
+      document.getElementById('pdp-title').innerText = prod.title;
+      document.getElementById('pdp-title-crumb').innerText = prod.title;
+      document.getElementById('pdp-subtitle').innerText = `${prod.metal} | Natural Diamonds`;
+      document.getElementById('pdp-price').innerText = `₹${prod.price.toLocaleString('en-IN')}`;
+      document.getElementById('pdp-old-price').innerText = `₹${prod.oldPrice.toLocaleString('en-IN')}`;
+      document.getElementById('pdp-main-image').src = prod.image;
+
+      document.getElementById('pdp-thumbnails').innerHTML = `
+        <img src="${prod.image}" class="w-16 h-16 object-cover rounded-m3-xl border-2 border-m3-primary cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=200" class="w-16 h-16 object-cover rounded-m3-xl border border-m3-surfaceVariant cursor-pointer opacity-70">
+      `;
+
+      switchView('product');
+    }
+
+    function addToCartCurrentPDP() {
+      const existing = cart.find(c => c.product.id === currentPDPProduct.id);
+      if (existing) existing.qty++;
+      else cart.push({ product: currentPDPProduct, qty: 1, metalSelected: "18KT Yellow Gold", sizeSelected: "14" });
+      renderCart();
+      alert(`Added "${currentPDPProduct.title}" to Shopping Bag!`);
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items-container');
+      const checkoutPreview = document.getElementById('checkout-items-preview');
+
+      const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('cart-badge').innerText = totalQty;
+
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="m3-liquid-glass rounded-m3-2xl p-8 text-center text-m3-onSurfaceVariant">Your shopping bag is empty.</div>`;
+        return;
+      }
+
+      let subtotal = 0;
+      container.innerHTML = cart.map((item, index) => {
+        const itemTotal = item.product.price * item.qty;
+        subtotal += itemTotal;
+        return `
+          <div class="m3-liquid-glass rounded-m3-2xl p-5 flex items-center justify-between gap-4 shadow-m3-glass">
+            <div class="flex items-center space-x-4">
+              <img src="${item.product.image}" class="w-20 h-20 object-cover rounded-m3-xl border">
+              <div class="text-xs space-y-1">
+                <h4 class="font-serif font-bold text-base text-m3-primary">${item.product.title}</h4>
+                <p class="text-m3-onSurfaceVariant">${item.metalSelected}</p>
+                <p class="font-bold text-m3-primary">₹${item.product.price.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4 text-xs">
+              <span class="font-bold text-m3-primary">Qty: ${item.qty}</span>
+              <span class="font-bold text-m3-primary">₹${itemTotal.toLocaleString('en-IN')}</span>
+              <button onclick="removeItem(${index})" class="text-red-600"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (checkoutPreview) {
+        checkoutPreview.innerHTML = cart.map(item => `
+          <div class="flex justify-between items-center text-xs border-b border-m3-surfaceVariant pb-2">
+            <span class="font-bold text-m3-primary">${item.product.title} (x${item.qty})</span>
+            <span class="font-bold">₹${(item.product.price * item.qty).toLocaleString('en-IN')}</span>
+          </div>
+        `).join('');
+      }
+
+      const gst = Math.round(subtotal * 0.03);
+      document.getElementById('cart-subtotal').innerText = `₹${subtotal.toLocaleString('en-IN')}`;
+      document.getElementById('cart-gst').innerText = `₹${gst.toLocaleString('en-IN')}`;
+      document.getElementById('cart-grand-total').innerText = `₹${(subtotal + gst).toLocaleString('en-IN')}`;
+    }
+
+    function removeItem(index) {
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function togglePriceBreakdown() {
+      document.getElementById('price-breakdown-box').classList.toggle('hidden');
+    }
+
+    function selectMetalOption(btn) {
+      document.querySelectorAll('.pdp-metal-btn').forEach(b => {
+        b.classList.remove('bg-m3-primary', 'text-white');
+        b.classList.add('bg-white', 'text-m3-primary');
+      });
+      btn.classList.remove('bg-white');
+      btn.classList.add('bg-m3-primary', 'text-white');
+    }
+
+    function checkPincode() {
+      const pin = document.getElementById('pincode-input').value;
+      if (pin.length === 6) document.getElementById('pincode-result').classList.remove('hidden');
+      else alert('Please enter a valid 6-digit Pincode.');
+    }
+
+    function applyFilters() {
+      const selectedMetals = Array.from(document.querySelectorAll('.filter-metal:checked')).map(cb => cb.value);
+      let filtered = products;
+      if (selectedMetals.length > 0) filtered = filtered.filter(p => selectedMetals.includes(p.metal));
+      renderProductGrid(filtered);
+      document.getElementById('product-count').innerText = filtered.length;
+    }
+
+    function resetFilters() {
+      document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(i => i.checked = false);
+      renderProductGrid(products);
+      document.getElementById('product-count').innerText = products.length;
+    }
+
+    function toggleMobileNav() {
+      document.getElementById('mobile-drawer').classList.toggle('hidden');
+    }
+
+    function openSearchModal() {
+      document.getElementById('search-modal').classList.remove('hidden');
+    }
+    function closeSearchModal() {
+      document.getElementById('search-modal').classList.add('hidden');
+    }
+    function handleSearch(query) {
+      const box = document.getElementById('search-results-box');
+      if (!query.trim()) { box.innerHTML = ''; return; }
+      const matches = products.filter(p => p.title.toLowerCase().includes(query.toLowerCase()));
+      box.innerHTML = matches.map(p => `
+        <div onclick="openPDP('${p.id}'); closeSearchModal();" class="p-3 hover:bg-white rounded-m3-xl cursor-pointer flex justify-between text-xs">
+          <span class="font-bold text-m3-primary">${p.title}</span>
+          <span class="font-bold">₹${p.price.toLocaleString('en-IN')}</span>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+1. On the homepage all product cards must swap images when hovered upon. Show maybe 2-3 small bullets like Emori to allow image selection.
+2. Visit DanaRebecca and see pages like sizing guide, diamond information, tips and tricks. Can be accessed at: https://www.danarebeccadesigns.com/pages/master-guide
+3. Test the whole order placement flow again and again. Multiple options, accounts, login to existing accounts to see past orders etc.

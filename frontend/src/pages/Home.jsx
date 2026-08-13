@@ -1,289 +1,278 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import api from "../api/client";
 import ProductCard from "../components/ProductCard";
-import Reveal from "../components/Reveal";
-import { useCategories } from "../context/CategoryContext";
+import usePageTitle from "../utils/usePageTitle";
 
-const MARQUEE = ["Natural & IGI certified", "BIS 916 hallmarked gold", "Free insured shipping",
-    "15-day easy returns", "Lifetime exchange", "Handcrafted in Jaipur"];
+const IMG = {
+    hero: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=900&auto=format&fit=crop",
+    studs: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=600&auto=format&fit=crop",
+    rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop",
+    earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?q=80&w=800&auto=format&fit=crop",
+    necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
+    bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?q=80&w=1000&auto=format&fit=crop",
+    color1: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=700&auto=format&fit=crop",
+    color2: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=500&auto=format&fit=crop",
+};
 
-const FALLBACK_CATS = [
-    { name: "Rings", slug: "rings", image_url: "https://picsum.photos/seed/collection-rings/1200/1500", subcategories: [{}] },
-    { name: "Earrings", slug: "earrings", image_url: "https://picsum.photos/seed/collection-earrings/900/1100", subcategories: [{}, {}] },
-    { name: "Pendants", slug: "pendants", image_url: "https://picsum.photos/seed/collection-pendants/900/1100", subcategories: [{}] },
-    { name: "Bracelets", slug: "bracelets", image_url: "https://picsum.photos/seed/collection-bracelets/900/1100", subcategories: [{}] },
-    { name: "Chains", slug: "chains", image_url: "https://picsum.photos/seed/collection-chains/900/1100", subcategories: [{}] },
-];
-
-const FALLBACK_FEATURED = [
-    { slug: "arka-solitaire-ring", name: "Arka Solitaire Ring", category_name: "Rings", base_price: 84500, mrp: 98000, discount_percent: 14, stock_status: "in_stock", colors: ["yellow", "rose", "white"], primary_image: "https://picsum.photos/seed/arka-solitaire/900/1125", second_image: "https://picsum.photos/seed/arka-solitaire-alt/900/1125" },
-    { slug: "nakshatra-diamond-studs", name: "Nakshatra Diamond Studs", category_name: "Earrings", base_price: 33500, mrp: 39000, discount_percent: 14, stock_status: "in_stock", colors: ["yellow", "white"], primary_image: "https://picsum.photos/seed/nakshatra-studs/900/1125", second_image: "https://picsum.photos/seed/nakshatra-studs-alt/900/1125" },
-    { slug: "jyoti-solitaire-pendant", name: "Jyoti Solitaire Pendant", category_name: "Pendants", base_price: 52600, mrp: 59900, discount_percent: 12, stock_status: "in_stock", colors: ["yellow", "rose", "white"], primary_image: "https://picsum.photos/seed/jyoti-pendant/900/1125", second_image: "https://picsum.photos/seed/jyoti-pendant-alt/900/1125" },
-    { slug: "sarita-tennis-bracelet", name: "Sarita Tennis Bracelet", category_name: "Bracelets", base_price: 129000, mrp: 149000, discount_percent: 13, stock_status: "in_stock", colors: ["white", "yellow"], primary_image: "https://picsum.photos/seed/sarita-tennis/900/1125", second_image: "https://picsum.photos/seed/sarita-tennis-alt/900/1125" },
+const TILES = [
+    { slug: "rings", tag: "14Kt & 18Kt Gold", title: "Solitaire & Eternity Rings", sub: "Engagement Bands & Daily Stackable Rings", img: IMG.rings },
+    { slug: "earrings", tag: "Certified Natural", title: "Diamond Earrings", sub: "Studs, Huggies & Drops", img: IMG.earrings },
+    { slug: "necklaces", tag: null, title: "Necklaces & Pendants", sub: "Solitaire Drops & Fine Chains", img: IMG.necklaces },
+    { slug: "bracelets", tag: "Tennis Collection", title: "Diamond Bracelets & Bangles", sub: "Classic silhouettes in 14Kt & 18Kt Gold", img: IMG.bracelets },
 ];
 
 const FOUR_CS = [
-    ["01", "Cut", "Proportion and symmetry decide a stone's fire. We cut for light return — not carat weight alone."],
-    ["02", "Colour", "We work almost exclusively in F–G, near-colourless: white against gold, never icy or dull."],
-    ["03", "Clarity", "VS by default. Every inclusion is mapped on the IGI certificate that travels with your piece."],
-    ["04", "Carat", "From 0.10 ct accents to 3.00 ct solos. Matched pairs and rare sizes sourced on request."],
+    ["01", "Carat", "Carat Weight", "Measures diamond weight. From subtle daily 0.20 Ct to statement 2.00+ Ct solitaires."],
+    ["02", "Cut", "Cut & Brilliance", "Determines light reflection. We craft Excellent & Ideal cuts for maximal sparkle."],
+    ["03", "Clarity", "Clarity Grade", "Purity rating. Choose between premium VVS or VS clarity natural earth stones."],
+    ["04", "Color", "Colorless Grade", "Ranging from EF (Rare Colorless) to GH (Near Colorless) for optimal value and brilliance."],
 ];
 
-function Hero() {
-    return (
-        <section className="relative overflow-hidden">
-            <div className="pointer-events-none absolute -right-40 -top-40 h-[560px] w-[560px] rounded-full bg-gold/10 blur-3xl" />
-            <div className="mx-auto grid max-w-7xl gap-16 px-5 pb-24 pt-14 md:grid-cols-12 md:pt-20 lg:px-8">
-                <div className="md:col-span-6">
-                    <p className="mask-line eyebrow"><span>Natural diamonds · IGI certified · Handmade in India</span></p>
-                    <h1 className="mt-6 font-display text-6xl leading-[0.98] tracking-tight sm:text-7xl">
-                        <span className="mask-line"><span>Earth-made fire,</span></span>
-                        <span className="mask-line"><span className="italic text-gold-deep" style={{ animationDelay: "130ms" }}>set by hand</span></span>
-                        <span className="mask-line"><span style={{ animationDelay: "260ms" }}>in Jaipur.</span></span>
-                    </h1>
-                    <p className="mt-7 max-w-md text-[15px] leading-relaxed text-ink/70">
-                        YA-RA cuts, certifies and sets natural diamonds into 14 & 18 KT gold — solitaires,
-                        tennis bracelets and heirloom jhumkas, shipped insured anywhere in India.
-                    </p>
-                    <div className="mt-9 flex flex-wrap gap-4">
-                        <Link to="/category/rings" className="btn-gold">Shop the collections</Link>
-                        <a href="#viewing" className="btn-ghost">Book a private viewing</a>
-                    </div>
-                    <ul className="mt-11 flex flex-wrap gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.22em] text-ink/60">
-                        {["IGI certified", "BIS 916 hallmark", "Insured delivery", "Lifetime exchange"].map((t) => (
-                            <li key={t} className="flex items-center gap-2"><span className="h-1 w-1 rotate-45 bg-gold" />{t}</li>
-                        ))}
-                    </ul>
-                </div>
+/* ── Icons ────────────────────────────────────────────── */
+const ArrowIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" y1="12" x2="20" y2="12" /><polyline points="13 5 20 12 13 19" />
+    </svg>
+);
+const GemIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 3h12l4 6-10 12L2 9l4-6z" />
+    </svg>
+);
+const StampIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-4z" />
+        <polyline points="9 12 11 14 15 10" />
+    </svg>
+);
+const RefundIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="1 4 1 10 7 10" />
+        <path d="M3.5 15a9 9 0 1 0 2-9.4L1 10" />
+    </svg>
+);
+const SwapIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="17 3 21 7 17 11" /><line x1="21" y1="7" x2="7" y2="7" />
+        <polyline points="7 21 3 17 7 13" /><line x1="3" y1="17" x2="21" y2="17" />
+    </svg>
+);
 
-                <div className="relative md:col-span-6">
-                    <div className="relative ml-auto max-w-md">
-                        <div className="absolute -inset-3 border border-gold/50" aria-hidden="true" />
-                        <img src="https://picsum.photos/seed/yara-solitaire-hero/900/1150" alt="Solitaire ring on silk"
-                            className="relative aspect-[3/4] w-full animate-breathe object-cover shadow-luxe" />
-                        <div className="absolute -left-12 bottom-10 hidden w-56 border border-gold/40 bg-ivory p-4 shadow-card sm:block">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-gold-deep">Certificate</p>
-                            <p className="mt-1 font-display text-lg">IGI · 48C-2210194</p>
-                            <p className="mt-1 text-xs leading-relaxed text-ink/60">1.02 ct · Round brilliant<br />F colour · VS1 clarity</p>
-                        </div>
-                        <svg className="absolute -right-8 -top-12 h-28 w-28 animate-spin-slow drop-shadow" viewBox="0 0 120 120" aria-hidden="true">
-                            <defs><path id="sealcirc" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" /></defs>
-                            <circle cx="60" cy="60" r="58" fill="#173227" />
-                            <circle cx="60" cy="60" r="30" fill="none" stroke="#c19a4b" strokeWidth="1" />
-                            <text fontSize="9.5" letterSpacing="2.6" fill="#e3cd9b">
-                                <textPath href="#sealcirc">YA-RA · NATURAL DIAMONDS · JAIPUR · EST. 2026 ·</textPath>
-                            </text>
-                            <text x="60" y="67" textAnchor="middle" fontSize="20" fill="#c19a4b">◆</text>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-}
+const CheckIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" className="text-blush shrink-0" fill="currentColor">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 12.5l2.5 2.5L16 9.5" stroke="#2E3A4C" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 
-function Marquee() {
-    const items = [...MARQUEE, ...MARQUEE];
-    return (
-        <div className="overflow-hidden border-y border-gold/30 bg-gold py-3">
-            <div className="flex w-max animate-marquee gap-10">
-                {items.map((t, i) => (
-                    <span key={i} className="flex items-center gap-10 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.3em] text-ink">
-                        {t}<span className="text-ink/50">◆</span>
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function CategoryMosaic() {
-    const { categories } = useCategories();
-    const cats = categories.length ? categories.slice(0, 5) : FALLBACK_CATS;
-    return (
-        <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8">
-            <Reveal>
-                <p className="eyebrow">The collections</p>
-                <div className="mt-3 flex items-end justify-between gap-6">
-                    <h2 className="font-display text-4xl tracking-tight sm:text-5xl">Five ways to wear light</h2>
-                    <div className="gold-rule mb-3 hidden flex-1 md:block" />
-                </div>
-            </Reveal>
-            <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 md:auto-rows-[230px] md:grid-cols-4">
-                {cats.map((c, i) => (
-                    <Reveal key={c.slug} delay={i * 80} className={i === 0 ? "sm:col-span-2 sm:row-span-2" : ""}>
-                        <Link to={`/category/${c.slug}`} className="zoom-hover group relative block h-64 overflow-hidden md:h-full">
-                            <img src={c.image_url || `https://picsum.photos/seed/collection-${c.slug}/900/1100`} alt={c.name}
-                                loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
-                            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-5">
-                                <div>
-                                    <h3 className="font-display text-2xl text-ivory">{c.name}</h3>
-                                    <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-champagne/80">
-                                        {c.subcategories?.length ? `${c.subcategories.length} edits` : "Explore"}
-                                    </p>
-                                </div>
-                                <span className="translate-x-2 text-xl text-gold opacity-0 transition-all duration-500 group-hover:translate-x-0 group-hover:opacity-100">→</span>
-                            </div>
-                        </Link>
-                    </Reveal>
-                ))}
-            </div>
-        </section>
-    );
-}
-
-function Featured() {
-    const [products, setProducts] = useState([]);
-    useEffect(() => {
-        api.get("/products/", { params: { featured: 1 } })
-            .then((r) => setProducts(r.data.results ?? r.data))
-            .catch(() => setProducts(FALLBACK_FEATURED));
-    }, []);
-    const list = products.length ? products.slice(0, 8) : FALLBACK_FEATURED;
-
-    return (
-        <section className="bg-gold-pale">
-            <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8">
-                <Reveal>
-                    <p className="eyebrow">The edit · Monsoon 2026</p>
-                    <div className="mt-3 flex items-end justify-between gap-6">
-                        <h2 className="font-display text-4xl tracking-tight sm:text-5xl">Most requested this season</h2>
-                        <Link to="/category/rings" className="hidden pb-1 text-[11px] uppercase tracking-[0.25em] text-ink/60 transition hover:text-gold-deep md:block">View all →</Link>
-                    </div>
-                </Reveal>
-                <div className="mt-12 grid grid-cols-2 gap-x-5 gap-y-12 lg:grid-cols-4">
-                    {list.map((p, i) => (
-                        <Reveal key={p.id ?? p.slug} delay={(i % 4) * 90}><ProductCard product={p} /></Reveal>
-                    ))}
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function Craft() {
-    return (
-        <section className="bg-pine text-ivory">
-            <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-24 md:grid-cols-2 lg:px-8">
-                <Reveal>
-                    <p className="eyebrow !text-gold-light">The atelier</p>
-                    <h2 className="mt-4 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
-                        Cut, set and hallmarked under one roof.
-                    </h2>
-                    <p className="mt-6 max-w-md text-sm leading-relaxed text-ivory/65">
-                        Most houses outsource. We don't. Our Jaipur atelier rough-sources, cuts and polishes
-                        its own stones, then sets them in BIS-hallmarked gold — so the certificate, the metal
-                        and the maker are always the same story.
-                    </p>
-                    <div className="mt-10 grid grid-cols-3 gap-6">
-                        {[["1,800+", "stones IGI certified"], ["42", "master karigars"], ["6–8 wks", "bespoke lead time"]].map(([n, l]) => (
-                            <div key={l} className="border-l border-gold pl-4">
-                                <p className="font-display text-2xl text-gold-light">{n}</p>
-                                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-ivory/55">{l}</p>
-                            </div>
-                        ))}
-                    </div>
-                </Reveal>
-                <Reveal delay={150}>
-                    <div className="relative ml-auto max-w-md">
-                        <div className="absolute -inset-3 border border-gold/40" aria-hidden="true" />
-                        <img src="https://picsum.photos/seed/yara-atelier-hands/900/1100" alt="Karigar setting a stone"
-                            loading="lazy" className="relative aspect-[4/5] w-full object-cover" />
-                        <img src="https://picsum.photos/seed/yara-atelier-tools/500/620" alt="Setting tools" loading="lazy"
-                            className="absolute -bottom-10 -left-14 hidden w-44 border-4 border-pine object-cover shadow-luxe md:block" />
-                    </div>
-                </Reveal>
-            </div>
-        </section>
-    );
-}
-
-function FourCs() {
-    return (
-        <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8">
-            <Reveal>
-                <p className="eyebrow">Know your stone</p>
-                <h2 className="mt-3 font-display text-4xl tracking-tight sm:text-5xl">The four Cs, honestly explained</h2>
-            </Reveal>
-            <div className="mt-12">
-                {FOUR_CS.map(([n, name, copy], i) => (
-                    <Reveal key={n} delay={i * 60}>
-                        <div className="group grid gap-2 border-t border-ink/15 py-8 transition-colors duration-500 hover:bg-pine md:grid-cols-[100px_240px_1fr] md:items-baseline md:px-6">
-                            <span className="text-[11px] uppercase tracking-[0.3em] text-gold-deep group-hover:text-gold-light">{n}</span>
-                            <h3 className="font-display text-3xl transition-colors group-hover:text-ivory">{name}</h3>
-                            <p className="max-w-xl text-sm leading-relaxed text-ink/65 transition-colors group-hover:text-ivory/70">{copy}</p>
-                        </div>
-                    </Reveal>
-                ))}
-                <div className="border-t border-ink/15" />
-            </div>
-        </section>
-    );
-}
-
-function Testimonials() {
-    return (
-        <section className="bg-parchment">
-            <div className="mx-auto grid max-w-7xl gap-14 px-5 py-24 md:grid-cols-2 lg:px-8">
-                <Reveal>
-                    <span className="font-display text-6xl text-gold">“</span>
-                    <p className="mt-2 max-w-md font-display text-2xl italic leading-relaxed text-ink/85">
-                        The solitaire arrived with the certificate, the hallmark, and a handwritten note.
-                        It felt less like delivery, more like a handover.
-                    </p>
-                    <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-ink/55">Riya M. · Mumbai</p>
-                </Reveal>
-                <Reveal delay={150} className="md:mt-16">
-                    <span className="font-display text-6xl text-gold">“</span>
-                    <p className="mt-2 max-w-md font-display text-2xl italic leading-relaxed text-ink/85">
-                        I asked for my grandmother's jhumka, redrawn. They sent wax impressions first.
-                        Two generations of our family now wear the same pattern.
-                    </p>
-                    <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-ink/55">Ananya K. · Bengaluru</p>
-                </Reveal>
-            </div>
-        </section>
-    );
-}
-
-function Viewing() {
-    return (
-        <section id="viewing" className="relative overflow-hidden bg-ink text-ivory">
-            <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[720px] -translate-x-1/2 rounded-full bg-gold/10 blur-3xl" />
-            <div className="mx-auto max-w-3xl px-5 py-24 text-center lg:px-8">
-                <Reveal>
-                    <p className="eyebrow !text-gold-light">Private viewings</p>
-                    <h2 className="mt-4 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
-                        See it before you say yes.
-                    </h2>
-                    <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-ivory/60">
-                        Book a one-on-one viewing in Mumbai, Delhi, Bengaluru or Jaipur — loose stones under
-                        the loupe, coffee on the house, no obligation.
-                    </p>
-                    <div className="mt-9 flex flex-wrap justify-center gap-4">
-                        <a href="tel:+919820000000" className="btn-gold">Call +91 98200 00000</a>
-                        <a href="#" className="btn-ghost-light">WhatsApp the concierge</a>
-                    </div>
-                    <p className="mt-6 text-[10px] uppercase tracking-[0.3em] text-ivory/40">Mon–Sat · 10:00–19:00 IST</p>
-                </Reveal>
-            </div>
-        </section>
-    );
-}
+const TRUST = [
+    [GemIcon, "100% Natural Diamonds", "Earth-mined certified diamonds."],
+    [StampIcon, "14Kt & 18Kt Gold", "BIS Hallmarked solid gold."],
+    [RefundIcon, "15-Day Money Back", "100% full refund guarantee."],
+    [SwapIcon, "Lifetime Buyback", "Exchange or upgrade anytime."],
+];
 
 export default function Home() {
+    const [products, setProducts] = useState([]);
+    usePageTitle();
+
+    useEffect(() => {
+        (async () => {
+            for (const path of ["/products/", "/catalog/products/"]) {
+                try {
+                    const { data } = await api.get(path);
+                    const list = data?.results ?? data;
+                    if (Array.isArray(list) && list.length) { setProducts(list.slice(0, 4)); return; }
+                } catch { /* next */ }
+            }
+        })();
+    }, []);
+
     return (
-        <>
-            <Hero />
-            <Marquee />
-            <CategoryMosaic />
-            <Featured />
-            <Craft />
-            <FourCs />
-            <Testimonials />
-            <Viewing />
-        </>
+        <div>
+            {/* ── HERO (compact · ~70% height) ─────────────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 pt-7 pb-8">
+                <div className="grid lg:grid-cols-[1.05fr_0.95fr_0.62fr] gap-8 items-center">
+                    {/* Left — copy */}
+                    <div className="pr-2">
+                        <span className="pill-badge">
+                            <span className="w-2 h-2 rounded-full bg-blush inline-block" />
+                            Fine Diamond Essentials 2026
+                        </span>
+                        <h1 className="font-serif text-ink text-[40px] md:text-[54px] leading-[1.05] mt-4">
+                            Designed For<br />Every Day.<br />Crafted Forever.
+                        </h1>
+                        <p className="text-ink/60 text-sm leading-relaxed max-w-md mt-4">
+                            Handcrafted with certified 100% natural earth-mined diamonds set in 14Kt and 18Kt
+                            solid gold. Fashionable, effortless fine jewellery designed to be worn and loved daily.
+                        </p>
+                        <div className="flex flex-wrap gap-4 mt-6">
+                            <Link to="/category/rings" className="btn-solid">
+                                Explore Collection <ArrowIcon />
+                            </Link>
+                            <Link to="/category/rings" className="btn-outline">Solitaire Bands</Link>
+                        </div>
+                    </div>
+
+                    {/* Centre — main image card */}
+                    <div className="relative rounded-3xl overflow-hidden shadow-hero">
+                        <img src={IMG.hero} alt="Aura Solitaire Diamond Ring" className="w-full h-[300px] md:h-[360px] object-cover" />
+                        <div className="absolute left-4 right-4 bottom-4 rounded-xl bg-white/60 backdrop-blur-md px-5 py-3">
+                            <p className="micro-label text-gold">18Kt Solid Yellow Gold</p>
+                            <p className="font-serif text-ink text-lg mt-0.5">Aura Solitaire Diamond Ring</p>
+                        </div>
+                    </div>
+
+                    {/* Right — stacked cards */}
+                    <div className="space-y-4">
+                        <div className="relative rounded-2xl overflow-hidden shadow-card">
+                            <img src={IMG.studs} alt="14Kt White Gold Halo Studs" className="w-full h-40 object-cover" />
+                            <p className="absolute left-3 right-3 bottom-3 rounded-md bg-ink/90 text-white text-center font-serif text-sm py-2">
+                                14Kt White Gold Halo Studs
+                            </p>
+                        </div>
+
+                        <div className="bg-ink rounded-2xl p-5 shadow-card">
+                            <span className="w-9 h-9 rounded-full bg-white/10 text-blush flex items-center justify-center">
+                                <GemIcon />
+                            </span>
+                            <p className="font-serif font-semibold text-blush text-lg mt-3">IGI &amp; GIA Certified</p>
+                            <p className="text-white/70 text-xs leading-relaxed mt-1.5">
+                                Every diamond verified for 100% earth-mined origin.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── SECTION 3 · TRUST ROW (white cards) ────────── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-10">
+                    {TRUST.map(([Icon, t, s]) => (
+                        <div key={t} className="bg-white rounded-2xl px-5 py-6 shadow-card text-center">
+                            <span className="w-9 h-9 mx-auto rounded-full bg-ink text-blush flex items-center justify-center">
+                                <Icon />
+                            </span>
+                            <p className="font-serif text-lg text-ink mt-3 mb-1">{t}</p>
+                            <p className="text-xs text-ink/55">{s}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ── SECTION 4 · SHOP BY CATEGORY (single row) ────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <h2 className="text-4xl mb-5">Shop By Category</h2>
+                <div className="grid grid-cols-4 gap-4 lg:gap-6">
+                    {TILES.map((c) => (
+                        <Link key={c.slug} to={`/category/${c.slug}`} className="group block">
+                            <div className="bg-cream aspect-[15/16] mb-3 overflow-hidden rounded-2xl">
+                                <img src={c.img} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            </div>
+                            {c.tag && <p className="micro-label text-gold-dark mb-1">{c.tag}</p>}
+                            <h3 className="font-serif text-base lg:text-lg leading-snug">{c.title}</h3>
+                            <p className="text-[11px] lg:text-xs text-ink/55 mt-1">{c.sub}</p>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+            {/* ── SECTION 5 · COLOR STONE (dark panel) ─────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <div className="bg-ink rounded-3xl px-8 lg:px-14 py-12 grid lg:grid-cols-2 gap-10 items-center shadow-card">
+                    {/* Left — copy */}
+                    <div>
+                        <span className="inline-block rounded-full bg-blush/20 text-blush uppercase tracking-[0.22em] text-[10px] font-semibold px-5 py-2.5">
+                            Precious Color Accents
+                        </span>
+                        <h2 className="font-serif text-white text-4xl md:text-5xl leading-tight mt-6">
+                            Color Stone Fine Jewellery
+                        </h2>
+                        <p className="text-white/70 text-sm leading-relaxed max-w-md mt-5">
+                            Handpicked precious color stone accents paired with earth-mined natural diamonds.
+                            Set in hallmarked 18Kt solid yellow and rose gold settings.
+                        </p>
+                        <ul className="mt-6 space-y-3">
+                            <li className="flex items-center gap-3 text-sm text-white/85">
+                                <CheckIcon />
+                                Ruby-Red &amp; Emerald-Green Color Stone Accents
+                            </li>
+                            <li className="flex items-center gap-3 text-sm text-white/85">
+                                <CheckIcon />
+                                Set in 14Kt and 18Kt Solid Gold Settings
+                            </li>
+                        </ul>
+                        <Link
+                            to="/category/color-stone"
+                            className="inline-flex items-center gap-3 bg-white text-ink uppercase tracking-[0.18em] text-[11px] font-medium px-8 py-4 rounded-md hover:bg-blush transition-colors mt-8"
+                        >
+                            Explore Color Stone Edit <ArrowIcon />
+                        </Link>
+                    </div>
+
+                    {/* Right — composition */}
+                    <div className="grid grid-cols-[1.15fr_0.85fr] gap-5 items-start">
+                        <img
+                            src={IMG.color1}
+                            alt="Color stone pendant on gold chain"
+                            className="rounded-2xl w-full h-[360px] object-cover -rotate-1 shadow-hero"
+                        />
+                        <div className="space-y-5">
+                            <div className="bg-white rounded-2xl p-2.5 rotate-1 shadow-hero">
+                                <img src={IMG.color2} alt="Pink sapphire halo ring" className="rounded-xl w-full h-40 object-cover" />
+                            </div>
+                            <div className="bg-white/10 rounded-xl px-5 py-5">
+                                <p className="font-serif font-semibold text-blush text-lg">Custom Color Settings</p>
+                                <p className="text-white/75 text-sm leading-relaxed mt-1.5">
+                                    Choose between Ruby, Sapphire &amp; Emerald Tones
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── MOST LOVED ───────────────────────────────────── */}
+            <section className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                <div className="flex items-end justify-between mb-5">
+                    <div>
+                        <p className="eyebrow mb-2">Our best sellers</p>
+                        <h2 className="text-4xl">Most Loved Designs</h2>
+                    </div>
+                    <Link
+                        to="/category/rings"
+                        className="text-xs font-medium uppercase tracking-[0.18em] text-ink border-b border-ink/50 pb-1.5 hover:text-gold-dark hover:border-gold-dark transition-colors"
+                    >
+                        View All Products →
+                    </Link>
+                </div>
+                {products.length ? (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                        {products.map((p) => <ProductCard key={p.id ?? p.slug} product={p} />)}
+                    </div>
+                ) : (
+                    <p className="text-sm text-ink/55">Loading curated pieces…</p>
+                )}
+            </section>
+
+            {/* ── SECTION 7 · 4Cs EDUCATION ────────────────────── */}
+            <section className="bg-cream border-t border-line">
+                <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-8">
+                    <p className="eyebrow mb-2">Natural Diamond Education</p>
+                    <h2 className="text-4xl md:text-5xl mb-3">Understand Your Diamond (The 4Cs)</h2>
+                    <p className="text-base text-ink/60 mb-8">
+                        Every YA-RA® diamond is certified by renowned third party laboratories like SGL &amp; IGI so you purchase with absolute trust.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+                        {FOUR_CS.map(([n, t, h, b]) => (
+                            <div key={n} className="border-t border-ink pt-5">
+                                <p className="font-serif italic text-3xl text-ink mb-2">{n}. {t}</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-dark mb-2">{h}</p>
+                                <p className="text-sm leading-relaxed text-ink/65">{b}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        </div>
     );
 }

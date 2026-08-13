@@ -62,7 +62,7 @@ class OrderCreateSerializer(serializers.Serializer):
                 variant = ProductVariant.objects.select_related("product").get(pk=item["variant"])
             except ProductVariant.DoesNotExist:
                 raise serializers.ValidationError("A selected item is no longer available.")
-            if variant.stock_quantity < item["quantity"]:
+            if variant.stock < item["quantity"]:
                 raise serializers.ValidationError(f"Insufficient stock for {variant.product.name}.")
             resolved.append({"variant": variant, "quantity": item["quantity"]})
         return resolved
@@ -78,8 +78,8 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal = Decimal("0")
             for item in validated_data["items"]:
                 variant = ProductVariant.objects.select_for_update().get(pk=item["variant"].pk)
-                variant.stock_quantity = max(0, variant.stock_quantity - item["quantity"])
-                variant.save(update_fields=["stock_quantity"])
+                variant.stock = max(0, variant.stock - item["quantity"])
+                variant.save(update_fields=["stock"])
                 line_total = variant.price * item["quantity"]
                 subtotal += line_total
                 OrderItem.objects.create(
