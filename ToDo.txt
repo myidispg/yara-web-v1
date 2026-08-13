@@ -12,3 +12,15 @@
 10. Making Charges can be in per gram basis instead of percentage. 
 
 11. MTO process, it automatic creates a product instance and sets status to sold. What I need is that it creates an order to fulfill. when we get the item made, we will enter into a control panel. So, that's how this will go. That item get's assigned to the order, and get's sold to the user in that order number
+
+Features suggested by Qwen:
+OTP verification (deferred)
+Google Sign-in (deferred)
+Email notifications (order confirmation, shipping updates)
+Payment gateway integration (currently mock)
+Admin dashboard for inventory management
+Product search functionality
+Wishlist/Save for later feature
+Product reviews and ratings
+Shipping cost calculation (currently always free)
+Tax calculation beyond GST percentage
