@@ -1,9 +1,11 @@
+import secrets
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
-from catalog.models import ProductVariant
+from catalog.models import Product, ProductInstance, RateCard
 
 from .models import Address, Order, OrderItem
 
@@ -13,21 +15,19 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = ["id", "label", "full_name", "phone", "line1", "line2",
                   "city", "state", "pincode", "is_default"]
-        
-    def create(self, validated_data):
-        # Ensure the user is passed in (handled by perform_create in the ViewSet)
-        return super().create(validated_data)
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_slug = serializers.SerializerMethodField()
+    item_code = serializers.CharField(source="instance.item_code", read_only=True)
+    is_mto = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ["product_name", "product_slug", "variant_label",
+        fields = ["product_name", "item_code", "variant_label", "is_mto",
                   "quantity", "unit_price", "line_total"]
 
-    def get_product_slug(self, obj):
-        return obj.product.slug if obj.product else None
+    def get_is_mto(self, obj):
+        return obj.instance.item_code.startswith("MTO-") if obj.instance else False
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -43,7 +43,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class _ItemInput(serializers.Serializer):
-    variant = serializers.IntegerField()
+    design = serializers.IntegerField()
+    karat = serializers.ChoiceField(choices=[("14Kt", "14Kt"), ("18Kt", "18Kt")])
+    gold_color = serializers.ChoiceField(choices=[("Yellow", "Yellow"), ("Rose", "Rose"), ("White", "White")])
+    ring_size = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     quantity = serializers.IntegerField(min_value=1, max_value=10)
 
 
@@ -62,12 +65,22 @@ class OrderCreateSerializer(serializers.Serializer):
         resolved = []
         for item in items:
             try:
-                variant = ProductVariant.objects.select_related("product").get(pk=item["variant"])
-            except ProductVariant.DoesNotExist:
-                raise serializers.ValidationError("A selected item is no longer available.")
-            if variant.stock < item["quantity"]:
-                raise serializers.ValidationError(f"Insufficient stock for {variant.product.name}.")
-            resolved.append({"variant": variant, "quantity": item["quantity"]})
+                design = Product.objects.get(pk=item["design"])
+            except Product.DoesNotExist:
+                raise serializers.ValidationError("A selected design is no longer available.")
+            
+            karat = item["karat"]
+            gold_color = item["gold_color"]
+            ring_size = item.get("ring_size") or None
+            quantity = item["quantity"]
+
+            resolved.append({
+                "design": design,
+                "karat": karat,
+                "gold_color": gold_color,
+                "ring_size": ring_size,
+                "quantity": quantity,
+            })
         return resolved
 
     def create(self, validated_data):
@@ -79,26 +92,81 @@ class OrderCreateSerializer(serializers.Serializer):
                 payment_method=validated_data["payment_method"],
             )
             subtotal = Decimal("0")
+            
             for item in validated_data["items"]:
-                variant = ProductVariant.objects.select_for_update().get(pk=item["variant"].pk)
-                variant.stock = max(0, variant.stock - item["quantity"])
-                variant.save(update_fields=["stock"])
-                line_total = variant.price * item["quantity"]
-                subtotal += line_total
-                OrderItem.objects.create(
-                    order=order, product=variant.product, variant=variant,
-                    product_name=variant.product.name, variant_label=variant.label,
-                    quantity=item["quantity"], unit_price=variant.price, line_total=line_total,
+                design = item["design"]
+                karat = item["karat"]
+                gold_color = item["gold_color"]
+                ring_size = item["ring_size"]
+                quantity = item["quantity"]
+
+                # 1. Try to allocate existing in-stock instances
+                qs = ProductInstance.objects.select_for_update().filter(
+                    design=design, karat=karat, gold_color=gold_color,
+                    ring_size=ring_size, status='in_stock'
                 )
+                allocated = list(qs[:quantity])
+                to_fabricate = quantity - len(allocated)
+
+                # Process allocated instances
+                for instance in allocated:
+                    instance.status = 'sold'
+                    instance.sold_to_user = user
+                    instance.sold_in_order = order
+                    instance.sold_at = timezone.now()
+                    instance.save()
+
+                    unit_price = instance.price or instance.calculated_price
+                    subtotal += unit_price
+                    OrderItem.objects.create(
+                        order=order,
+                        instance=instance,
+                        product_name=design.name,
+                        variant_label=f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else ""),
+                        quantity=1,
+                        unit_price=unit_price,
+                        line_total=unit_price,
+                    )
+
+                # 2. Fabricate MTO (Made-to-Order) instances for the rest
+                for _ in range(to_fabricate):
+                    net_weight = design.calculate_net_weight(karat, ring_size)
+                    dia_weight = design.total_diamond_weight
+                    mto_code = f"MTO-{design.design_code}-{karat[:2]}{gold_color[0]}-{ring_size or 'OS'}-{secrets.token_hex(2).upper()}"
+                    
+                    new_instance = ProductInstance.objects.create(
+                        item_code=mto_code,
+                        design=design,
+                        karat=karat,
+                        gold_color=gold_color,
+                        ring_size=ring_size,
+                        actual_net_weight=net_weight,
+                        actual_diamond_weight=dia_weight,
+                        actual_color_stone_weight=design.color_stone_weight,
+                        status='sold',
+                        sold_to_user=user,
+                        sold_in_order=order,
+                        sold_at=timezone.now(),
+                    )
+                    unit_price = new_instance.calculated_price
+                    new_instance.price = unit_price
+                    new_instance.save(update_fields=["price"])
+                    subtotal += unit_price
+                    OrderItem.objects.create(
+                        order=order,
+                        instance=new_instance,
+                        product_name=design.name,
+                        variant_label=f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else "") + " (Made to Order)",
+                        quantity=1,
+                        unit_price=unit_price,
+                        line_total=unit_price,
+                    )
+
             order.subtotal = subtotal
-            order.shipping_fee = Decimal("0.00")   # free insured shipping starter policy
+            order.shipping_fee = Decimal("0.00")
             order.total = subtotal
             order.save()
         return order
 
     def to_representation(self, instance):
-        """
-        After creating the order, use the read serializer 
-        to properly format the Address and Items for the response.
-        """
         return OrderSerializer(instance, context=self.context).data
