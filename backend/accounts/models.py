@@ -1,15 +1,15 @@
 import re
-
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from django.contrib.auth.models import BaseUserManager
+def validate_indian_phone(value):
+    if not re.fullmatch(r"[6-9]\d{9}", value or ""):
+        raise ValidationError("Enter a valid 10-digit Indian mobile number.")
 
 class CustomUserManager(BaseUserManager):
     """
-    Custom manager for User model where email is the unique identifier
-    instead of username.
+    Custom manager for User model where email is the unique identifier.
     """
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -31,21 +31,18 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-
-def validate_indian_phone(value):
-    if not re.fullmatch(r"[6-9]\d{9}", value or ""):
-        raise ValidationError("Enter a valid 10-digit Indian mobile number.")
-
-
 class User(AbstractUser):
-    """Login is possible with email OR phone; phone is mandatory."""
-
+    # Remove the default username field
     username = None
+    
+    # Mandatory fields
     email = models.EmailField("email address", unique=True)
     phone = models.CharField(max_length=10, unique=True, validators=[validate_indian_phone])
+    first_name = models.CharField(max_length=150) # Removed blank=True to make it mandatory
+    last_name = models.CharField(max_length=150)  # Removed blank=True to make it mandatory
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["phone"]
+    REQUIRED_FIELDS = ["phone", "first_name", "last_name"]
 
     objects = CustomUserManager() 
 
