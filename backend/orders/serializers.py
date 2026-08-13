@@ -13,7 +13,10 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = ["id", "label", "full_name", "phone", "line1", "line2",
                   "city", "state", "pincode", "is_default"]
-
+        
+    def create(self, validated_data):
+        # Ensure the user is passed in (handled by perform_create in the ViewSet)
+        return super().create(validated_data)
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_slug = serializers.SerializerMethodField()
@@ -92,3 +95,10 @@ class OrderCreateSerializer(serializers.Serializer):
             order.total = subtotal
             order.save()
         return order
+
+    def to_representation(self, instance):
+        """
+        After creating the order, use the read serializer 
+        to properly format the Address and Items for the response.
+        """
+        return OrderSerializer(instance, context=self.context).data
