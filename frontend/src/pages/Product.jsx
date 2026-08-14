@@ -16,6 +16,24 @@ const SWATCH = {
 };
 const RING_SIZES = ["8", "10", "12", "14", "16", "18", "20"];
 
+const ChevronIcon = ({ open }) => (
+    <svg
+        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className={`transition-transform ${open ? "rotate-180" : ""}`}
+    >
+        <polyline points="6 9 12 15 18 9" />
+    </svg>
+);
+
+const BreakRow = ({ label, value }) =>
+    value == null ? null : (
+        <div className="flex items-center justify-between text-sm">
+            <span className="text-ink/60">{label}</span>
+            <span className="font-medium text-ink">{inr(value)}</span>
+        </div>
+    );
+
 export default function ProductPage() {
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -28,6 +46,7 @@ export default function ProductPage() {
     const [size, setSize] = useState(null);
     const [showAllMedia, setShowAllMedia] = useState(false);
     const [added, setAdded] = useState(false);
+    const [showBreakdown, setShowBreakdown] = useState(false);
     const carouselRef = useRef(null);
 
     usePageTitle(product?.name);
@@ -55,40 +74,82 @@ export default function ProductPage() {
 
     if (!product) return <p className="text-center text-sm text-ink/50 py-24">Loading design…</p>;
 
-    /* ── Physical stock ── */
+    /* ── Media & Options ── */
     const media = product.media ?? [];
     const desktopMedia = showAllMedia ? media : media.slice(0, 6);
-    const instances = (product.instances ?? []).filter((i) => i.status === "in_stock");
-    const cheapest = instances.length
-        ? instances.reduce((a, b) => (Number(a.price) <= Number(b.price) ? a : b))
-        : null;
+    const instances = product.instances ?? []; // Don't filter! We need to check all instances.
 
-    const presentP = [...new Set(instances.map((i) => i.karat))];
-    const purities = [...PURITY_ORDER.filter((p) => presentP.includes(p)), ...presentP.filter((p) => !PURITY_ORDER.includes(p))];
-    const activePurity = purities.includes(purity) ? purity : (cheapest?.karat ?? purities[0]);
+    const isRing = product.category_name?.toLowerCase().includes("ring") || product.category_name?.toLowerCase().includes("solitaire");
 
-    const presentC = [...new Set(instances.filter((i) => i.karat === activePurity).map((i) => i.gold_color))];
-    const colors = [...COLOR_ORDER.filter((c) => presentC.includes(c)), ...presentC.filter((c) => !COLOR_ORDER.includes(c))];
-    const activeColor = colors.includes(color) ? color : (cheapest?.gold_color ?? colors[0]);
+    // Hardcode all available options so they ALWAYS show
+    const KARATS = ["14Kt", "18Kt"];
+    const COLORS = ["Yellow", "Rose", "White"];
+    const SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
 
-    const isRing = instances.some((i) => i.ring_size);
-    const availableSizes = RING_SIZES.filter((s) =>
-        instances.some((i) => i.karat === activePurity && i.gold_color === activeColor && i.ring_size === s)
-    );
-    const activeSize = RING_SIZES.includes(size)
-        ? size
-        : (availableSizes.includes(cheapest?.ring_size) ? cheapest.ring_size : availableSizes[0] ?? "12");
+    const activePurity = KARATS.includes(purity) ? purity : KARATS[1]; // Default 18Kt
+    const activeColor = COLORS.includes(color) ? color : COLORS[0]; // Default Yellow
+    const activeSize = isRing ? (SIZES.includes(size) ? size : SIZES[3]) : null; // Default 12
 
+    // Find if a physical piece exists for this exact combination
     const activeInstance = instances.find((i) =>
         i.karat === activePurity && i.gold_color === activeColor && (!isRing || i.ring_size === activeSize)
     );
 
-    const price = activeInstance ? Number(activeInstance.price) : Number(product.base_price);
+    const isInStock = activeInstance && activeInstance.status === "in_stock";
+
+    // ── Price & Breakdown Calculation ──
+    let price, breakdown, netWeight, diaWeight;
+
+    if (activeInstance) {
+        // Physical piece exists (either in stock or sold)
+        price = Number(activeInstance.price || activeInstance.calculated_price);
+        breakdown = {
+            gold_value: Number(activeInstance.gold_value),
+            diamond_value: Number(activeInstance.diamond_value),
+            making_charges: Number(activeInstance.making_charges),
+            gst_amount: Number(activeInstance.gst_amount),
+        };
+        netWeight = Number(activeInstance.actual_net_weight).toFixed(3);
+        diaWeight = Number(activeInstance.actual_diamond_weight).toFixed(2);
+    } else {
+        // Made to Order: Calculate price using the live RateCard
+        const rc = product.rate_card;
+        if (rc) {
+            let baseWeight = Number(product.base_net_weight_14kt);
+            if (isRing && activeSize) {
+                const sizeDiff = Number(activeSize) - 12;
+                const steps = Math.floor(sizeDiff / 2);
+                baseWeight = baseWeight * Math.pow(1.03, steps);
+            }
+            if (activePurity === "18Kt") baseWeight *= 1.20;
+
+            const goldRate = activePurity === "18Kt" ? rc.gold_rate_18kt : rc.gold_rate_14kt;
+            const goldValue = baseWeight * goldRate;
+            const diaValue = Number(product.total_diamond_weight) * rc.diamond_rate_per_carat;
+            const making = (goldValue + diaValue) * (rc.making_charges_percentage / 100);
+            const gst = (goldValue + diaValue + making) * (rc.gst_percentage / 100);
+
+            price = Math.round(goldValue + diaValue + making + gst);
+            breakdown = {
+                gold_value: Math.round(goldValue),
+                diamond_value: Math.round(diaValue),
+                making_charges: Math.round(making),
+                gst_amount: Math.round(gst),
+            };
+            netWeight = baseWeight.toFixed(3);
+            diaWeight = Number(product.total_diamond_weight).toFixed(2);
+        } else {
+            price = Number(product.base_price);
+            breakdown = {};
+            netWeight = Number(product.base_net_weight_14kt).toFixed(3);
+            diaWeight = Number(product.total_diamond_weight).toFixed(2);
+        }
+    }
 
     const selection = {
         karat: activePurity,
         gold_color: activeColor,
-        ring_size: isRing ? activeSize : null,
+        ring_size: activeSize,
         price,
     };
 
@@ -163,57 +224,52 @@ export default function ProductPage() {
 
                 {/* ── Details — right ── */}
                 <div className="px-8 py-10 lg:py-12 lg:pl-10 xl:pr-20">
-                    <p className="eyebrow">{product.diamond_color}·{product.diamond_clarity} Natural Diamond</p>
                     <h1 className="font-serif text-4xl md:text-5xl mt-3">{product.name}</h1>
                     <p className="text-xs uppercase tracking-[0.14em] text-ink/50 mt-2">Design Code: {product.design_code}</p>
                     <p className="text-sm text-ink/60 leading-relaxed mt-4">{product.description}</p>
 
                     {/* Purity */}
-                    {purities.length > 0 && (
-                        <div className="mt-8">
-                            <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Purity:</p>
-                            <div className="flex flex-wrap gap-3">
-                                {purities.map((p) => (
-                                    <button key={p} onClick={() => { setPurity(p); setSize(null); }}
-                                        className={`text-xs font-medium px-5 py-2.5 rounded-full transition-colors ${p === activePurity ? "bg-ink text-white" : "bg-cream text-ink hover:bg-ink hover:text-white"}`}>
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="mt-8">
+                        <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Purity:</p>
+                        <div className="flex flex-wrap gap-3">
+                            {KARATS.map((p) => (
+                                <button key={p} onClick={() => { setPurity(p); setSize(null); }}
+                                    className={`text-xs font-medium px-5 py-2.5 rounded-full transition-colors ${p === activePurity ? "bg-ink text-white" : "bg-cream text-ink hover:bg-ink hover:text-white"}`}>
+                                    {p}
+                                </button>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
                     {/* Color */}
-                    {colors.length > 0 && (
-                        <div className="mt-6">
-                            <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Colour:</p>
-                            <div className="flex flex-wrap gap-3">
-                                {colors.map((c) => (
-                                    <button key={c} onClick={() => { setColor(c); setSize(null); }}
-                                        className={`flex items-center gap-2.5 text-xs font-medium px-4 py-2.5 rounded-full border transition-colors ${c === activeColor ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
-                                        <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: SWATCH[c] ?? "#ccc" }} />
-                                        {c} Gold
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="mt-6">
+                        <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Colour:</p>
+                        <div className="flex flex-wrap gap-3">
+                            {COLORS.map((c) => (
+                                <button key={c} onClick={() => { setColor(c); setSize(null); }}
+                                    className={`flex items-center gap-2.5 text-xs font-medium px-4 py-2.5 rounded-full border transition-colors ${c === activeColor ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+                                    <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: SWATCH[c] ?? "#ccc" }} />
+                                    {c} Gold
+                                </button>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
-                    {/* Ring size — physical availability */}
+                    {/* Ring size — ALL sizes shown */}
                     {isRing && (
                         <div className="mt-6">
                             <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Ring Size:</p>
                             <div className="flex flex-wrap gap-3">
-                                {RING_SIZES.map((s) => {
-                                    const has = availableSizes.includes(s);
+                                {SIZES.map((s) => {
+                                    const inst = instances.find(i => i.karat === activePurity && i.gold_color === activeColor && i.ring_size === s);
+                                    const hasStock = inst && inst.status === "in_stock";
                                     return (
                                         <button key={s} onClick={() => setSize(s)}
                                             className={`w-24 py-3 rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${s === activeSize ? "border-ink bg-ink text-white"
-                                                : has ? "border-line bg-white text-ink hover:border-ink/40"
-                                                    : "border-line bg-cream/50 text-ink/60 hover:border-ink/40"}`}>
+                                                : "border-line bg-white text-ink hover:border-ink/40"}`}>
                                             <span className="text-sm font-semibold">{s}</span>
-                                            <span className={`text-[9px] uppercase tracking-[0.08em] font-medium ${s === activeSize ? "text-white/80" : has ? "text-[#3E5C4B]" : "text-gold-dark"}`}>
-                                                {has ? "In Stock" : "Made to Order"}
+                                            <span className={`text-[9px] uppercase tracking-[0.08em] font-medium ${s === activeSize ? "text-white/80" : hasStock ? "text-[#3E5C4B]" : "text-gold-dark"}`}>
+                                                {hasStock ? "In Stock" : "Made to Order"}
                                             </span>
                                         </button>
                                     );
@@ -227,7 +283,33 @@ export default function ProductPage() {
                     <div className="flex flex-wrap items-baseline gap-3 mt-8">
                         <span className="text-3xl font-semibold text-ink">{inr(price)}</span>
                     </div>
-                    <p className="text-xs text-ink/50 mt-2">Inclusive of all taxes. Free insured delivery in India.</p>
+                    <p className="text-xs text-ink/50 mt-2">Inclusive of all taxes.</p>
+                    {!isInStock && (
+                        <p className="text-[11px] text-gold-dark font-semibold mt-2">Made to Order — Ships in 10-12 days.</p>
+                    )}
+
+                    {/* Price Breakdown */}
+                    <div className="mt-4 rounded-xl border border-line bg-white overflow-hidden">
+                        <button
+                            onClick={() => setShowBreakdown(!showBreakdown)}
+                            className="w-full flex items-center justify-between px-5 py-4 text-xs uppercase tracking-[0.16em] font-semibold hover:text-gold-dark transition-colors"
+                        >
+                            View Price Breakdown
+                            <ChevronIcon open={showBreakdown} />
+                        </button>
+                        {showBreakdown && (
+                            <div className="px-5 pb-5 pt-4 border-t border-line space-y-2.5">
+                                <BreakRow label={`Gold (${activePurity}, ${netWeight}g)`} value={breakdown.gold_value} />
+                                <BreakRow label={`Natural Diamond (${diaWeight} Ct)`} value={breakdown.diamond_value} />
+                                <BreakRow label="Making Charges" value={breakdown.making_charges} />
+                                <BreakRow label={`GST (${product.rate_card?.gst_percentage || 3}%)`} value={breakdown.gst_amount} />
+                                <div className="flex items-center justify-between text-sm border-t border-line pt-2.5">
+                                    <span className="font-semibold text-ink">Total</span>
+                                    <span className="font-semibold text-ink">{inr(price)}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Specification card */}
                     <div className="mt-4 rounded-xl border border-line bg-white px-5 py-4">
@@ -256,10 +338,10 @@ export default function ProductPage() {
 
                     {/* CTAs */}
                     <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                        <button onClick={handleAdd} disabled={!activeInstance} className="btn-solid flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <button onClick={handleAdd} className="btn-solid flex-1">
                             {added ? "Added ✓" : "Add To Shopping Bag"}
                         </button>
-                        <button onClick={handleBuyNow} disabled={!activeInstance} className="btn-outline flex-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <button onClick={handleBuyNow} className="btn-outline flex-1">
                             Buy Now (Checkout Now)
                         </button>
                     </div>
