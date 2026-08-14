@@ -1,40 +1,53 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
+  // Next.js uses process.env.NEXT_PUBLIC_ instead of import.meta.env.VITE_
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
 });
 
+// Attach JWT token to every request (only on the client side)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("access");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-let refreshing = null;
-
+// Handle token refresh and 401 redirects (only on the client side)
 api.interceptors.response.use(
   (res) => res,
-  async (error) => {
-    const original = error.config || {};
-    const isAuthCall = original.url?.includes("/auth/login") || original.url?.includes("/auth/register");
-    if (error.response?.status === 401 && !original._retry && !isAuthCall && localStorage.getItem("refresh")) {
+  async (err) => {
+    const original = err.config;
+    
+    if (
+      typeof window !== "undefined" &&
+      err.response?.status === 401 &&
+      !original._retry &&
+      !original.url.includes("/auth/login/") &&
+      !original.url.includes("/auth/refresh/")
+    ) {
       original._retry = true;
       try {
-        refreshing = refreshing || api.post("/auth/refresh/", { refresh: localStorage.getItem("refresh") });
-        const { data } = await refreshing;
-        refreshing = null;
-        localStorage.setItem("access", data.access);
-        if (data.refresh) localStorage.setItem("refresh", data.refresh);
-        original.headers.Authorization = `Bearer ${data.access}`;
-        return api(original);
+        const refresh = localStorage.getItem("refresh");
+        if (refresh) {
+          const { data } = await axios.post(
+            `${api.defaults.baseURL}/auth/refresh/`,
+            { refresh }
+          );
+          localStorage.setItem("access", data.access);
+          original.headers.Authorization = `Bearer ${data.access}`;
+          return api(original);
+        }
       } catch {
-        refreshing = null;
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 
