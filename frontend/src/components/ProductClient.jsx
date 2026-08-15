@@ -58,18 +58,15 @@ export default function ProductClient({ product }) {
         document.title = `${product.name} | YA-RA Jewels`;
     }, [product.name]);
 
-    // Track carousel scroll position
     useEffect(() => {
         const carousel = carouselRef.current;
         if (!carousel) return;
-
         const handleScroll = () => {
             const scrollLeft = carousel.scrollLeft;
             const slideWidth = carousel.clientWidth;
             const newIndex = Math.round(scrollLeft / slideWidth);
             setCurrentSlide(newIndex);
         };
-
         carousel.addEventListener('scroll', handleScroll);
         return () => carousel.removeEventListener('scroll', handleScroll);
     }, []);
@@ -86,7 +83,7 @@ export default function ProductClient({ product }) {
     const desktopMedia = showAllMedia ? media : media.slice(0, 6);
     const allInstances = product.instances ?? [];
     const inStockInstances = allInstances.filter(i => i.status === "in_stock");
-    const isRing = allInstances.some(i => i.ring_size) || product.category?.slug === "rings" || product.category?.slug === "solitaires" || /\b(rings?|solitaires?)\b/i.test(product.category_name || "");
+    const isRing = allInstances.some(i => i.ring_size) || product.category_slug === "rings" || product.category_slug === "solitaires" || /\b(rings?|solitaires?)\b/i.test(product.category_name || "");
 
     const cheapestInStock = inStockInstances.length
         ? inStockInstances.reduce((a, b) => (Number(a.price || a.calculated_price) <= Number(b.price || b.calculated_price) ? a : b))
@@ -144,7 +141,6 @@ export default function ProductClient({ product }) {
     const handleAdd = () => { addItem(product, selection); setAdded(true); setTimeout(() => setAdded(false), 1500); };
     const handleBuyNow = () => { addItem(product, selection); router.push("/checkout"); };
 
-    // Zoom handlers
     const handleZoomMouseMove = (e) => {
         if (!zoomContainerRef.current || zoomLevel === 1) return;
         const rect = zoomContainerRef.current.getBoundingClientRect();
@@ -160,14 +156,7 @@ export default function ProductClient({ product }) {
     };
 
     const handleTouchMove = (e) => {
-        if (e.touches.length === 2) {
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-            // Store initial distance and implement pinch zoom logic
-            // For now, just prevent default to avoid page scroll
-            e.preventDefault();
-        }
+        if (e.touches.length === 2) { e.preventDefault(); }
     };
 
     const resetZoom = () => {
@@ -177,7 +166,6 @@ export default function ProductClient({ product }) {
 
     return (
         <div>
-            {/* Enhanced Zoom Modal */}
             {zoomedImage && (
                 <div className="fixed inset-0 z-50 bg-ink/95 flex items-center justify-center p-4 md:p-8" onClick={() => { setZoomedImage(null); resetZoom(); }}>
                     <button className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white text-xl hover:bg-white/20 transition-colors z-10" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); resetZoom(); }}>✕</button>
@@ -202,32 +190,13 @@ export default function ProductClient({ product }) {
                             onError={handleImgError}
                         />
 
-                        {/* Zoom controls */}
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full px-4 py-2">
-                            <button
-                                onClick={() => setZoomLevel(prev => Math.max(1, prev - 0.5))}
-                                className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                −
-                            </button>
-                            <span className="text-white text-sm font-medium min-w-[40px] text-center">
-                                {Math.round(zoomLevel * 100)}%
-                            </span>
-                            <button
-                                onClick={() => setZoomLevel(prev => Math.min(4, prev + 0.5))}
-                                className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                +
-                            </button>
-                            <button
-                                onClick={resetZoom}
-                                className="text-white text-xs font-medium px-3 py-1 hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                Reset
-                            </button>
+                            <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 0.5))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 rounded-full transition-colors">−</button>
+                            <span className="text-white text-sm font-medium min-w-[40px] text-center">{Math.round(zoomLevel * 100)}%</span>
+                            <button onClick={() => setZoomLevel(prev => Math.min(4, prev + 0.5))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 rounded-full transition-colors">+</button>
+                            <button onClick={resetZoom} className="text-white text-xs font-medium px-3 py-1 hover:bg-white/20 rounded-full transition-colors">Reset</button>
                         </div>
 
-                        {/* Zoom hint */}
                         {zoomLevel === 1 && (
                             <div className="absolute top-6 left-1/2 -translate-x-1/2 text-white/70 text-xs bg-white/10 backdrop-blur-md px-4 py-2 rounded-full">
                                 Scroll or pinch to zoom · Move cursor to pan
@@ -241,7 +210,8 @@ export default function ProductClient({ product }) {
                 <p className="text-xs uppercase tracking-[0.16em] text-ink/50">
                     <Link href="/" className="hover:text-gold-dark">Home</Link>
                     {" / "}
-                    <Link href={`/category/${product.category?.slug ?? ""}`} className="hover:text-gold-dark">{product.category_name ?? "Jewellery"}</Link>
+                    {/* FIXED: Use category_slug instead of category.slug */}
+                    <Link href={`/category/${product.category_slug ?? ""}`} className="hover:text-gold-dark">{product.category_name ?? "Jewellery"}</Link>
                     {" / "}{product.name}
                 </p>
             </div>
@@ -265,14 +235,9 @@ export default function ProductClient({ product }) {
                         </button>
                     )}
 
-                    {/* Mobile carousel with controls */}
                     <div className="lg:hidden px-8">
                         <div className="relative">
-                            {/* Carousel */}
-                            <div
-                                ref={carouselRef}
-                                className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
-                            >
+                            <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
                                 {media.map((m, i) => (
                                     <div key={i} className="w-full shrink-0 snap-center">
                                         {m.kind === "video" ? (
@@ -284,48 +249,25 @@ export default function ProductClient({ product }) {
                                 ))}
                             </div>
 
-                            {/* Navigation arrows */}
                             {media.length > 1 && (
                                 <>
-                                    <button
-                                        onClick={() => scrollToSlide(Math.max(0, currentSlide - 1))}
-                                        disabled={currentSlide === 0}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="15 18 9 12 15 6" />
-                                        </svg>
+                                    <button onClick={() => scrollToSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                                     </button>
-                                    <button
-                                        onClick={() => scrollToSlide(Math.min(media.length - 1, currentSlide + 1))}
-                                        disabled={currentSlide === media.length - 1}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="9 18 15 12 9 6" />
-                                        </svg>
+                                    <button onClick={() => scrollToSlide(Math.min(media.length - 1, currentSlide + 1))} disabled={currentSlide === media.length - 1} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                                     </button>
                                 </>
                             )}
 
-                            {/* Dots indicator */}
                             {media.length > 1 && (
                                 <div className="flex justify-center gap-2 mt-4">
                                     {media.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => scrollToSlide(i)}
-                                            className={`w-2 h-2 rounded-full transition-all ${i === currentSlide
-                                                    ? 'bg-ink w-8'
-                                                    : 'bg-ink/30 hover:bg-ink/50'
-                                                }`}
-                                            aria-label={`Go to slide ${i + 1}`}
-                                        />
+                                        <button key={i} onClick={() => scrollToSlide(i)} className={`h-2 rounded-full transition-all ${i === currentSlide ? 'bg-ink w-8' : 'bg-ink/30 hover:bg-ink/50 w-2'}`} aria-label={`Go to slide ${i + 1}`} />
                                     ))}
                                 </div>
                             )}
 
-                            {/* Slide counter */}
                             {media.length > 1 && (
                                 <div className="text-center mt-2 text-xs text-ink/50">
                                     {currentSlide + 1} of {media.length}
@@ -345,16 +287,7 @@ export default function ProductClient({ product }) {
                         <p className="text-xs uppercase tracking-[0.16em] font-semibold mb-3">Select Gold Purity:</p>
                         <div className="flex flex-wrap gap-3">
                             {KARATS.map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => { setPurity(p); setSize(null); }}
-                                    className={`flex items-center justify-center text-xs font-medium px-5 py-2.5 rounded-full border transition-colors ${p === activePurity
-                                        ? "border-ink bg-ink text-white"
-                                        : "border-line bg-white text-ink hover:border-ink"
-                                        }`}
-                                >
-                                    {p}
-                                </button>
+                                <button key={p} onClick={() => { setPurity(p); setSize(null); }} className={`flex items-center justify-center text-xs font-medium px-5 py-2.5 rounded-full border transition-colors ${p === activePurity ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{p}</button>
                             ))}
                         </div>
                     </div>
