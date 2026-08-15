@@ -29,9 +29,12 @@ const Field = ({ label, ...props }) => (
     </label>
 );
 
+import { useRouter } from "next/navigation";
+
 export default function CheckoutPage() {
     const { items, subtotal, clear } = useCart();
     const { user } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         document.title = "Secure Checkout | YA-RA Jewels";
@@ -55,10 +58,30 @@ export default function CheckoutPage() {
     const [error, setError] = useState("");
     const [placed, setPlaced] = useState(null);
     const [mounted, setMounted] = useState(false);
+    const [mtoDialog, setMtoDialog] = useState(null);
 
     useEffect(() => {
         document.title = "Secure Checkout | YA-RA Jewels";
         setMounted(true);
+
+        // Restore saved form data if returning from login
+        try {
+            const savedForm = sessionStorage.getItem('checkout_form');
+            const savedMethod = sessionStorage.getItem('checkout_method');
+            const savedUpi = sessionStorage.getItem('checkout_upiId');
+            if (savedForm) {
+                setForm(JSON.parse(savedForm));
+                sessionStorage.removeItem('checkout_form');
+            }
+            if (savedMethod) {
+                setMethod(savedMethod);
+                sessionStorage.removeItem('checkout_method');
+            }
+            if (savedUpi) {
+                setUpiId(savedUpi);
+                sessionStorage.removeItem('checkout_upiId');
+            }
+        } catch (e) { /* ignore storage errors */ }
     }, []);
 
     if (!mounted) return (
@@ -79,29 +102,102 @@ export default function CheckoutPage() {
         return true;
     };
 
-    if (placed)
+    /* ── MTO Dialog ── */
+    if (mtoDialog)
         return (
-            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Order Confirmed</p>
-                <h1 className="text-5xl font-serif mb-4">Thank You For Your Order!</h1>
-                <p className="text-sm text-charcoal/70 mb-10 leading-relaxed">
-                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been
-                    confirmed and is fully insured.
-                </p>
-                <div className="flex justify-center gap-4">
-                    <Link href="/account" className="btn-solid">Track Order</Link>
-                    <Link href="/" className="btn-outline">Continue Shopping</Link>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-hero max-w-lg w-full p-8 md:p-10 text-center">
+                    <span className="w-12 h-12 mx-auto rounded-full bg-gold/10 text-gold-dark flex items-center justify-center mb-4">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                        </svg>
+                    </span>
+                    <h2 className="font-serif text-2xl md:text-3xl text-ink mb-3">
+                        {mtoDialog.preOrder ? "Before You Place This Order" : "Crafting Your Jewellery"}
+                    </h2>
+                    <p className="text-sm text-ink/60 mb-6 leading-relaxed">
+                        {mtoDialog.preOrder
+                            ? <>One or more items in your bag are currently out of physical stock. If you proceed, we will handcraft them for you in our <span className="font-semibold text-gold-dark">Made-to-Order</span> queue.</>
+                            : <>One or more items in your order were out of physical stock at the time of checkout. We have automatically placed them in our <span className="font-semibold text-gold-dark">Made-to-Order</span> fabrication queue.</>}
+                    </p>
+
+                    <div className="bg-cream rounded-xl p-4 text-left mb-6 max-h-48 overflow-y-auto border border-line">
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/50 mb-2">Items Being Crafted:</p>
+                        <ul className="space-y-1.5">
+                            {mtoDialog.items.map((item, idx) => (
+                                <li key={idx} className="text-sm text-ink flex items-start gap-2">
+                                    <span className="text-gold-dark mt-1 text-[10px]">◆</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <p className="text-xs text-ink/50 mb-8">
+                        These pieces will be handcrafted and shipped within <span className="font-semibold text-ink">10–12 days</span>. Any in-stock items will ship immediately.
+                    </p>
+
+                    {mtoDialog.preOrder ? (
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="btn-outline flex-1">
+                                Edit My Bag
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const payload = mtoDialog.itemsPayload;
+                                    setMtoDialog(null);
+                                    setPlacing(true);
+                                    setError("");
+                                    try {
+                                        await submitOrder(payload);
+                                    } catch (err) {
+                                        handleOrderError(err);
+                                        setPlacing(false);
+                                    }
+                                }}
+                                className="btn-solid flex-1"
+                            >
+                                Proceed & Place Order
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }}
+                            className="btn-solid w-full"
+                        >
+                            Continue to Order Confirmation
+                        </button>
+                    )}
                 </div>
             </div>
         );
 
-    if (!items.length)
-        return (
-            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <h1 className="text-3xl font-serif mb-6">Nothing to checkout</h1>
-                <Link href="/" className="btn-outline inline-block">Return Home</Link>
-            </div>
-        );
+    const submitOrder = async (itemsPayload) => {
+        const addressPayload = {
+            label: "home",
+            full_name: `${form.first_name} ${form.last_name}`.trim(),
+            phone: form.phone,
+            line1: form.address,
+            line2: form.landmark ?? "",
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode,
+            is_default: true,
+        };
+        const { data: addressData } = await api.post("/addresses/", addressPayload);
+        const addressId = addressData.id;
+
+        const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
+        const { data } = await api.post("/orders/", orderPayload);
+        clear();
+
+        // Fallback: stock changed between preview and placement
+        if (data.mto_items && data.mto_items.length > 0) {
+            setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: data.mto_items, preOrder: false });
+        } else {
+            setPlaced({ number: data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}` });
+        }
+    };
 
     const placeOrder = async (e) => {
         e.preventDefault();
@@ -112,53 +208,19 @@ export default function CheckoutPage() {
         setPlacing(true);
         setError("");
         try {
-            const addressPayload = {
-                label: "home",
-                full_name: `${form.first_name} ${form.last_name}`.trim(),
-                phone: form.phone,
-                line1: form.address,
-                line2: form.landmark ?? "",
-                city: form.city,
-                state: form.state,
-                pincode: form.pincode,
-                is_default: true,
-            };
-            const { data: addressData } = await api.post("/addresses/", addressPayload);
-            const addressId = addressData.id;
+            const itemsPayload = buildItemsPayload();
 
-            const orderPayload = {
-                address: addressId,
-                payment_method: method,
-                items: items.map((i) => ({
-                    design: i.product_id,
-                    karat: i.karat,
-                    gold_color: i.gold_color,
-                    ring_size: i.ring_size,
-                    quantity: i.qty,
-                })),
-            };
-            const { data } = await api.post("/orders/", orderPayload);
-            setPlaced({
-                number: data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}`,
-            });
-            clear();
-        } catch (err) {
-            const status = err.response?.status;
-            const d = err.response?.data ?? {};
-
-            // Specific, helpful messages for common failures
-            let msg;
-            if (status === 401 || status === 403) {
-                msg = "Please log in or create an account to place an order.";
-            } else if (status === 400 && typeof d === "object") {
-                msg = Object.entries(d)
-                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v) : v)}`)
-                    .join(" · ");
-            } else {
-                msg = d?.detail || "Could not place the order. Please try again.";
+            // Pre-check: which items will need Made-to-Order fabrication?
+            const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
+            if (preview?.mto_items?.length) {
+                setMtoDialog({ items: preview.mto_items, preOrder: true, itemsPayload });
+                setPlacing(false);
+                return; // wait for the user's decision
             }
 
-            setError(msg);
+            await submitOrder(itemsPayload);
+        } catch (err) {
+            handleOrderError(err);
             setPlacing(false);
         }
     };
