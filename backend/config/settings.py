@@ -100,4 +100,10 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
 }
 
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+CORS_ALLOWED_ORIGINS = [
+    # o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip(),
+    "http://localhost:3000",  # Next.js dev server
+    "http://127.0.0.1:3000",  # Alternative localhost
+]
+
+CORS_ALLOW_CREDENTIALS = True  # Allow cookies/JWT tokens

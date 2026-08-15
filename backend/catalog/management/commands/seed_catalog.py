@@ -76,7 +76,7 @@ class Command(BaseCommand):
 
             for i in range(1, 31):
                 pname = f"{ADJ[(i - 1) % len(ADJ)]} {noun}"
-                is_ring = slug in ("rings", "solitaires")
+                is_ring = slug in ("rings", "solitaires", "color-stone")
 
                 # Blueprint weights
                 net14 = q3(rng.uniform(2.0, 6.5))
