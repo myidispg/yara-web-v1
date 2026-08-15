@@ -81,14 +81,27 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* MTO Queue */}
-      <div className="bg-cream rounded-xl p-8">
-        <h2 className="font-serif text-2xl mb-4">MTO Fabrication Queue</h2>
-        <div className="flex items-center gap-4">
-          <div className="text-4xl">🔨</div>
-          <div>
-            <p className="text-3xl font-serif">{stats.mto_queue}</p>
-            <p className="text-sm text-ink/60">Orders currently in fabrication</p>
+      {/* MTO Queue & Offline Sales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-cream rounded-xl p-8">
+          <h2 className="font-serif text-2xl mb-4">MTO Fabrication Queue</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">🔨</div>
+            <div>
+              <p className="text-3xl font-serif">{stats.mto_queue}</p>
+              <p className="text-sm text-ink/60">Open orders containing made-to-order pieces</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-cream rounded-xl p-8">
+          <h2 className="font-serif text-2xl mb-4">Offline / Showroom Sales</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">🏪</div>
+            <div>
+              <p className="text-3xl font-serif">{stats.offline_sales ?? 0}</p>
+              <p className="text-sm text-ink/60">Pieces sold offline (marked in Inventory)</p>
+            </div>
           </div>
         </div>
       </div>

@@ -64,12 +64,17 @@ class StaffOrderSerializer(serializers.ModelSerializer):
         }
 
 class StaffProductInstanceSerializer(serializers.ModelSerializer):
+    sold_in_order_number = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductInstance
         fields = ['id', 'item_code', 'karat', 'gold_color', 'ring_size', 'status', 'price',
                   'actual_net_weight', 'actual_diamond_weight', 'actual_color_stone_weight',
-                  'report_lab', 'report_number']
+                  'report_lab', 'report_number', 'sold_at', 'sold_in_order_number']
 
+    def get_sold_in_order_number(self, obj):
+        return obj.sold_in_order.order_number if obj.sold_in_order else None
+    
 class StaffProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name')
     instances = StaffProductInstanceSerializer(many=True, read_only=True)
