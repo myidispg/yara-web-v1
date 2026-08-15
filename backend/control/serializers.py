@@ -9,28 +9,18 @@ class StaffUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'is_staff', 'date_joined']
 
 class StaffOrderItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.SerializerMethodField()
+    # Use the denormalized product_name field directly
     total_price = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = OrderItem
         fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 'total_price', 'instance']
-
-    def get_product_name(self, obj):
-        # Try every possible source: denormalized field, FKs, then via the instance
-        if getattr(obj, "product_name", None):
-            return obj.product_name
-        related = getattr(obj, "product", None) or getattr(obj, "design", None)
-        if related is not None:
-            return related.name
-        inst = getattr(obj, "instance", None)
-        if inst is not None and getattr(inst, "design", None) is not None:
-            return inst.design.name
-        return "Unknown"
-
+    
     def get_total_price(self, obj):
+        # Use line_total if available, otherwise calculate
+        if hasattr(obj, 'line_total') and obj.line_total:
+            return float(obj.line_total)
         return float(obj.unit_price) * int(obj.quantity)
-
 
 class StaffOrderSerializer(serializers.ModelSerializer):
     items = StaffOrderItemSerializer(many=True, read_only=True)
@@ -38,31 +28,39 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     address = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = Order
         fields = ['id', 'order_number', 'customer_email', 'customer_name', 'customer_phone',
                   'status', 'payment_method', 'subtotal', 'shipping_fee', 'total',
                   'created_at', 'items', 'address']
-
+    
     def get_customer_name(self, obj):
-        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
-
+        # 1) Account name → 2) Recipient name from checkout → 3) Email
+        full = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        if full:
+            return full
+        if obj.address and getattr(obj.address, "full_name", ""):
+            return obj.address.full_name
+        return obj.user.email
+    
     def get_customer_phone(self, obj):
-        return getattr(obj.user, "phone", "") or "—"
-
+        # Get phone from user model
+        phone = getattr(obj.user, 'phone', '')
+        return phone if phone else "Not provided"
+    
     def get_address(self, obj):
         a = obj.address
         if not a:
             return None
         return {
-            "full_name": getattr(a, "full_name", ""),
-            "phone": getattr(a, "phone", ""),
-            "line1": getattr(a, "line1", ""),
-            "line2": getattr(a, "line2", ""),
-            "city": getattr(a, "city", ""),
-            "state": getattr(a, "state", ""),
-            "pincode": getattr(a, "pincode", ""),
+            "full_name": a.full_name,
+            "phone": a.phone,
+            "line1": a.line1,
+            "line2": a.line2 or "",
+            "city": a.city,
+            "state": a.state,
+            "pincode": a.pincode,
         }
 
 class StaffProductInstanceSerializer(serializers.ModelSerializer):

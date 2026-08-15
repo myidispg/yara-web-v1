@@ -7,16 +7,16 @@ const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 const STATUS_STYLES = {
-    pending: "bg-yellow-100 text-yellow-800",
-    processing: "bg-blue-100 text-blue-800",
+    placed: "bg-yellow-100 text-yellow-800",
+    confirmed: "bg-blue-100 text-blue-800",
     shipped: "bg-purple-100 text-purple-800",
     delivered: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
 };
 
 const STATUS_LABELS = {
-    pending: "Pending",
-    processing: "Processing",
+    placed: "Placed",
+    confirmed: "Confirmed",
     shipped: "Shipped",
     delivered: "Delivered",
     cancelled: "Cancelled",
@@ -45,7 +45,7 @@ export default function OrdersPage() {
 
     const updateStatus = async (orderId, newStatus) => {
         if (!confirm(`Change order status to ${STATUS_LABELS[newStatus]}?`)) return;
-
+        
         setUpdating(true);
         try {
             await controlApi.updateOrderStatus(orderId, newStatus);
@@ -63,7 +63,7 @@ export default function OrdersPage() {
 
     const cancelOrder = async (orderId) => {
         if (!confirm("Cancel this order? Stock will be returned automatically.")) return;
-
+        
         setUpdating(true);
         try {
             await controlApi.cancelOrder(orderId);
@@ -111,8 +111,8 @@ export default function OrdersPage() {
                                     Placed on {new Date(selectedOrder.created_at).toLocaleString("en-IN")}
                                 </p>
                             </div>
-                            <span className={`px-4 py-2 rounded-full text-xs font-semibold ${STATUS_STYLES[selectedOrder.status]}`}>
-                                {STATUS_LABELS[selectedOrder.status]}
+                            <span className={`px-4 py-2 rounded-full text-xs font-semibold ${STATUS_STYLES[selectedOrder.status] || "bg-gray-100 text-gray-800"}`}>
+                                {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
                             </span>
                         </div>
 
@@ -120,8 +120,8 @@ export default function OrdersPage() {
                             <div>
                                 <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-2">Customer</p>
                                 <p className="font-semibold">{selectedOrder.customer_name}</p>
-                                <p className="text-sm text-ink/60">{selectedOrder.customer_email}</p>
-                                <p className="text-sm text-ink/60">📞 {selectedOrder.customer_phone}</p>
+                                <p className="text-sm text-ink/60">✉️ {selectedOrder.customer_email}</p>
+                                <p className="text-sm text-ink/60">📞 {selectedOrder.customer_phone || "Not provided"}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-2">Shipping Address</p>
@@ -176,14 +176,14 @@ export default function OrdersPage() {
 
                         {selectedOrder.status !== "cancelled" && selectedOrder.status !== "delivered" && (
                             <div className="flex gap-3">
-                                {selectedOrder.status === "pending" && (
+                                {selectedOrder.status === "placed" && (
                                     <>
                                         <button
-                                            onClick={() => updateStatus(selectedOrder.id, "processing")}
+                                            onClick={() => updateStatus(selectedOrder.id, "confirmed")}
                                             disabled={updating}
                                             className="btn-solid flex-1"
                                         >
-                                            Mark as Processing
+                                            Mark as Confirmed
                                         </button>
                                         <button
                                             onClick={() => cancelOrder(selectedOrder.id)}
@@ -194,7 +194,7 @@ export default function OrdersPage() {
                                         </button>
                                     </>
                                 )}
-                                {selectedOrder.status === "processing" && (
+                                {selectedOrder.status === "confirmed" && (
                                     <>
                                         <button
                                             onClick={() => updateStatus(selectedOrder.id, "shipped")}
@@ -242,8 +242,11 @@ export default function OrdersPage() {
                             {orders.map((order) => (
                                 <tr
                                     key={order.id}
-                                    onClick={() => viewOrder(order.id)}
-                                    className="border-b border-line hover:bg-cream/50 transition-colors cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        viewOrder(order.id);
+                                    }}
+                                    className="border-b border-line hover:bg-cream/50 transition-colors cursor-pointer select-none"
                                 >
                                     <td className="px-6 py-4">
                                         <p className="font-semibold">{order.order_number}</p>
@@ -257,8 +260,8 @@ export default function OrdersPage() {
                                     </td>
                                     <td className="px-6 py-4 font-semibold">{inr(order.total)}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[order.status]}`}>
-                                            {STATUS_LABELS[order.status]}
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[order.status] || "bg-gray-100 text-gray-800"}`}>
+                                            {STATUS_LABELS[order.status] || order.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
