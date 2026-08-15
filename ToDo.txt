@@ -20,6 +20,8 @@ This also allows category management, products move from one category to other c
 
 11. MTO process, it automatic creates a product instance and sets status to sold. What I need is that it creates an order to fulfill. when we get the item made, we will enter into a control panel. So, that's how this will go. That item get's assigned to the order, and get's sold to the user in that order number
 
+12. In the control panel and on the rate_card page, it shows that updating rates changes rate for made on order items and in stock items' prices are static. Make them all dynamic.
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
