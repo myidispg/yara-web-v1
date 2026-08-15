@@ -14,6 +14,7 @@ combinations are correctly shown, made on order and buy now logic is correct etc
 8. Clicking on an order should show me the order details, placed on etc from the user's profile.
 
 9. Create a Control Panel to set rates, upload products, manage stock, manage users, their orders, current orders, past orders etc.
+This also allows category management, products move from one category to other categories and subcategories
 
 10. Making Charges can be in per gram basis instead of percentage. 
 
@@ -30,6 +31,7 @@ Wishlist/Save for later feature
 Product reviews and ratings
 Shipping cost calculation (currently always free)
 Tax calculation beyond GST percentage
+
 
 Next.js migration strategy and things to remember:
 
