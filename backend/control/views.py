@@ -75,9 +75,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         new_status = request.data.get('status')
         
+        # Match your actual Order.STATUS choices
         valid_transitions = {
-            'pending': ['processing', 'cancelled'],
-            'processing': ['shipped', 'cancelled'],
+            'placed': ['confirmed', 'cancelled'],
+            'confirmed': ['shipped', 'cancelled'],
             'shipped': ['delivered'],
             'delivered': [],
             'cancelled': [],
