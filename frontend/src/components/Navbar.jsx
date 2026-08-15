@@ -113,7 +113,7 @@ export default function Navbar() {
                     </button>
 
                     <Link
-                        href={user ? "/account" : "/login"}
+                        href={user ? "/account" : "/auth"}
                         className="text-charcoal hover:text-gold-dark transition-colors"
                         aria-label="Account & Orders"
                     >
@@ -191,7 +191,7 @@ export default function Navbar() {
                         </Link>
                     ))}
                     <hr className="border-line" />
-                    <Link href={user ? "/account" : "/login"} className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
+                    <Link href={user ? "/account" : "/auth"} className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>
                         My Account & Orders
                     </Link>
                     <Link href="/policies" className="block hover:text-gold-dark" onClick={() => setMobileOpen(false)}>

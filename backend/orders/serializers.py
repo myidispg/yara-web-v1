@@ -35,11 +35,23 @@ class OrderSerializer(serializers.ModelSerializer):
     address = AddressSerializer(read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     payment_label = serializers.CharField(source="get_payment_method_display", read_only=True)
+    mto_items = serializers.SerializerMethodField()  # <-- ADD THIS
 
     class Meta:
         model = Order
         fields = ["order_number", "status", "status_label", "payment_method", "payment_label",
-                  "subtotal", "shipping_fee", "total", "created_at", "address", "items"]
+                  "subtotal", "shipping_fee", "total", "created_at", "address", "items", "mto_items"] # <-- ADD "mto_items"
+
+    def get_mto_items(self, obj):
+        mto = []
+        for item in obj.items.all():
+            # Check if the allocated instance was fabricated on the fly
+            if item.instance and item.instance.item_code.startswith("MTO-"):
+                if item.variant_label:
+                    mto.append(f"{item.product_name} · {item.variant_label}")
+                else:
+                    mto.append(item.product_name)
+        return mto
 
 
 class _ItemInput(serializers.Serializer):
@@ -63,24 +75,32 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def validate_items(self, items):
         resolved = []
+        unavailable = []
+        
         for item in items:
             try:
-                design = Product.objects.get(pk=item["design"])
+                design = Product.objects.get(pk=item["design"], is_active=True)
             except Product.DoesNotExist:
-                raise serializers.ValidationError("A selected design is no longer available.")
+                # Collect the specific item details for a better error message
+                karat = item.get("karat", "?")
+                color = item.get("gold_color", "?")
+                size = item.get("ring_size", "")
+                unavailable.append(f"{karat} {color} {f'Size {size}' if size else ''}".strip())
+                continue
             
-            karat = item["karat"]
-            gold_color = item["gold_color"]
-            ring_size = item.get("ring_size") or None
-            quantity = item["quantity"]
-
             resolved.append({
                 "design": design,
-                "karat": karat,
-                "gold_color": gold_color,
-                "ring_size": ring_size,
-                "quantity": quantity,
+                "karat": item["karat"],
+                "gold_color": item["gold_color"],
+                "ring_size": item.get("ring_size") or None,
+                "quantity": item["quantity"],
             })
+        
+        if unavailable:
+            raise serializers.ValidationError({
+                "items": [f"The following combinations are no longer available: {', '.join(unavailable)}"]
+            })
+            
         return resolved
 
     def create(self, validated_data):
