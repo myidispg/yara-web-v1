@@ -24,12 +24,13 @@ export default function ControlLayout({ children }) {
           <h1 className="font-serif text-2xl tracking-[0.3em]">YA-RA</h1>
           <p className="text-[10px] uppercase tracking-[0.2em] text-gold-dark mt-1">Control Panel</p>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => window.dispatchEvent(new CustomEvent("control-nav", { detail: item.href }))}
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm hover:bg-white/10 transition-colors"
             >
               <span className="text-lg">{item.icon}</span>
@@ -37,7 +38,7 @@ export default function ControlLayout({ children }) {
             </Link>
           ))}
         </nav>
-        
+
         <div className="p-4 border-t border-white/10">
           <div className="text-xs text-white/60 mb-2">{user?.email}</div>
           <div className="flex gap-2">
@@ -56,7 +57,7 @@ export default function ControlLayout({ children }) {
           </div>
         </div>
       </aside>
-      
+
       {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-8">

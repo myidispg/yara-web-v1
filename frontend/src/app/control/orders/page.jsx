@@ -32,6 +32,15 @@ export default function OrdersPage() {
         loadOrders();
     }, []);
 
+    // Reset detail view when sidebar "Orders" is clicked
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail === "/control/orders") setSelectedOrder(null);
+        };
+        window.addEventListener("control-nav", handler);
+        return () => window.removeEventListener("control-nav", handler);
+    }, []);
+
     const loadOrders = async () => {
         try {
             const { data } = await controlApi.getOrders();
@@ -45,7 +54,7 @@ export default function OrdersPage() {
 
     const updateStatus = async (orderId, newStatus) => {
         if (!confirm(`Change order status to ${STATUS_LABELS[newStatus]}?`)) return;
-        
+
         setUpdating(true);
         try {
             await controlApi.updateOrderStatus(orderId, newStatus);
@@ -63,7 +72,7 @@ export default function OrdersPage() {
 
     const cancelOrder = async (orderId) => {
         if (!confirm("Cancel this order? Stock will be returned automatically.")) return;
-        
+
         setUpdating(true);
         try {
             await controlApi.cancelOrder(orderId);

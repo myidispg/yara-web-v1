@@ -43,7 +43,7 @@ export default function RateCardPage() {
     const saveRateCard = async (e) => {
         e.preventDefault();
         setSaving(true);
-        
+
         try {
             const payload = {
                 gold_rate_14kt: parseFloat(form.gold_rate_14kt),
@@ -52,7 +52,7 @@ export default function RateCardPage() {
                 making_charges_percentage: parseFloat(form.making_charges_percentage),
                 gst_percentage: parseFloat(form.gst_percentage),
             };
-            
+
             const { data } = await controlApi.updateRateCard(payload);
             setRateCard(data);
             alert("Rate card updated successfully!");
@@ -72,7 +72,7 @@ export default function RateCardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white rounded-xl border border-line p-8 shadow-card">
                     <h2 className="font-serif text-2xl mb-6">Current Rates</h2>
-                    
+
                     <form onSubmit={saveRateCard} className="space-y-6">
                         <div>
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">
@@ -151,10 +151,10 @@ export default function RateCardPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <div className="bg-ink rounded-xl p-8 text-white">
-                        <h2 className="font-serif text-2xl mb-4">Last Updated</h2>
-                        <p className="text-white/80">
-                            {rateCard?.updated_at 
+                    <div className="bg-white rounded-xl border border-line p-8 shadow-card">
+                        <h2 className="font-serif text-2xl mb-4 text-ink">Last Updated</h2>
+                        <p className="text-ink/70 font-medium">
+                            {rateCard?.updated_at
                                 ? new Date(rateCard.updated_at).toLocaleString("en-IN")
                                 : "Never"}
                         </p>
@@ -163,8 +163,8 @@ export default function RateCardPage() {
                     <div className="bg-cream rounded-xl p-8">
                         <h3 className="font-serif text-xl mb-4">Impact Notice</h3>
                         <p className="text-sm text-ink/70 leading-relaxed">
-                            Updating these rates will automatically recalculate prices for all 
-                            Made-to-Order products based on their blueprint weights. In-stock 
+                            Updating these rates will automatically recalculate prices for all
+                            Made-to-Order products based on their blueprint weights. In-stock
                             items will retain their locked-in prices.
                         </p>
                     </div>

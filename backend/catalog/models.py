@@ -72,7 +72,7 @@ class ProductMedia(models.Model):
 
 class ProductInstance(models.Model):
     """The Physical Item / SKU"""
-    STATUS_CHOICES = [('in_stock', 'In Stock'), ('sold', 'Sold'), ('reserved', 'Reserved')]
+    STATUS_CHOICES = [('in_stock', 'In Stock'), ('sold', 'Sold'), ('sold_offline', 'Sold Offline'), ('reserved', 'Reserved')]
     KARAT_CHOICES = [('14Kt', '14Kt'), ('18Kt', '18Kt')]
     COLOR_CHOICES = [('Yellow', 'Yellow'), ('Rose', 'Rose'), ('White', 'White')]
 
