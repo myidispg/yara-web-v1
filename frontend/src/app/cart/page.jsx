@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 export default function CartPage() {
     const { items, setQty, removeItem, subtotal, count } = useCart();
+    const { user } = useAuth();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
 
@@ -85,7 +87,7 @@ export default function CartPage() {
                             <span>Total Payable</span><span>{inr(subtotal)}</span>
                         </div>
                     </div>
-                    <button onClick={() => router.push("/checkout")} className="btn-solid w-full mt-8">Proceed To Checkout →</button>
+                    <button onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")} className="btn-solid w-full mt-8">Proceed To Checkout →</button>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-charcoal/50 text-center mt-4">Secure SSL · Certified Conflict-Free Diamonds</p>
                 </aside>
             </div>

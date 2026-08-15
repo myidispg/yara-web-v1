@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/api/client";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -29,16 +30,10 @@ const Field = ({ label, ...props }) => (
     </label>
 );
 
-import { useRouter } from "next/navigation";
-
 export default function CheckoutPage() {
     const { items, subtotal, clear } = useCart();
     const { user } = useAuth();
     const router = useRouter();
-
-    useEffect(() => {
-        document.title = "Secure Checkout | YA-RA Jewels";
-    }, []);
 
     const [form, setForm] = useState({
         first_name: user?.first_name ?? "",
@@ -83,6 +78,103 @@ export default function CheckoutPage() {
             }
         } catch (e) { /* ignore storage errors */ }
     }, []);
+
+    // Guests can't checkout — send them to login first (cart stays intact)
+    useEffect(() => {
+        if (mounted && !user) {
+            router.push("/auth?next=/checkout");
+        }
+    }, [mounted, user, router]);
+
+    const buildItemsPayload = () =>
+        items.map((i) => ({
+            design: i.product_id,
+            karat: i.karat,
+            gold_color: i.gold_color,
+            ring_size: i.ring_size,
+            quantity: i.qty,
+        }));
+
+    const handleOrderError = (err) => {
+        const status = err.response?.status;
+        const d = err.response?.data ?? {};
+        let msg;
+        if (status === 401 || status === 403) {
+            try {
+                sessionStorage.setItem('checkout_form', JSON.stringify(form));
+                sessionStorage.setItem('checkout_method', method);
+                sessionStorage.setItem('checkout_upiId', upiId);
+            } catch (e) { /* ignore */ }
+            msg = "Please log in or create an account to place an order. Redirecting…";
+            setError(msg);
+            setTimeout(() => router.push("/auth?next=/checkout"), 1500);
+            return;
+        } else if (status === 400 && typeof d === "object") {
+            if (d.items && Array.isArray(d.items)) {
+                msg = d.items.join(" ");
+            } else {
+                msg = Object.entries(d)
+                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v) : v)}`)
+                    .join(" · ");
+            }
+        } else {
+            msg = d?.detail || "Could not place the order. Please try again.";
+        }
+        setError(msg);
+    };
+
+    const submitOrder = async (itemsPayload) => {
+        const addressPayload = {
+            label: "home",
+            full_name: `${form.first_name} ${form.last_name}`.trim(),
+            phone: form.phone,
+            line1: form.address,
+            line2: form.landmark ?? "",
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode,
+            is_default: true,
+        };
+        const { data: addressData } = await api.post("/addresses/", addressPayload);
+        const addressId = addressData.id;
+
+        const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
+        const { data } = await api.post("/orders/", orderPayload);
+        clear();
+
+        // Fallback: stock changed between preview and placement
+        if (data.mto_items && data.mto_items.length > 0) {
+            setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: data.mto_items, preOrder: false });
+        } else {
+            setPlaced({ number: data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}` });
+        }
+    };
+
+    const placeOrder = async (e) => {
+        e.preventDefault();
+        if (!isFormValid()) {
+            setError("Please ensure all required fields are filled correctly.");
+            return;
+        }
+        setPlacing(true);
+        setError("");
+        try {
+            const itemsPayload = buildItemsPayload();
+
+            // Pre-check: which items will need Made-to-Order fabrication?
+            const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
+            if (preview?.mto_items?.length) {
+                setMtoDialog({ items: preview.mto_items, preOrder: true, itemsPayload });
+                setPlacing(false);
+                return; // wait for the user's decision
+            }
+
+            await submitOrder(itemsPayload);
+        } catch (err) {
+            handleOrderError(err);
+            setPlacing(false);
+        }
+    };
 
     if (!mounted) return (
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
@@ -172,58 +264,29 @@ export default function CheckoutPage() {
             </div>
         );
 
-    const submitOrder = async (itemsPayload) => {
-        const addressPayload = {
-            label: "home",
-            full_name: `${form.first_name} ${form.last_name}`.trim(),
-            phone: form.phone,
-            line1: form.address,
-            line2: form.landmark ?? "",
-            city: form.city,
-            state: form.state,
-            pincode: form.pincode,
-            is_default: true,
-        };
-        const { data: addressData } = await api.post("/addresses/", addressPayload);
-        const addressId = addressData.id;
+    if (placed)
+        return (
+            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
+                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Order Confirmed</p>
+                <h1 className="text-5xl font-serif mb-4">Thank You For Your Order!</h1>
+                <p className="text-sm text-charcoal/70 mb-10 leading-relaxed">
+                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been
+                    confirmed and is fully insured.
+                </p>
+                <div className="flex justify-center gap-4">
+                    <Link href="/account" className="btn-solid">Track Order</Link>
+                    <Link href="/" className="btn-outline">Continue Shopping</Link>
+                </div>
+            </div>
+        );
 
-        const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
-        const { data } = await api.post("/orders/", orderPayload);
-        clear();
-
-        // Fallback: stock changed between preview and placement
-        if (data.mto_items && data.mto_items.length > 0) {
-            setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: data.mto_items, preOrder: false });
-        } else {
-            setPlaced({ number: data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}` });
-        }
-    };
-
-    const placeOrder = async (e) => {
-        e.preventDefault();
-        if (!isFormValid()) {
-            setError("Please ensure all required fields are filled correctly.");
-            return;
-        }
-        setPlacing(true);
-        setError("");
-        try {
-            const itemsPayload = buildItemsPayload();
-
-            // Pre-check: which items will need Made-to-Order fabrication?
-            const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
-            if (preview?.mto_items?.length) {
-                setMtoDialog({ items: preview.mto_items, preOrder: true, itemsPayload });
-                setPlacing(false);
-                return; // wait for the user's decision
-            }
-
-            await submitOrder(itemsPayload);
-        } catch (err) {
-            handleOrderError(err);
-            setPlacing(false);
-        }
-    };
+    if (!items.length)
+        return (
+            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
+                <h1 className="text-3xl font-serif mb-6">Nothing to checkout</h1>
+                <Link href="/" className="btn-outline inline-block">Return Home</Link>
+            </div>
+        );
 
     return (
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
