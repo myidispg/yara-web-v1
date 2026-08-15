@@ -43,7 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "name", "email", "phone", "date_joined"]
+        fields = ["id", "first_name", "last_name", "name", "email", "phone", "date_joined", "is_staff"]
         read_only_fields = ["email", "phone"]
 
     def get_name(self, obj):
