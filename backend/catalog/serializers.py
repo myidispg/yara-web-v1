@@ -38,12 +38,15 @@ class ProductInstanceSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
     in_stock = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ["id", "design_code", "slug", "name", "category", "category_name",
-                  "base_price", "total_diamond_weight", "media", "in_stock"]
+        fields = [
+            "id", "design_code", "slug", "name", "category", "category_name", "category_slug",
+            "base_price", "total_diamond_weight", "media", "in_stock"
+        ]
 
     def get_in_stock(self, obj):
         return any(i.status == "in_stock" for i in obj.instances.all())
@@ -53,16 +56,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
     instances = ProductInstanceSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
-    rate_card = serializers.SerializerMethodField()  # ADD THIS
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
+    rate_card = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ["id", "design_code", "slug", "name", "category", "category_name", "description",
-                  "base_net_weight_14kt", "base_price", "total_diamond_weight",
-                  "diamond_weight_round_melle", "pointer_solitaire_weight", "fancy_cut_weight",
-                  "color_stone_weight", "diamond_color", "diamond_clarity",
-                  "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
-                  "media", "instances", "rate_card"]  # ADD "rate_card" HERE
+        fields = [
+            "id", "design_code", "slug", "name", "category", "category_name", "category_slug",
+            "description", "base_net_weight_14kt", "base_price", "total_diamond_weight",
+            "diamond_weight_round_melle", "pointer_solitaire_weight", "fancy_cut_weight",
+            "color_stone_weight", "diamond_color", "diamond_clarity",
+            "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
+            "media", "instances", "rate_card"
+        ]
 
     def get_rate_card(self, obj):
         rc = RateCard.get()
