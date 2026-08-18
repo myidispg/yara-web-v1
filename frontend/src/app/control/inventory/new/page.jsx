@@ -14,7 +14,7 @@ const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink
 
 export default function NewPage() {
     const router = useRouter();
-    const [mode, setMode] = useState(null); // 'design' | 'product'
+    const [mode, setMode] = useState(null);
     const [step, setStep] = useState(0);
     const [categories, setCategories] = useState([]);
     const [designs, setDesigns] = useState([]);
@@ -22,6 +22,7 @@ export default function NewPage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [files, setFiles] = useState([]);
+    const [preselectedDesignId, setPreselectedDesignId] = useState("");
 
     const [designForm, setDesignForm] = useState({
         category: "", name: "", design_code: "", description: "",
@@ -38,7 +39,13 @@ export default function NewPage() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const m = params.get("mode");
+        const dId = params.get("design_id");
         if (m === "design" || m === "product") setMode(m);
+        if (dId) {
+            setPreselectedDesignId(dId);
+            setExistingDesignId(dId);
+            setUseNewDesign(false);
+        }
     }, []);
 
     useEffect(() => {
@@ -71,6 +78,23 @@ export default function NewPage() {
         return Math.round(gv + dv + making + gst);
     };
 
+    const getRefWeight = () => {
+        if (!targetDesign || !productDesignIsRing) return targetDesign?.base_net_weight_14kt || 0;
+        const refs = targetDesign.size_weight_refs || {};
+        const size = productForm.ring_size || "12";
+        return refs[size] || targetDesign.base_net_weight_14kt;
+    };
+
+    const getRefDia = () => {
+        return targetDesign?.total_diamond_weight || 0;
+    };
+
+    const liveEstimate = () => {
+        const net = productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : getRefWeight();
+        const dia = productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : getRefDia();
+        return estimate(net, dia, productForm.karat, productForm.diamond_grade);
+    };
+
     const designPayload = () => ({
         name: designForm.name.trim(),
         design_code: designForm.design_code.trim(),
@@ -93,18 +117,16 @@ export default function NewPage() {
 
     const steps = mode === "design"
         ? ["Basics", "Materials", "Media", "Review"]
-        : ["Design", "Product Details", "Media", "Review"];
+        : ["Design", "Product Details", ...(useNewDesign ? ["Media"] : []), "Review"];
 
     const designBasicsValid = designForm.category && designForm.name.trim() && designForm.design_code.trim();
     const canProceed = () => {
         if (step === 0) {
             if (mode === "design") return !!designBasicsValid;
-            return useNewDesign ? !!designBasicsValid : !!existingDesignId;
+            if (useNewDesign) return !!designBasicsValid && parseFloat(designForm.ref_weight) > 0;
+            return !!existingDesignId;
         }
-        if (step === 1) {
-            if (mode === "design") return parseFloat(designForm.ref_weight) > 0;
-            return true;
-        }
+        if (step === 1 && mode === "design") return parseFloat(designForm.ref_weight) > 0;
         return true;
     };
 
@@ -119,13 +141,12 @@ export default function NewPage() {
                 return;
             }
 
-            // Product mode
             let designId = existingDesignId;
             if (useNewDesign) {
                 const { data } = await controlApi.createDesign(designPayload());
                 designId = data.id;
             }
-            if (files.length) await uploadFiles(designId);
+            if (files.length && useNewDesign) await uploadFiles(designId);
 
             await controlApi.addInstance(designId, {
                 karat: productForm.karat,
@@ -146,7 +167,6 @@ export default function NewPage() {
         }
     };
 
-    // ── Mode selection ──
     if (!mode)
         return (
             <div className="max-w-3xl mx-auto">
@@ -193,6 +213,42 @@ export default function NewPage() {
         </div>
     );
 
+    const materialsFields = (
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+                <div>
+                    <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
+                    <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
+                </div>
+                {isRingDesign && (
+                    <div>
+                        <label className={labelCls}>Entered Weight Is For Size</label>
+                        <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
+                            {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
+                        </select>
+                    </div>
+                )}
+                <div>
+                    <label className={labelCls}>Round / Melle (Ct)</label>
+                    <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                    <label className={labelCls}>Pointer / Solitaire (Ct)</label>
+                    <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                    <label className={labelCls}>Fancy Cut (Ct)</label>
+                    <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                    <label className={labelCls}>Color Stone (Ct)</label>
+                    <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} className={inputCls} />
+                </div>
+            </div>
+            {isRingDesign && <p className="text-xs text-ink/50">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
+        </div>
+    );
+
     const mediaStep = (
         <div className="space-y-4">
             <label className={labelCls}>Upload Images / Videos</label>
@@ -233,61 +289,35 @@ export default function NewPage() {
             <div className="bg-white rounded-xl border border-line p-8 shadow-card">
                 {step === 0 && (mode === "design" ? designFields : (
                     <div className="space-y-6">
-                        <div className="flex gap-4">
-                            <button onClick={() => { setUseNewDesign(false); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${!useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
-                                Existing Design
-                            </button>
-                            <button onClick={() => { setUseNewDesign(true); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
-                                Create New Design
-                            </button>
-                        </div>
-                        {useNewDesign ? designFields : (
+                        {!preselectedDesignId && (
+                            <div className="flex gap-4">
+                                <button onClick={() => { setUseNewDesign(false); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${!useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                                    Existing Design
+                                </button>
+                                <button onClick={() => { setUseNewDesign(true); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                                    Create New Design
+                                </button>
+                            </div>
+                        )}
+                        {useNewDesign ? (
+                            <div className="space-y-6">
+                                {designFields}
+                                {materialsFields}
+                            </div>
+                        ) : (
                             <div>
                                 <label className={labelCls}>Select Design *</label>
-                                <select value={existingDesignId} onChange={(e) => setExistingDesignId(e.target.value)} className={inputCls}>
+                                <select value={existingDesignId} onChange={(e) => setExistingDesignId(e.target.value)} className={inputCls} disabled={!!preselectedDesignId}>
                                     <option value="">Choose a design…</option>
                                     {designs.map((d) => <option key={d.id} value={d.id}>{d.design_code} — {d.name}</option>)}
                                 </select>
+                                {preselectedDesignId && <p className="text-xs text-ink/50 mt-1">Pre-selected from inventory view. You can change if needed.</p>}
                             </div>
                         )}
                     </div>
                 ))}
 
-                {step === 1 && (mode === "design" ? (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
-                                <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
-                            </div>
-                            {isRingDesign && (
-                                <div>
-                                    <label className={labelCls}>Entered Weight Is For Size</label>
-                                    <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
-                                        {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
-                                    </select>
-                                </div>
-                            )}
-                            <div>
-                                <label className={labelCls}>Round / Melle (Ct)</label>
-                                <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Pointer / Solitaire (Ct)</label>
-                                <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Fancy Cut (Ct)</label>
-                                <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Color Stone (Ct)</label>
-                                <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} className={inputCls} />
-                            </div>
-                        </div>
-                        {isRingDesign && <p className="text-xs text-ink/50">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
-                    </div>
-                ) : (
+                {step === 1 && (mode === "design" ? materialsFields : (
                     <div className="space-y-6">
                         <div className="grid grid-cols-3 gap-4">
                             <div>
@@ -316,11 +346,11 @@ export default function NewPage() {
                             </div>
                             <div>
                                 <label className={labelCls}>Actual Net Weight (g)</label>
-                                <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                                <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design reference" className={inputCls} />
                             </div>
                             <div>
                                 <label className={labelCls}>Actual Diamond (Ct)</label>
-                                <input type="number" step="0.01" value={productForm.actual_diamond_weight} onChange={(e) => setProductForm({ ...productForm, actual_diamond_weight: e.target.value })} placeholder="blank = design" className={inputCls} />
+                                <input type="number" step="0.01" value={productForm.actual_diamond_weight} onChange={(e) => setProductForm({ ...productForm, actual_diamond_weight: e.target.value })} placeholder="blank = design reference" className={inputCls} />
                             </div>
                             <div>
                                 <label className={labelCls}>Cert Lab</label>
@@ -335,15 +365,16 @@ export default function NewPage() {
                         </div>
                         <div className="bg-cream rounded-xl p-6 flex items-center justify-between">
                             <p className="text-sm text-ink/60">Estimated price (live rates, {productForm.diamond_grade})</p>
-                            <p className="text-2xl font-serif">{inr(estimate(productForm.actual_net_weight, productForm.actual_diamond_weight, productForm.karat, productForm.diamond_grade))}</p>
+                            <p className="text-2xl font-serif">{inr(liveEstimate())}</p>
                         </div>
-                        <p className="text-xs text-ink/50">The entered weight updates the design's size references (running average) for better future estimates.</p>
+                        <p className="text-xs text-ink/50">When fields are blank, the design's reference weights are used. The entered weight updates the design's size references (running average) for better future estimates.</p>
                     </div>
                 ))}
 
-                {step === 2 && mediaStep}
+                {step === 2 && mode === "design" && mediaStep}
+                {step === 2 && mode === "product" && useNewDesign && mediaStep}
 
-                {step === 3 && (
+                {((mode === "design" && step === 3) || (mode === "product" && ((useNewDesign && step === 3) || (!useNewDesign && step === 2)))) && (
                     <div className="space-y-4 text-sm">
                         <div className="grid grid-cols-2 gap-6">
                             <div>
@@ -363,7 +394,7 @@ export default function NewPage() {
                                 {mode === "product" && (
                                     <p className="text-ink/70">{productForm.karat} {productForm.gold_color}{productDesignIsRing && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}</p>
                                 )}
-                                <p className="text-ink/70">Media files: {files.length}</p>
+                                {(mode === "design" || useNewDesign) && <p className="text-ink/70">Media files: {files.length}</p>}
                             </div>
                         </div>
                         {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}

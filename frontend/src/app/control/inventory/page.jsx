@@ -91,8 +91,15 @@ export default function InventoryPage() {
                     </button>
 
                     <div className="bg-white rounded-xl border border-line p-8 shadow-card mb-6">
-                        <h2 className="font-serif text-2xl mb-2">{selected.name}</h2>
-                        <p className="text-sm text-ink/60 mb-4">Design Code: {selected.design_code} · {selected.category_name}</p>
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <h2 className="font-serif text-2xl mb-2">{selected.name}</h2>
+                                <p className="text-sm text-ink/60">Design Code: {selected.design_code} · {selected.category_name}</p>
+                            </div>
+                            <Link href={`/control/inventory/${selected.id}/edit`} className="btn-outline text-sm">
+                                Edit Design
+                            </Link>
+                        </div>
 
                         <div className="grid grid-cols-4 gap-6 mb-4">
                             <div>
@@ -114,7 +121,7 @@ export default function InventoryPage() {
                         </div>
 
                         {selected.size_weight_refs && Object.keys(selected.size_weight_refs).length > 0 && (
-                            <div className="bg-cream rounded-xl p-4">
+                            <div className="bg-cream rounded-xl p-4 mb-4">
                                 <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">Size Reference Weights (14Kt, learned)</p>
                                 <div className="flex flex-wrap gap-3 text-xs">
                                     {Object.entries(selected.size_weight_refs).map(([size, w]) => (
@@ -126,12 +133,45 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         )}
+
+                        {selected.media && selected.media.length > 0 && (
+                            <div className="mb-4">
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">
+                                    Media ({selected.media.length})
+                                </p>
+                                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                    {selected.media.map((m, i) => (
+                                        <div key={i} className="aspect-square rounded-lg overflow-hidden bg-cream relative group">
+                                            {m.kind === "video" ? (
+                                                <video src={m.url} className="w-full h-full object-cover" muted />
+                                            ) : (
+                                                <img src={m.url} alt={`Media ${i + 1}`} className="w-full h-full object-cover" />
+                                            )}
+                                            <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
+                                                {m.kind === "video" ? "▶ Video" : "Image"}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {selected.description && (
+                            <div className="text-sm text-ink/70 leading-relaxed">
+                                {selected.description}
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
                         <div className="px-6 py-4 border-b border-line bg-cream flex items-center justify-between">
                             <h3 className="font-semibold">Products ({selected.products.length})</h3>
-                            <Link href="/control/inventory/new?mode=product" className="text-xs text-gold-dark font-semibold hover:text-ink">+ Add Product to this Design</Link>
+                            <Link
+                                href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
+                                className="text-xs text-gold-dark font-semibold hover:text-ink"
+                            >
+                                + Add Product to this Design
+                            </Link>
                         </div>
                         <table className="w-full">
                             <thead className="bg-cream/50">
