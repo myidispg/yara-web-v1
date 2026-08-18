@@ -259,12 +259,12 @@ export default function NewPage() {
                 </div>
                 <div>
                     <label className={labelCls}>Design Code *</label>
-                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., RG-031" className={inputCls} />
+                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., RG-031" maxLength={50} className={inputCls} />
                 </div>
             </div>
             <div>
                 <label className={labelCls}>Design Name *</label>
-                <input value={designForm.name} onChange={(e) => setDesignForm({ ...designForm, name: e.target.value })} placeholder="e.g., Aura Diamond Ring" className={inputCls} />
+                <input value={designForm.name} onChange={(e) => setDesignForm({ ...designForm, name: e.target.value })} placeholder="e.g., Aura Diamond Ring" maxLength={255} className={inputCls} />
             </div>
             <div>
                 <label className={labelCls}>Description</label>
@@ -350,19 +350,19 @@ export default function NewPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Actual Melle (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Pointer (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Fancy (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Color Stone (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Cert Lab</label>
@@ -372,15 +372,15 @@ export default function NewPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Cert Number</label>
-                        <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} className={inputCls} />
+                        <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} maxLength={100} className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Product Code (item_code)</label>
-                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="blank = auto-generate" className={inputCls} />
+                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="blank = auto-generate" maxLength={100} className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Hallmark Number</label>
-                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} className={inputCls} />
+                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} maxLength={6} className={inputCls} />
                     </div>
                 </div>
             </div>
