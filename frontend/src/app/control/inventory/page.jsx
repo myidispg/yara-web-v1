@@ -14,6 +14,8 @@ const INSTANCE_STATUS = {
     reserved: { label: "Reserved", cls: "bg-yellow-100 text-yellow-800" },
 };
 
+const RING_SLUGS = ["rings", "solitaires", "color-stone"];
+
 export default function InventoryPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -90,7 +92,12 @@ export default function InventoryPage() {
                 <h1 className="font-serif text-4xl">Inventory</h1>
                 <div className="flex items-center gap-3">
                     <p className="text-sm text-ink/60 mr-2">{products.length} designs</p>
-                    <Link href="/control/inventory/new?mode=product" className="btn-outline">+ Add Product</Link>
+                    <Link
+                        href={selected ? `/control/inventory/new?mode=product&design_id=${selected.id}` : "/control/inventory/new?mode=product"}
+                        className="btn-outline"
+                    >
+                        + Add Product
+                    </Link>
                     <Link href="/control/inventory/new?mode=design" className="btn-solid">+ Add Design</Link>
                 </div>
             </div>
@@ -122,7 +129,9 @@ export default function InventoryPage() {
 
                         <div className="grid grid-cols-4 gap-6 mb-4">
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">Base Weight @12</p>
+                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">
+                                    {RING_SLUGS.includes(selected.category_slug) ? "Base Weight @ Size 12 · 14Kt" : "Base Weight @ 14Kt"}
+                                </p>
                                 <p className="font-semibold">{Number(selected.base_net_weight_14kt).toFixed(3)} g</p>
                             </div>
                             <div>

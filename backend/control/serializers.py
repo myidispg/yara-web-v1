@@ -3,7 +3,7 @@ import secrets
 from rest_framework import serializers
 
 from accounts.models import User
-from catalog.models import Category, Design, ProductMedia, Product, RateCard
+from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES
 from orders.models import Order, OrderItem
 
 
@@ -190,6 +190,25 @@ class ProductInputSerializer(serializers.Serializer):
             raise serializers.ValidationError("This product code already exists in the database.")
         return value
 
+    def validate_ring_size(self, value):
+        if value in (None, ""):
+            return value
+        if str(value) not in RING_SIZES:
+            raise serializers.ValidationError(f"Ring size must be one of: {', '.join(RING_SIZES)}.")
+        return value
+
+    def validate_hallmark_number(self, value):
+        if value and Product.objects.filter(hallmark_number=value).exists():
+            raise serializers.ValidationError("This hallmark number already exists on another product.")
+        return value
+
+    def validate(self, data):
+        lab = (data.get('report_lab') or '').strip()
+        num = (data.get('report_number') or '').strip()
+        if num and Product.objects.filter(report_lab=lab, report_number=num).exists():
+            raise serializers.ValidationError(
+                {"report_number": f"A product with cert {lab} #{num} already exists."})
+        return data
 
 DESIGN_PREFIXES = {
     'rings': 'RG', 'earrings': 'ER', 'necklaces': 'NK',
