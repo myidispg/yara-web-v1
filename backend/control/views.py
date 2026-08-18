@@ -146,6 +146,17 @@ class DesignViewSet(viewsets.ModelViewSet):
         return Response({'status': 'success', 'media_id': media.id, 'url': media.url},
                         status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['delete'])
+    def delete_design(self, request, pk=None):
+        design = self.get_object()
+        if design.products.exists():
+            return Response(
+                {'error': f'Cannot delete design with {design.products.count()} existing products. Delete products first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        design.delete()
+        return Response({'status': 'deleted'})
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]

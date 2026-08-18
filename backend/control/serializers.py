@@ -23,7 +23,7 @@ class StaffProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'item_code', 'karat', 'gold_color', 'ring_size', 'diamond_grade',
                   'status', 'price', 'actual_net_weight', 'actual_diamond_weight',
-                  'actual_color_stone_weight', 'report_lab', 'report_number',
+                  'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_number',
                   'sold_at', 'sold_in_order_number']
 
     def get_sold_in_order_number(self, obj):
@@ -146,8 +146,14 @@ def create_product_for_design(design, inst, rc):
     if grade not in rc.grade_choices():
         grade = rc.default_grade
 
-    item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
-                 f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+    # Use user-provided item_code or auto-generate
+    user_item_code = (inst.get('item_code') or '').strip()
+    if user_item_code:
+        item_code = user_item_code
+    else:
+        item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
+                     f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+        
     product = Product.objects.create(
         design=design, item_code=item_code, karat=karat, gold_color=inst['gold_color'],
         ring_size=size, diamond_grade=grade, status='in_stock',
@@ -167,6 +173,7 @@ class MediaInputSerializer(serializers.Serializer):
 
 
 class ProductInputSerializer(serializers.Serializer):
+    item_code = serializers.CharField(max_length=100, required=False, allow_blank=True)
     karat = serializers.ChoiceField(choices=['14Kt', '18Kt'])
     gold_color = serializers.ChoiceField(choices=['Yellow', 'Rose', 'White'])
     ring_size = serializers.CharField(max_length=10, required=False, allow_null=True, allow_blank=True)
@@ -176,6 +183,12 @@ class ProductInputSerializer(serializers.Serializer):
     actual_color_stone_weight = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
     report_lab = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
     report_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    hallmark_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+
+    def validate_item_code(self, value):
+        if value and Product.objects.filter(item_code=value).exists():
+            raise serializers.ValidationError("This product code already exists in the database.")
+        return value
 
 
 DESIGN_PREFIXES = {

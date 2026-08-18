@@ -145,6 +145,7 @@ class Product(models.Model):
 
     report_lab = models.CharField(max_length=50, blank=True)
     report_number = models.CharField(max_length=100, blank=True)
+    hallmark_number = models.CharField(max_length=6, blank=True) 
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="in_stock")
     sold_to_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
