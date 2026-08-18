@@ -18,12 +18,29 @@ class ProductMediaSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """The physical, sellable piece."""
+    gold_value = serializers.SerializerMethodField()
+    diamond_value = serializers.SerializerMethodField()
+    making_charges = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = ["id", "item_code", "karat", "gold_color", "ring_size", "diamond_grade",
                   "status", "price", "actual_net_weight", "actual_diamond_weight",
-                  "actual_color_stone_weight", "report_lab", "report_number"]
+                  "actual_color_stone_weight", "report_lab", "report_number",
+                  "gold_value", "diamond_value", "making_charges", "gst_amount"]
 
+    def get_gold_value(self, obj):
+        return float(obj.gold_value)
+
+    def get_diamond_value(self, obj):
+        return float(obj.diamond_value)
+
+    def get_making_charges(self, obj):
+        return float(obj.making_charges)
+
+    def get_gst_amount(self, obj):
+        return float(obj.gst_amount)
 
 class RateCardSerializer(serializers.ModelSerializer):
     class Meta:

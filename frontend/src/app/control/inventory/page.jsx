@@ -73,6 +73,16 @@ export default function InventoryPage() {
         }
     };
 
+    const deleteProduct = async (productId, itemCode) => {
+        if (!confirm(`Delete product "${itemCode}" permanently? This cannot be undone.`)) return;
+        try {
+            await controlApi.deleteProduct(productId);
+            await viewDesign(selected.id);
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to delete product');
+        }
+    };
+
     const deleteDesign = async () => {
         if (!confirm(`Delete design "${selected.name}"? This cannot be undone.`)) return;
         try {
@@ -149,15 +159,28 @@ export default function InventoryPage() {
                         </div>
 
                         {selected.size_weight_refs && Object.keys(selected.size_weight_refs).length > 0 && (
-                            <div className="bg-cream rounded-xl p-4 mb-4">
-                                <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">Size Reference Weights (14Kt, learned)</p>
-                                <div className="flex flex-wrap gap-3 text-xs">
-                                    {Object.entries(selected.size_weight_refs).map(([size, w]) => (
-                                        <span key={size} className="bg-white border border-line rounded-full px-3 py-1">
-                                            <span className="font-semibold">#{size}</span> {Number(w).toFixed(3)}g
-                                            <span className="text-ink/40 ml-1">({selected.size_weight_counts?.[size] ?? 1} upd)</span>
-                                        </span>
-                                    ))}
+                            <div className="bg-cream rounded-xl p-4 mb-4 space-y-3">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">14Kt Reference Weights</p>
+                                    <div className="flex flex-wrap gap-2 text-xs">
+                                        {Object.entries(selected.size_weight_refs).map(([size, w]) => (
+                                            <span key={`14-${size}`} className="bg-white border border-line rounded-full px-3 py-1">
+                                                <span className="font-semibold">{size === "base" ? "Base" : `#${size}`}</span> {Number(w).toFixed(3)}g
+                                                <span className="text-ink/40 ml-1">({selected.size_weight_counts?.[size] ?? 1} upd)</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">18Kt Reference Weights</p>
+                                    <div className="flex flex-wrap gap-2 text-xs">
+                                        {Object.entries(selected.size_weight_refs).map(([size, w]) => (
+                                            <span key={`18-${size}`} className="bg-white border border-line rounded-full px-3 py-1">
+                                                <span className="font-semibold">{size === "base" ? "Base" : `#${size}`}</span> {(Number(w) * 1.2).toFixed(3)}g
+                                                <span className="text-ink/40 ml-1">({selected.size_weight_counts?.[size] ?? 1} upd)</span>
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -208,6 +231,7 @@ export default function InventoryPage() {
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Hallmark</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Grade</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Dia (Ct)</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Weight</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Price</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
@@ -226,6 +250,7 @@ export default function InventoryPage() {
                                                 {p.ring_size && ` · Size ${p.ring_size}`}
                                             </td>
                                             <td className="px-6 py-4 text-sm">{p.diamond_grade}</td>
+                                            <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_diamond_weight).toFixed(2)}</td>
                                             <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
                                             <td className="px-6 py-4 font-semibold">{inr(p.price)}</td>
                                             <td className="px-6 py-4">
@@ -233,11 +258,21 @@ export default function InventoryPage() {
                                                 {p.sold_in_order_number && <p className="text-[10px] text-ink/50 mt-1">→ {p.sold_in_order_number}</p>}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                {p.status === "in_stock" ? (
-                                                    <button onClick={() => markSoldOffline(p.id)} className="text-sm text-gold-dark hover:text-ink font-semibold">Mark Sold (Offline)</button>
-                                                ) : (
-                                                    <button onClick={() => returnToStock(p.id)} className="text-sm text-green-600 hover:text-ink font-semibold">Return to Stock</button>
-                                                )}
+                                                <div className="flex items-center justify-end gap-3">
+                                                    {p.status === "in_stock" ? (
+                                                        <button onClick={() => markSoldOffline(p.id)} className="text-sm text-gold-dark hover:text-ink font-semibold">Mark Sold</button>
+                                                    ) : (
+                                                        <button onClick={() => returnToStock(p.id)} className="text-sm text-green-600 hover:text-ink font-semibold">Return to Stock</button>
+                                                    )}
+                                                    {p.status === "in_stock" && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); deleteProduct(p.id, p.item_code); }}
+                                                            className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );

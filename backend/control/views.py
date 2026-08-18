@@ -185,6 +185,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         product.save()
         return Response({'status': 'in_stock'})
 
+    @action(detail=True, methods=['delete'])
+    def delete_product(self, request, pk=None):
+        product = self.get_object()
+        if product.status != 'in_stock':
+            return Response(
+                {'error': f'Cannot delete a product with status "{product.status}". Return it to stock first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        product.delete()
+        return Response({'status': 'deleted'})
+
 
 class RateCardView(APIView):
     permission_classes = [IsStaff]

@@ -115,6 +115,32 @@ class Design(models.Model):
         self.save(update_fields=[
             "size_weight_refs", "size_weight_counts", "base_net_weight_14kt"])
 
+    def init_base_ref(self, weight):
+        """Seed a single base reference for non-ring designs."""
+        w = float(Decimal(str(weight)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))
+        self.size_weight_refs = {"base": w}
+        self.size_weight_counts = {"base": 1}
+        self.base_net_weight_14kt = w
+        return self.size_weight_refs
+
+    def record_actual_weight_base(self, weight):
+        """Fold a real measured weight into the single base reference (running average)."""
+        refs = {k: Decimal(str(v)) for k, v in (self.size_weight_refs or {}).items()}
+        counts = {k: int(v) for k, v in (self.size_weight_counts or {}).items()}
+        w = Decimal(str(weight))
+        if "base" not in refs:
+            # Seed with the blueprint base weight so the average includes it
+            refs["base"] = Decimal(str(self.base_net_weight_14kt))
+            counts["base"] = 1
+        old = refs["base"]
+        n = counts["base"]
+        refs["base"] = ((old * n) + w) / (n + 1)
+        counts["base"] = n + 1
+        self.size_weight_refs = {"base": float(refs["base"].quantize(Decimal("0.001"), rounding=ROUND_HALF_UP))}
+        self.size_weight_counts = counts
+        self.base_net_weight_14kt = self.size_weight_refs["base"]
+        self.save(update_fields=["size_weight_refs", "size_weight_counts", "base_net_weight_14kt"])
+
     def calculate_net_weight(self, karat, ring_size=None):
         base = (self.reference_weight_for_size(ring_size)
                 if (ring_size and self.is_ring)
