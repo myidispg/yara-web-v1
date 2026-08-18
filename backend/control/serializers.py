@@ -160,7 +160,9 @@ def create_product_for_design(design, inst, rc):
         price=price_for(net, dia, karat, grade, rc),
         actual_net_weight=net, actual_diamond_weight=dia,
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
-        report_lab=inst.get('report_lab', ''), report_number=inst.get('report_number', ''))
+        report_lab=inst.get('report_lab', ''), 
+        report_number=inst.get('report_number', ''),
+        hallmark_number=inst.get('hallmark_number', ''))
 
     if design.is_ring and size:
         design.record_actual_weight(size, net)

@@ -35,7 +35,7 @@ export default function NewPage() {
     const [productForm, setProductForm] = useState({
         item_code: "",
         karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
-        actual_net_weight: "", a_melle: "", a_pointer: "", a_fancy: "", a_cstone: "",
+        actual_net_weight: "", actual_diamond_weight: "",
         report_lab: "IGI", report_number: "", hallmark_number: "",
     });
 
@@ -206,11 +206,11 @@ export default function NewPage() {
                     item_code: productForm.item_code,
                     karat: productForm.karat,
                     gold_color: productForm.gold_color,
-                    ring_size: ringContext ? (productForm.ring_size || null) : null,
+                    ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
                     diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
                     actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
-                    actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
-                    actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
+                    actual_diamond_weight: productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : null,
+                    actual_color_stone_weight: 0,
                     report_lab: productForm.report_lab,
                     report_number: productForm.report_number,
                     hallmark_number: productForm.hallmark_number,
