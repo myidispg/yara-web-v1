@@ -135,7 +135,10 @@ class Product(models.Model):
     design = models.ForeignKey(Design, on_delete=models.PROTECT, related_name="products")
     karat = models.CharField(max_length=10, choices=KARAT_CHOICES)
     gold_color = models.CharField(max_length=10, choices=COLOR_CHOICES)
-    ring_size = models.CharField(max_length=10, blank=True, null=True)
+
+    RING_SIZE_CHOICES = [(s, s) for s in RING_SIZES]
+    ring_size = models.CharField(max_length=10, blank=True, null=True, choices=RING_SIZE_CHOICES)
+    
     diamond_grade = models.CharField(max_length=20, default="IJ/SI")
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 

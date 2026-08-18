@@ -33,7 +33,7 @@ export default function NewPage() {
     const [useNewDesign, setUseNewDesign] = useState(false);
     const [existingDesignId, setExistingDesignId] = useState("");
     const [productForm, setProductForm] = useState({
-        item_code: "", 
+        item_code: "",
         karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
         actual_net_weight: "", a_melle: "", a_pointer: "", a_fancy: "", a_cstone: "",
         report_lab: "IGI", report_number: "", hallmark_number: "",
@@ -42,13 +42,7 @@ export default function NewPage() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const m = params.get("mode");
-        const dId = params.get("design_id");
         if (m === "design" || m === "product") setMode(m);
-        if (dId) {
-            setPreselectedDesignId(dId);
-            setExistingDesignId(dId);
-            setUseNewDesign(false);
-        }
     }, []);
 
     useEffect(() => {
@@ -57,10 +51,23 @@ export default function NewPage() {
                 const [cats, rc, ds] = await Promise.all([
                     controlApi.getCategories(), controlApi.getRateCard(), controlApi.getProducts(),
                 ]);
-                setCategories(cats.data.results || cats.data);
-                setRateCard(rc.data);
-                setDesigns(ds.data.results || ds.data);
-                setProductForm((f) => ({ ...f, diamond_grade: rc.data.default_grade || "IJ/SI" }));
+                const catData = cats.data.results || cats.data;
+                const rcData = rc.data;
+                const dsData = ds.data.results || ds.data;
+
+                setCategories(catData);
+                setRateCard(rcData);
+                setDesigns(dsData);
+                setProductForm((f) => ({ ...f, diamond_grade: rcData.default_grade || "IJ/SI" }));
+
+                // Apply URL design_id AFTER designs are loaded
+                const params = new URLSearchParams(window.location.search);
+                const dId = params.get("design_id");
+                if (dId && dsData.some((d) => String(d.id) === dId)) {
+                    setPreselectedDesignId(dId);
+                    setExistingDesignId(dId);
+                    setUseNewDesign(false);
+                }
             } catch (e) { console.error(e); }
         })();
     }, []);
@@ -84,7 +91,6 @@ export default function NewPage() {
         return Math.round(gv + dv + making + gst);
     };
 
-    // Reference net weight (14Kt) at the piece's ring size
     const designRefNetAtSize = () => {
         if (useNewDesign || mode === "design") {
             const base = parseFloat(designForm.ref_weight) || 0;
@@ -149,42 +155,70 @@ export default function NewPage() {
             if (useNewDesign) return !!designBasicsValid && refsValid;
             return !!existingDesignId;
         }
-        if (step === 1 && mode === "design") return refsValid;
+        if (step === 1) {
+            if (mode === "design") return refsValid;
+            if (ringContext && !productForm.ring_size) return false;
+            return true;
+        }
         return true;
     };
 
+    const MAX_FILE = 50 * 1024 * 1024;
+    const OK_EXT = ["jpg", "jpeg", "png", "webp", "mp4", "webm", "mov"];
+    const fileProblem = () => {
+        for (const f of files) {
+            const ext = f.name.split(".").pop().toLowerCase();
+            if (!OK_EXT.includes(ext)) return `"${f.name}" is not a supported file type.`;
+            if (f.size > MAX_FILE) return `"${f.name}" is larger than 50MB. Remove or replace it before saving.`;
+        }
+        return null;
+    };
+
     const submit = async () => {
+        const problem = fileProblem();
+        if (problem) { setError(problem); return; }
         setSubmitting(true);
         setError("");
         try {
             if (mode === "design") {
                 const { data } = await controlApi.createDesign(designPayload());
-                if (files.length) await uploadFiles(data.id);
+                try {
+                    if (files.length) await uploadFiles(data.id);
+                } catch (upErr) {
+                    await controlApi.deleteDesign(data.id).catch(() => { });
+                    throw upErr;
+                }
                 router.push("/control/inventory");
                 return;
             }
 
             let designId = existingDesignId;
+            let createdNew = false;
             if (useNewDesign) {
                 const { data } = await controlApi.createDesign(designPayload());
                 designId = data.id;
+                createdNew = true;
             }
-            if (files.length && useNewDesign) await uploadFiles(designId);
-
-            const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
-            await controlApi.addInstance(designId, {
-                item_code: productForm.item_code,
-                karat: productForm.karat,
-                gold_color: productForm.gold_color,
-                ring_size: ringContext ? (productForm.ring_size || null) : null,
-                diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
-                actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
-                actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
-                actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
-                report_lab: productForm.report_lab,
-                report_number: productForm.report_number,
-                hallmark_number: productForm.hallmark_number,
-            });
+            try {
+                if (files.length && useNewDesign) await uploadFiles(designId);
+                const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
+                await controlApi.addInstance(designId, {
+                    item_code: productForm.item_code,
+                    karat: productForm.karat,
+                    gold_color: productForm.gold_color,
+                    ring_size: ringContext ? (productForm.ring_size || null) : null,
+                    diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
+                    actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
+                    actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
+                    actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
+                    report_lab: productForm.report_lab,
+                    report_number: productForm.report_number,
+                    hallmark_number: productForm.hallmark_number,
+                });
+            } catch (innerErr) {
+                if (createdNew) await controlApi.deleteDesign(designId).catch(() => { });
+                throw innerErr;
+            }
             router.push("/control/inventory");
         } catch (err) {
             const d = err.response?.data;
@@ -297,8 +331,11 @@ export default function NewPage() {
                     </div>
                     {ringContext && (
                         <div>
-                            <label className={labelCls}>Ring Size</label>
-                            <input value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} placeholder="e.g., 12" className={inputCls} />
+                            <label className={labelCls}>Ring Size *</label>
+                            <select value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} className={inputCls}>
+                                <option value="">Select size…</option>
+                                {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
                         </div>
                     )}
                     <div>

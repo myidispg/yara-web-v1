@@ -27,6 +27,8 @@ This also allows category management, products move from one category to other c
 
 15. Create invoicing system and more importantly, a list of past all invoices.
 
+16. I wanted to delete a desing with existing products. So, it didn't allow me to delete that design until I deleted products. Make an option to delete products also. 
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
