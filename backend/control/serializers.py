@@ -162,10 +162,14 @@ def create_product_for_design(design, inst, rc):
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
         report_lab=inst.get('report_lab', ''), 
         report_number=inst.get('report_number', ''),
-        hallmark_number=inst.get('hallmark_number', ''))
+        hallmark_number=inst.get('hallmark_number', '')
+        )
 
+    net_14kt = net / 1.2 if karat == "18Kt" else net
     if design.is_ring and size:
-        design.record_actual_weight(size, net)
+        design.record_actual_weight(size, net_14kt)
+    elif not design.is_ring:
+        design.record_actual_weight_base(net_14kt)
     return product
 
 
@@ -251,10 +255,12 @@ class DesignCreateSerializer(serializers.ModelSerializer):
             # Create the design
             design = Design.objects.create(**validated_data)
 
-            # Initialize size references for rings
+            # Initialize weight references (per-size for rings, single base for others)
             if design.is_ring:
                 design.init_size_refs(float(ref_w or design.base_net_weight_14kt), at_size=ref_s)
-                design.save()
+            else:
+                design.init_base_ref(float(ref_w or design.base_net_weight_14kt))
+            design.save()
 
             # Create media
             rc = RateCard.get()

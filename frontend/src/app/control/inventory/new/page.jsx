@@ -499,7 +499,9 @@ export default function NewPage() {
                                 {mode === "product" && (
                                     <p className="text-ink/70">
                                         Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
-                                        dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2) || "refs"} Ct
+                                        dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy) > 0
+                                            ? sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2)
+                                            : "refs"} Ct
                                     </p>
                                 )}
                                 {(mode === "design" || useNewDesign) && <p className="text-ink/70">Media files: {files.length}</p>}

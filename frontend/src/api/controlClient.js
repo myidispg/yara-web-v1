@@ -23,6 +23,7 @@ const controlApi = {
     });
   },
   deleteDesign: (designId) => api.delete(`/control/products/${designId}/delete_design/`),
+  deleteProduct: (productId) => api.delete(`/control/instances/${productId}/delete_product/`),
 
   // Products (physical pieces)
   getInstances: () => api.get("/control/instances/"),
