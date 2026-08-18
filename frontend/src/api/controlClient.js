@@ -39,6 +39,19 @@ const controlApi = {
 
   // Customers
   getCustomers: () => api.get("/control/customers/"),
+
+  // Import/Export
+  importProducts: (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/control/products/import-products/', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  downloadTemplate: () => api.get('/control/products/import-template/', { responseType: 'blob' }),
+  exportProducts: () => api.get('/control/products/export-products/', { responseType: 'blob' }),
+  exportOrders: () => api.get('/control/orders/export-orders/', { responseType: 'blob' }),
+  exportCustomers: () => api.get('/control/customers/export-customers/', { responseType: 'blob' }),
 };
 
 export default controlApi;

@@ -1,5 +1,7 @@
 import secrets
+import csv
 
+from django.http import HttpResponse
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db.models import Count, Q, Sum
@@ -88,6 +90,24 @@ class OrderViewSet(viewsets.ModelViewSet):
         self._restock(order)
         return Response({'status': 'cancelled'})
 
+    # Import/Export CSV
+    @action(detail=False, methods=['get'], url_path='export-orders')
+    def export_orders(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+        w = csv.writer(response)
+        w.writerow(['order_number', 'customer_email', 'customer_name', 'customer_phone',
+                    'status', 'payment_method', 'subtotal', 'shipping_fee', 'total',
+                    'created_at', 'item_codes'])
+        for o in self.queryset.select_related('user', 'address'):
+            codes = ','.join(i.instance.item_code for i in o.items.all() if i.instance)
+            w.writerow([o.order_number, o.user.email,
+                        f"{o.user.first_name} {o.user.last_name}".strip() or o.user.email,
+                        getattr(o.user, 'phone', ''), o.status, o.payment_method,
+                        float(o.subtotal), float(o.shipping_fee), float(o.total),
+                        o.created_at.isoformat(), codes])
+        return response
+
     @staticmethod
     def _restock(order):
         for item in order.items.all():
@@ -157,6 +177,146 @@ class DesignViewSet(viewsets.ModelViewSet):
         design.delete()
         return Response({'status': 'deleted'})
 
+    # Import/Export CSV
+    @action(detail=False, methods=['get'], url_path='import-template')
+    def import_template(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="import-template.csv"'
+        w = csv.writer(response)
+        w.writerow(['design_code', 'item_code', 'karat', 'gold_color', 'ring_size',
+                    'diamond_grade', 'actual_net_weight', 'actual_melle', 'actual_pointer',
+                    'actual_fancy', 'actual_color_stone', 'cert_lab', 'cert_number', 'hallmark_number'])
+        w.writerow(['RG-001', 'YRA-RG001-001', '18Kt', 'Yellow', '12', 'IJ/SI',
+                    '3.500', '0.10', '0.50', '0.00', '0.00', 'IGI', '12345', 'HMK-001'])
+        return response
+
+    @action(detail=False, methods=['post'], url_path='import-products')
+    def import_products(self, request):
+        csv_file = request.FILES.get('file')
+        if not csv_file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            decoded = csv_file.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            return Response({'error': 'File must be UTF-8 encoded'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lines = decoded.splitlines()
+        if not lines:
+            return Response({'error': 'CSV file is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+        reader = csv.DictReader(lines)
+        rc = RateCard.get()
+        valid_rows, errors = [], []
+
+        def pf(s, name, max_val=None):
+            if s is None or str(s).strip() == '':
+                return None
+            try:
+                v = float(s)
+                if v < 0: raise ValueError(f'{name} must be >= 0')
+                if max_val and v > max_val: raise ValueError(f'{name} must be <= {max_val}')
+                return v
+            except ValueError as e:
+                if 'numeric' not in str(e): raise
+                raise ValueError(f'{name} must be a number')
+
+        for i, row in enumerate(reader, start=2):
+            errs = []
+            dc = (row.get('design_code') or '').strip()
+            ic = (row.get('item_code') or '').strip()
+            if not dc: errs.append('design_code is required')
+            if not ic: errs.append('item_code is required')
+            if errs:
+                errors.append({'row': i, 'errors': errs}); continue
+            if Product.objects.filter(item_code=ic).exists():
+                errs.append(f'item_code "{ic}" already exists')
+
+            try:
+                design = Design.objects.get(design_code=dc)
+            except Design.DoesNotExist:
+                errs.append(f'Design "{dc}" not found'); errors.append({'row': i, 'errors': errs}); continue
+
+            karat = (row.get('karat') or '18Kt').strip()
+            if karat not in ('14Kt', '18Kt'): errs.append(f'Invalid karat: {karat}')
+            gc = (row.get('gold_color') or 'Yellow').strip()
+            if gc not in ('Yellow', 'Rose', 'White'): errs.append(f'Invalid gold_color: {gc}')
+            rs = (row.get('ring_size') or '').strip() or None
+            if design.is_ring and rs and rs not in RING_SIZES: errs.append(f'Invalid ring_size: {rs}')
+            if not design.is_ring: rs = None
+            dg = (row.get('diamond_grade') or rc.default_grade).strip()
+            if dg not in rc.grade_choices(): errs.append(f'Invalid diamond_grade: {dg}')
+
+            try:
+                net = pf(row.get('actual_net_weight'), 'actual_net_weight', 200)
+                melle = pf(row.get('actual_melle'), 'actual_melle', 50) or 0
+                pointer = pf(row.get('actual_pointer'), 'actual_pointer', 50) or 0
+                fancy = pf(row.get('actual_fancy'), 'actual_fancy', 50) or 0
+                cstone = pf(row.get('actual_color_stone'), 'actual_color_stone', 50) or 0
+            except ValueError as e:
+                errs.append(str(e)); errors.append({'row': i, 'errors': errs}); continue
+            if melle + pointer + fancy > 50:
+                errs.append('Total diamond weight must be <= 50 Ct')
+
+            cl = (row.get('cert_lab') or '').strip()
+            cn = (row.get('cert_number') or '').strip()
+            if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
+                errs.append(f'Cert {cl} #{cn} already exists')
+            hm = (row.get('hallmark_number') or '').strip()
+            if hm and Product.objects.filter(hallmark_number=hm).exists():
+                errs.append(f'Hallmark "{hm}" already exists')
+
+            if errs:
+                errors.append({'row': i, 'errors': errs}); continue
+
+            final_net = net if net is not None else float(design.calculate_net_weight(karat, rs))
+            dia_total = (melle + pointer + fancy) if (melle + pointer + fancy) > 0 else float(design.total_diamond_weight)
+            valid_rows.append({
+                'design': design, 'item_code': ic, 'karat': karat, 'gold_color': gc,
+                'ring_size': rs, 'diamond_grade': dg, 'net': final_net, 'dia_total': dia_total,
+                'cstone': cstone, 'cert_lab': cl, 'cert_number': cn, 'hallmark': hm,
+            })
+
+        if errors:
+            return Response({'status': 'validation_failed', 'errors': errors,
+                             'valid_count': len(valid_rows)}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.db import transaction
+        created_codes = []
+        with transaction.atomic():
+            for r in valid_rows:
+                p = Product.objects.create(
+                    design=r['design'], item_code=r['item_code'], karat=r['karat'],
+                    gold_color=r['gold_color'], ring_size=r['ring_size'],
+                    diamond_grade=r['diamond_grade'], status='in_stock',
+                    price=price_for(r['net'], r['dia_total'], r['karat'], r['diamond_grade'], rc),
+                    actual_net_weight=r['net'], actual_diamond_weight=r['dia_total'],
+                    actual_color_stone_weight=r['cstone'],
+                    report_lab=r['cert_lab'], report_number=r['cert_number'],
+                    hallmark_number=r['hallmark'])
+                created_codes.append(p.item_code)
+                net_14kt = r['net'] / 1.2 if r['karat'] == '18Kt' else r['net']
+                if r['design'].is_ring and r['ring_size']:
+                    r['design'].record_actual_weight(r['ring_size'], net_14kt)
+                elif not r['design'].is_ring:
+                    r['design'].record_actual_weight_base(net_14kt)
+        return Response({'status': 'success', 'imported': len(created_codes), 'item_codes': created_codes})
+
+    @action(detail=False, methods=['get'], url_path='export-products')
+    def export_products(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="products.csv"'
+        w = csv.writer(response)
+        w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
+                    'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
+                    'cert_lab', 'cert_number', 'hallmark_number', 'price', 'status'])
+        for p in Product.objects.select_related('design', 'design__category').all():
+            w.writerow([p.item_code, p.design.design_code, p.design.name, p.design.category.name,
+                        p.karat, p.gold_color, p.ring_size or '', p.diamond_grade,
+                        float(p.actual_net_weight), float(p.actual_diamond_weight),
+                        p.report_lab, p.report_number, p.hallmark_number,
+                        float(p.price), p.status])
+        return response
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
@@ -225,3 +385,18 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffUserSerializer
     queryset = User.objects.filter(is_staff=False).order_by('-date_joined')
+
+    # Import/Export customers
+    @action(detail=False, methods=['get'], url_path='export-customers')
+    def export_customers(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+        w = csv.writer(response)
+        w.writerow(['email', 'first_name', 'last_name', 'phone', 'date_joined',
+                    'total_orders', 'total_spent'])
+        for u in self.queryset:
+            agg = u.orders.exclude(status='cancelled').aggregate(
+                c=Count('id'), s=Sum('total'))
+            w.writerow([u.email, u.first_name, u.last_name, getattr(u, 'phone', ''),
+                        u.date_joined.isoformat(), agg['c'] or 0, float(agg['s'] or 0)])
+        return response
