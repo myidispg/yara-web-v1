@@ -32,6 +32,7 @@ class StaffProductSerializer(serializers.ModelSerializer):
 
 class StaffDesignSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name')
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
     products = StaffProductSerializer(many=True, read_only=True)
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
@@ -41,7 +42,7 @@ class StaffDesignSerializer(serializers.ModelSerializer):
         model = Design
         fields = ['id', 'design_code', 'slug', 'name', 'category_name', 'base_net_weight_14kt',
                   'size_weight_refs', 'size_weight_counts', 'total_diamond_weight',
-                  'products', 'instance_count', 'in_stock_count', 'base_price']
+                  'products', 'instance_count', 'in_stock_count', 'base_price', 'category_slug']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()
@@ -197,30 +198,42 @@ class DesignCreateSerializer(serializers.ModelSerializer):
                   'diamond_weight_round_melle', 'pointer_solitaire_weight',
                   'fancy_cut_weight', 'color_stone_weight', 'media', 'products']
 
-        def create(self, validated_data):
-            from django.db import transaction
-            media = validated_data.pop('media', [])
-            products = validated_data.pop('products', [])
-            ref_w = validated_data.pop('reference_weight', None)
-            ref_s = validated_data.pop('reference_size', 12) or 12
-            category = validated_data['category']
+    def create(self, validated_data):
+        from django.db import transaction
+        
+        # Pop nested fields BEFORE creating the Design
+        media_list = validated_data.pop('media', [])
+        products_list = validated_data.pop('products', [])
+        ref_w = validated_data.pop('reference_weight', None)
+        ref_s = validated_data.pop('reference_size', 12) or 12
+        category = validated_data['category']
 
-            with transaction.atomic():
-                validated_data['has_solitaire_pointer'] = float(validated_data.get('pointer_solitaire_weight') or 0) > 0
-                validated_data['has_fancy_cut'] = float(validated_data.get('fancy_cut_weight') or 0) > 0
-                validated_data['has_color_stone'] = float(validated_data.get('color_stone_weight') or 0) > 0
+        with transaction.atomic():
+            # Auto-set material flags from weights
+            validated_data['has_solitaire_pointer'] = float(validated_data.get('pointer_solitaire_weight') or 0) > 0
+            validated_data['has_fancy_cut'] = float(validated_data.get('fancy_cut_weight') or 0) > 0
+            validated_data['has_color_stone'] = float(validated_data.get('color_stone_weight') or 0) > 0
 
-                design = Design.objects.create(**validated_data)
+            # Create the design
+            design = Design.objects.create(**validated_data)
 
-                if design.is_ring:
-                    design.init_size_refs(float(ref_w or design.base_net_weight_14kt), at_size=ref_s)
-                    design.save()
+            # Initialize size references for rings
+            if design.is_ring:
+                design.init_size_refs(float(ref_w or design.base_net_weight_14kt), at_size=ref_s)
+                design.save()
 
-                rc = RateCard.get()
-                for order, m in enumerate(media, start=1):
-                    ProductMedia.objects.create(design=design, url=m['url'], kind=m['kind'], sort_order=order)
+            # Create media
+            rc = RateCard.get()
+            for order, m in enumerate(media_list, start=1):
+                ProductMedia.objects.create(
+                    design=design, 
+                    url=m['url'], 
+                    kind=m['kind'], 
+                    sort_order=order
+                )
 
-                for inst in products:
-                    create_product_for_design(design, inst, rc)
+            # Create physical products
+            for inst in products_list:
+                create_product_for_design(design, inst, rc)
 
-            return design
+        return design

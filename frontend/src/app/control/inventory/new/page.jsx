@@ -8,68 +8,103 @@ const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 const RING_SLUGS = ["rings", "solitaires", "color-stone"];
-const DIAMOND_COLORS = ["EF", "GH", "IJ"];
-const DIAMOND_CLARITIES = ["VVS", "VS", "SI"];
 
-const emptyInstance = () => ({
-    karat: "18Kt", gold_color: "Yellow", ring_size: "",
-    actual_net_weight: "", actual_diamond_weight: "", actual_color_stone_weight: "",
-    report_lab: "IGI", report_number: "",
-});
+const inputCls = "w-full border border-line rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold-dark";
+const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2";
 
-const STEPS = ["Basics", "Materials", "Media", "Instances", "Review"];
-
-export default function NewDesignPage() {
+export default function NewPage() {
     const router = useRouter();
+    const [mode, setMode] = useState(null); // 'design' | 'product'
     const [step, setStep] = useState(0);
     const [categories, setCategories] = useState([]);
+    const [designs, setDesigns] = useState([]);
     const [rateCard, setRateCard] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [files, setFiles] = useState([]);
 
-    const [form, setForm] = useState({
+    const [designForm, setDesignForm] = useState({
         category: "", name: "", design_code: "", description: "",
-        base_net_weight_14kt: "", diamond_weight_round_melle: "0",
-        pointer_solitaire_weight: "0", fancy_cut_weight: "0", color_stone_weight: "0",
-        diamond_color: "EF", diamond_clarity: "VVS",
+        ref_weight: "", ref_size: "12",
+        melle: "0", pointer: "0", fancy: "0", cstone: "0",
     });
-    const [media, setMedia] = useState([{ url: "", kind: "image" }]);
-    const [instances, setInstances] = useState([emptyInstance()]);
+    const [useNewDesign, setUseNewDesign] = useState(false);
+    const [existingDesignId, setExistingDesignId] = useState("");
+    const [productForm, setProductForm] = useState({
+        karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
+        actual_net_weight: "", actual_diamond_weight: "", report_lab: "IGI", report_number: "",
+    });
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const m = params.get("mode");
+        if (m === "design" || m === "product") setMode(m);
+    }, []);
 
     useEffect(() => {
         (async () => {
             try {
-                const [cats, rc] = await Promise.all([controlApi.getCategories(), controlApi.getRateCard()]);
+                const [cats, rc, ds] = await Promise.all([
+                    controlApi.getCategories(), controlApi.getRateCard(), controlApi.getProducts(),
+                ]);
                 setCategories(cats.data.results || cats.data);
                 setRateCard(rc.data);
+                setDesigns(ds.data.results || ds.data);
+                setProductForm((f) => ({ ...f, diamond_grade: rc.data.default_grade || "IJ/SI" }));
             } catch (e) { console.error(e); }
         })();
     }, []);
 
-    const selectedCategory = categories.find((c) => String(c.id) === String(form.category));
-    const isRing = RING_SLUGS.includes(selectedCategory?.slug);
+    const gradeBands = rateCard ? Object.entries(rateCard.diamond_rates || {}).filter(([, v]) => v).map(([k]) => k) : [];
+    const selectedCategory = categories.find((c) => String(c.id) === String(designForm.category));
+    const isRingDesign = RING_SLUGS.includes(selectedCategory?.slug);
+    const targetDesign = designs.find((d) => String(d.id) === String(existingDesignId));
+    const productDesignIsRing = targetDesign ? RING_SLUGS.includes(targetDesign.category_slug) : false;
 
-    const estimatePrice = (netG, diaCt, karat) => {
+    const estimate = (netG, diaCt, karat, grade) => {
         if (!rateCard || !netG) return 0;
         const goldRate = karat === "18Kt" ? Number(rateCard.gold_rate_18kt) : Number(rateCard.gold_rate_14kt);
-        const goldValue = Number(netG) * goldRate;
-        const diaValue = Number(diaCt || 0) * Number(rateCard.diamond_rate_per_carat);
-        const making = (goldValue + diaValue) * (Number(rateCard.making_charges_percentage) / 100);
-        const gst = (goldValue + diaValue + making) * (Number(rateCard.gst_percentage) / 100);
-        return Math.round(goldValue + diaValue + making + gst);
+        const gv = Number(netG) * goldRate;
+        const dv = Number(diaCt || 0) * Number(rateCard.diamond_rates?.[grade || rateCard.default_grade] || 0);
+        const making = (gv + dv) * (Number(rateCard.making_charges_percentage) / 100);
+        const gst = (gv + dv + making) * (Number(rateCard.gst_percentage) / 100);
+        return Math.round(gv + dv + making + gst);
     };
 
-    const totalDia = () =>
-        (parseFloat(form.diamond_weight_round_melle) || 0) +
-        (parseFloat(form.pointer_solitaire_weight) || 0) +
-        (parseFloat(form.fancy_cut_weight) || 0);
+    const designPayload = () => ({
+        name: designForm.name.trim(),
+        design_code: designForm.design_code.trim(),
+        category: Number(designForm.category),
+        description: designForm.description,
+        base_net_weight_14kt: parseFloat(designForm.ref_weight),
+        reference_weight: parseFloat(designForm.ref_weight),
+        reference_size: parseInt(designForm.ref_size) || 12,
+        diamond_weight_round_melle: parseFloat(designForm.melle) || 0,
+        pointer_solitaire_weight: parseFloat(designForm.pointer) || 0,
+        fancy_cut_weight: parseFloat(designForm.fancy) || 0,
+        color_stone_weight: parseFloat(designForm.cstone) || 0,
+        media: [],
+        products: [],
+    });
 
-    const validMedia = media.filter((m) => m.url.trim() !== "");
-    const baseEstimate = estimatePrice(form.base_net_weight_14kt, totalDia(), "14Kt");
+    const uploadFiles = async (designId) => {
+        for (const f of files) await controlApi.uploadMedia(designId, f);
+    };
 
+    const steps = mode === "design"
+        ? ["Basics", "Materials", "Media", "Review"]
+        : ["Design", "Product Details", "Media", "Review"];
+
+    const designBasicsValid = designForm.category && designForm.name.trim() && designForm.design_code.trim();
     const canProceed = () => {
-        if (step === 0) return form.category && form.name.trim() && form.design_code.trim();
-        if (step === 1) return parseFloat(form.base_net_weight_14kt) > 0;
+        if (step === 0) {
+            if (mode === "design") return !!designBasicsValid;
+            return useNewDesign ? !!designBasicsValid : !!existingDesignId;
+        }
+        if (step === 1) {
+            if (mode === "design") return parseFloat(designForm.ref_weight) > 0;
+            return true;
+        }
         return true;
     };
 
@@ -77,245 +112,270 @@ export default function NewDesignPage() {
         setSubmitting(true);
         setError("");
         try {
-            const payload = {
-                name: form.name.trim(),
-                design_code: form.design_code.trim(),
-                category: Number(form.category),
-                description: form.description,
-                base_net_weight_14kt: parseFloat(form.base_net_weight_14kt),
-                diamond_weight_round_melle: parseFloat(form.diamond_weight_round_melle) || 0,
-                pointer_solitaire_weight: parseFloat(form.pointer_solitaire_weight) || 0,
-                fancy_cut_weight: parseFloat(form.fancy_cut_weight) || 0,
-                color_stone_weight: parseFloat(form.color_stone_weight) || 0,
-                diamond_color: form.diamond_color,
-                diamond_clarity: form.diamond_clarity,
-                media: validMedia,
-                instances: instances.map((i) => ({
-                    karat: i.karat,
-                    gold_color: i.gold_color,
-                    ring_size: isRing ? (i.ring_size || null) : null,
-                    actual_net_weight: i.actual_net_weight ? parseFloat(i.actual_net_weight) : null,
-                    actual_diamond_weight: i.actual_diamond_weight ? parseFloat(i.actual_diamond_weight) : null,
-                    actual_color_stone_weight: i.actual_color_stone_weight ? parseFloat(i.actual_color_stone_weight) : 0,
-                    report_lab: i.report_lab,
-                    report_number: i.report_number,
-                })),
-            };
-            await controlApi.createDesign(payload);
+            if (mode === "design") {
+                const { data } = await controlApi.createDesign(designPayload());
+                if (files.length) await uploadFiles(data.id);
+                router.push("/control/inventory");
+                return;
+            }
+
+            // Product mode
+            let designId = existingDesignId;
+            if (useNewDesign) {
+                const { data } = await controlApi.createDesign(designPayload());
+                designId = data.id;
+            }
+            if (files.length) await uploadFiles(designId);
+
+            await controlApi.addInstance(designId, {
+                karat: productForm.karat,
+                gold_color: productForm.gold_color,
+                ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
+                diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
+                actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
+                actual_diamond_weight: productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : null,
+                actual_color_stone_weight: 0,
+                report_lab: productForm.report_lab,
+                report_number: productForm.report_number,
+            });
             router.push("/control/inventory");
         } catch (err) {
-            setError(JSON.stringify(err.response?.data || err.message));
+            const d = err.response?.data;
+            setError(typeof d === "object" ? JSON.stringify(d) : String(d || err.message));
             setSubmitting(false);
         }
     };
 
-    const inputCls = "w-full border border-line rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold-dark";
-    const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2";
+    // ── Mode selection ──
+    if (!mode)
+        return (
+            <div className="max-w-3xl mx-auto">
+                <button onClick={() => router.push("/control/inventory")} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back to Inventory</button>
+                <h1 className="font-serif text-4xl mb-8">What are you adding?</h1>
+                <div className="grid grid-cols-2 gap-6">
+                    <button onClick={() => setMode("design")} className="bg-white rounded-xl border border-line p-8 shadow-card hover:shadow-hero transition-shadow text-left">
+                        <p className="text-3xl mb-3">📐</p>
+                        <h2 className="font-serif text-2xl mb-2">Add Design</h2>
+                        <p className="text-sm text-ink/60">Create a blueprint only. It becomes sellable immediately as Made-to-Order.</p>
+                    </button>
+                    <button onClick={() => setMode("product")} className="bg-white rounded-xl border border-line p-8 shadow-card hover:shadow-hero transition-shadow text-left">
+                        <p className="text-3xl mb-3">💎</p>
+                        <h2 className="font-serif text-2xl mb-2">Add Product</h2>
+                        <p className="text-sm text-ink/60">Add a physical piece from the workshop. Attach it to an existing design or create a new one.</p>
+                    </button>
+                </div>
+            </div>
+        );
+
+    const designFields = (
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+                <div>
+                    <label className={labelCls}>Category *</label>
+                    <select value={designForm.category} onChange={(e) => setDesignForm({ ...designForm, category: e.target.value })} className={inputCls}>
+                        <option value="">Select category…</option>
+                        {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className={labelCls}>Design Code *</label>
+                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., RG-031" className={inputCls} />
+                </div>
+            </div>
+            <div>
+                <label className={labelCls}>Design Name *</label>
+                <input value={designForm.name} onChange={(e) => setDesignForm({ ...designForm, name: e.target.value })} placeholder="e.g., Aura Diamond Ring" className={inputCls} />
+            </div>
+            <div>
+                <label className={labelCls}>Description</label>
+                <textarea rows="3" value={designForm.description} onChange={(e) => setDesignForm({ ...designForm, description: e.target.value })} className={inputCls} />
+            </div>
+        </div>
+    );
+
+    const mediaStep = (
+        <div className="space-y-4">
+            <label className={labelCls}>Upload Images / Videos</label>
+            <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => setFiles([...files, ...Array.from(e.target.files)])}
+                className="w-full text-sm"
+            />
+            {files.length > 0 && (
+                <ul className="space-y-2">
+                    {files.map((f, i) => (
+                        <li key={i} className="flex items-center justify-between bg-cream rounded-lg px-4 py-2 text-sm">
+                            <span>{f.name} <span className="text-ink/40">({(f.size / 1024).toFixed(0)} KB)</span></span>
+                            <button onClick={() => setFiles(files.filter((_, x) => x !== i))} className="text-red-500">✕</button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <p className="text-xs text-ink/50">Files upload to secure storage after the record is created. Media is optional.</p>
+        </div>
+    );
 
     return (
         <div className="max-w-4xl mx-auto">
-            <button onClick={() => router.push("/control/inventory")} className="mb-6 text-sm text-gold-dark hover:text-ink">
-                ← Back to Inventory
-            </button>
-            <h1 className="font-serif text-4xl mb-8">Create New Design</h1>
+            <button onClick={() => router.push("/control/inventory")} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back to Inventory</button>
+            <h1 className="font-serif text-4xl mb-8">{mode === "design" ? "Add Design" : "Add Product"}</h1>
 
-            {/* Step indicator */}
             <div className="flex items-center gap-2 mb-10">
-                {STEPS.map((s, i) => (
-                    <button
-                        key={s}
-                        onClick={() => i < step && setStep(i)}
-                        className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] px-4 py-2 rounded-full transition-colors ${i === step ? "bg-ink text-white" : i < step ? "bg-gold-dark text-white" : "bg-cream text-ink/50"
-                            }`}
-                    >
+                {steps.map((s, i) => (
+                    <button key={s} onClick={() => i < step && setStep(i)} className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] px-4 py-2 rounded-full transition-colors ${i === step ? "bg-ink text-white" : i < step ? "bg-gold-dark text-white" : "bg-cream text-ink/50"}`}>
                         <span>{i + 1}</span> {s}
                     </button>
                 ))}
             </div>
 
             <div className="bg-white rounded-xl border border-line p-8 shadow-card">
-                {step === 0 && (
+                {step === 0 && (mode === "design" ? designFields : (
                     <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="flex gap-4">
+                            <button onClick={() => { setUseNewDesign(false); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${!useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                                Existing Design
+                            </button>
+                            <button onClick={() => { setUseNewDesign(true); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                                Create New Design
+                            </button>
+                        </div>
+                        {useNewDesign ? designFields : (
                             <div>
-                                <label className={labelCls}>Category *</label>
-                                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputCls}>
-                                    <option value="">Select category…</option>
-                                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                <label className={labelCls}>Select Design *</label>
+                                <select value={existingDesignId} onChange={(e) => setExistingDesignId(e.target.value)} className={inputCls}>
+                                    <option value="">Choose a design…</option>
+                                    {designs.map((d) => <option key={d.id} value={d.id}>{d.design_code} — {d.name}</option>)}
                                 </select>
                             </div>
-                            <div>
-                                <label className={labelCls}>Design Code *</label>
-                                <input value={form.design_code} onChange={(e) => setForm({ ...form, design_code: e.target.value })} placeholder="e.g., RG-031 (required)" className={inputCls} />
-                            </div>
-                        </div>
-                        <div>
-                            <label className={labelCls}>Design Name *</label>
-                            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Aura Diamond Ring" className={inputCls} />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Description</label>
-                            <textarea rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} />
-                        </div>
+                        )}
                     </div>
-                )}
+                ))}
 
-                {step === 1 && (
+                {step === 1 && (mode === "design" ? (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
                             <div>
                                 <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
-                                <input type="number" step="0.001" value={form.base_net_weight_14kt} onChange={(e) => setForm({ ...form, base_net_weight_14kt: e.target.value })} className={inputCls} />
+                                <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
                             </div>
+                            {isRingDesign && (
+                                <div>
+                                    <label className={labelCls}>Entered Weight Is For Size</label>
+                                    <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
+                                        {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div>
-                                <label className={labelCls}>Round / Melle Diamond (Ct)</label>
-                                <input type="number" step="0.01" value={form.diamond_weight_round_melle} onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })} className={inputCls} />
+                                <label className={labelCls}>Round / Melle (Ct)</label>
+                                <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} className={inputCls} />
                             </div>
                             <div>
                                 <label className={labelCls}>Pointer / Solitaire (Ct)</label>
-                                <input type="number" step="0.01" value={form.pointer_solitaire_weight} onChange={(e) => setForm({ ...form, pointer_solitaire_weight: e.target.value })} className={inputCls} />
+                                <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} className={inputCls} />
                             </div>
                             <div>
                                 <label className={labelCls}>Fancy Cut (Ct)</label>
-                                <input type="number" step="0.01" value={form.fancy_cut_weight} onChange={(e) => setForm({ ...form, fancy_cut_weight: e.target.value })} className={inputCls} />
+                                <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} className={inputCls} />
                             </div>
                             <div>
                                 <label className={labelCls}>Color Stone (Ct)</label>
-                                <input type="number" step="0.01" value={form.color_stone_weight} onChange={(e) => setForm({ ...form, color_stone_weight: e.target.value })} className={inputCls} />
+                                <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} className={inputCls} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                        </div>
+                        {isRingDesign && <p className="text-xs text-ink/50">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className={labelCls}>Karat</label>
+                                <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
+                                    <option>14Kt</option><option>18Kt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Gold Color</label>
+                                <select value={productForm.gold_color} onChange={(e) => setProductForm({ ...productForm, gold_color: e.target.value })} className={inputCls}>
+                                    <option>Yellow</option><option>Rose</option><option>White</option>
+                                </select>
+                            </div>
+                            {productDesignIsRing && (
                                 <div>
-                                    <label className={labelCls}>Diamond Color</label>
-                                    <select value={form.diamond_color} onChange={(e) => setForm({ ...form, diamond_color: e.target.value })} className={inputCls}>
-                                        {DIAMOND_COLORS.map((c) => <option key={c}>{c}</option>)}
-                                    </select>
+                                    <label className={labelCls}>Ring Size</label>
+                                    <input value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} placeholder="e.g., 12" className={inputCls} />
                                 </div>
-                                <div>
-                                    <label className={labelCls}>Clarity</label>
-                                    <select value={form.diamond_clarity} onChange={(e) => setForm({ ...form, diamond_clarity: e.target.value })} className={inputCls}>
-                                        {DIAMOND_CLARITIES.map((c) => <option key={c}>{c}</option>)}
-                                    </select>
-                                </div>
+                            )}
+                            <div>
+                                <label className={labelCls}>Diamond Grade</label>
+                                <select value={productForm.diamond_grade} onChange={(e) => setProductForm({ ...productForm, diamond_grade: e.target.value })} className={inputCls}>
+                                    {gradeBands.map((g) => <option key={g}>{g}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Actual Net Weight (g)</label>
+                                <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Actual Diamond (Ct)</label>
+                                <input type="number" step="0.01" value={productForm.actual_diamond_weight} onChange={(e) => setProductForm({ ...productForm, actual_diamond_weight: e.target.value })} placeholder="blank = design" className={inputCls} />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Cert Lab</label>
+                                <select value={productForm.report_lab} onChange={(e) => setProductForm({ ...productForm, report_lab: e.target.value })} className={inputCls}>
+                                    <option>IGI</option><option>GIA</option><option>SGL</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Cert Number</label>
+                                <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} className={inputCls} />
                             </div>
                         </div>
                         <div className="bg-cream rounded-xl p-6 flex items-center justify-between">
-                            <p className="text-sm text-ink/60">Estimated base price (14Kt, live rates)</p>
-                            <p className="text-2xl font-serif">{inr(baseEstimate)}</p>
+                            <p className="text-sm text-ink/60">Estimated price (live rates, {productForm.diamond_grade})</p>
+                            <p className="text-2xl font-serif">{inr(estimate(productForm.actual_net_weight, productForm.actual_diamond_weight, productForm.karat, productForm.diamond_grade))}</p>
                         </div>
+                        <p className="text-xs text-ink/50">The entered weight updates the design's size references (running average) for better future estimates.</p>
                     </div>
-                )}
+                ))}
 
-                {step === 2 && (
-                    <div className="space-y-4">
-                        {media.map((m, i) => (
-                            <div key={i} className="flex gap-3 items-center">
-                                <input value={m.url} onChange={(e) => {
-                                    const next = [...media]; next[i].url = e.target.value; setMedia(next);
-                                }} placeholder="https://… image or video URL" className={inputCls} />
-                                <select value={m.kind} onChange={(e) => {
-                                    const next = [...media]; next[i].kind = e.target.value; setMedia(next);
-                                }} className="border border-line rounded-lg px-3 py-3 text-sm">
-                                    <option value="image">Image</option>
-                                    <option value="video">Video</option>
-                                </select>
-                                <button onClick={() => setMedia(media.filter((_, x) => x !== i))} className="text-red-500 text-sm shrink-0">✕</button>
-                            </div>
-                        ))}
-                        <button onClick={() => setMedia([...media, { url: "", kind: "image" }])} className="btn-outline">+ Add Media URL</button>
-                        <p className="text-xs text-ink/50">Media is optional — you can add photos later. Order on screen = display order.</p>
-                    </div>
-                )}
+                {step === 2 && mediaStep}
 
                 {step === 3 && (
-                    <div className="space-y-6">
-                        <p className="text-sm text-ink/60">
-                            Add the physical pieces you received from the workshop. Leave empty to sell this design as Made-to-Order only.
-                        </p>
-                        {instances.map((inst, i) => (
-                            <div key={i} className="border border-line rounded-xl p-5 space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <p className="font-semibold text-sm">Instance {i + 1}</p>
-                                    <button onClick={() => setInstances(instances.filter((_, x) => x !== i))} className="text-red-500 text-sm">Remove</button>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className={labelCls}>Karat</label>
-                                        <select value={inst.karat} onChange={(e) => { const n = [...instances]; n[i].karat = e.target.value; setInstances(n); }} className={inputCls}>
-                                            <option>14Kt</option><option>18Kt</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Gold Color</label>
-                                        <select value={inst.gold_color} onChange={(e) => { const n = [...instances]; n[i].gold_color = e.target.value; setInstances(n); }} className={inputCls}>
-                                            <option>Yellow</option><option>Rose</option><option>White</option>
-                                        </select>
-                                    </div>
-                                    {isRing && (
-                                        <div>
-                                            <label className={labelCls}>Ring Size</label>
-                                            <input value={inst.ring_size} onChange={(e) => { const n = [...instances]; n[i].ring_size = e.target.value; setInstances(n); }} placeholder="e.g., 12" className={inputCls} />
-                                        </div>
-                                    )}
-                                    <div>
-                                        <label className={labelCls}>Net Weight (g)</label>
-                                        <input type="number" step="0.001" value={inst.actual_net_weight} onChange={(e) => { const n = [...instances]; n[i].actual_net_weight = e.target.value; setInstances(n); }} placeholder={form.base_net_weight_14kt || "0.000"} className={inputCls} />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Diamond (Ct)</label>
-                                        <input type="number" step="0.01" value={inst.actual_diamond_weight} onChange={(e) => { const n = [...instances]; n[i].actual_diamond_weight = e.target.value; setInstances(n); }} placeholder={totalDia().toFixed(2)} className={inputCls} />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Cert Lab / No.</label>
-                                        <div className="flex gap-2">
-                                            <select value={inst.report_lab} onChange={(e) => { const n = [...instances]; n[i].report_lab = e.target.value; setInstances(n); }} className={inputCls}>
-                                                <option>IGI</option><option>GIA</option><option>SGL</option>
-                                            </select>
-                                            <input value={inst.report_number} onChange={(e) => { const n = [...instances]; n[i].report_number = e.target.value; setInstances(n); }} placeholder="Cert #" className={inputCls} />
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-ink/50">
-                                    Estimated price: <span className="font-semibold text-ink">{inr(estimatePrice(inst.actual_net_weight || form.base_net_weight_14kt, inst.actual_diamond_weight || totalDia(), inst.karat))}</span>
-                                </p>
-                            </div>
-                        ))}
-                        <button onClick={() => setInstances([...instances, emptyInstance()])} className="btn-outline">+ Add Instance</button>
-                    </div>
-                )}
-
-                {step === 4 && (
                     <div className="space-y-4 text-sm">
                         <div className="grid grid-cols-2 gap-6">
                             <div>
                                 <p className={labelCls}>Design</p>
-                                <p className="font-serif text-xl">{form.name}</p>
-                                <p className="text-ink/60">{selectedCategory?.name} · {form.design_code || "(auto code)"}</p>
-                                <p className="text-ink/60">{form.diamond_color}-{form.diamond_clarity} · {totalDia().toFixed(2)} Ct · {form.base_net_weight_14kt}g @14Kt</p>
+                                {mode === "design" || useNewDesign ? (
+                                    <>
+                                        <p className="font-serif text-xl">{designForm.name}</p>
+                                        <p className="text-ink/60">{selectedCategory?.name} · {designForm.design_code}</p>
+                                        <p className="text-ink/60">{designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`}</p>
+                                    </>
+                                ) : (
+                                    <p className="font-serif text-xl">{targetDesign?.name} <span className="text-sm text-ink/50">({targetDesign?.design_code})</span></p>
+                                )}
                             </div>
                             <div>
                                 <p className={labelCls}>Summary</p>
-                                <p className="text-ink/70">Media: {validMedia.length} item(s)</p>
-                                <p className="text-ink/70">Physical instances: {instances.length}</p>
-                                <p className="text-ink/70">Est. base price: <span className="font-semibold text-ink">{inr(baseEstimate)}</span></p>
+                                {mode === "product" && (
+                                    <p className="text-ink/70">{productForm.karat} {productForm.gold_color}{productDesignIsRing && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}</p>
+                                )}
+                                <p className="text-ink/70">Media files: {files.length}</p>
                             </div>
                         </div>
                         {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
                     </div>
                 )}
 
-                {/* Nav buttons */}
                 <div className="flex justify-between mt-10 pt-6 border-t border-line">
-                    <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="btn-outline disabled:opacity-40">
-                        ← Back
-                    </button>
-                    {step < STEPS.length - 1 ? (
-                        <button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="btn-solid disabled:opacity-40">
-                            Continue →
-                        </button>
+                    <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="btn-outline disabled:opacity-40">← Back</button>
+                    {step < steps.length - 1 ? (
+                        <button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="btn-solid disabled:opacity-40">Continue →</button>
                     ) : (
-                        <button onClick={submit} disabled={submitting} className="btn-solid">
-                            {submitting ? "Creating…" : "Create Design"}
-                        </button>
+                        <button onClick={submit} disabled={submitting} className="btn-solid">{submitting ? "Saving…" : mode === "design" ? "Create Design" : "Save Product"}</button>
                     )}
                 </div>
             </div>
