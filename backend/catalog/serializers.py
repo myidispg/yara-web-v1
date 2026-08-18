@@ -1,17 +1,13 @@
 from rest_framework import serializers
+from decimal import Decimal
 
-from .models import Category, Product, ProductMedia, ProductInstance, RateCard
-
-class RateCardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RateCard
-        fields = ["gold_rate_14kt", "gold_rate_18kt", "diamond_rate_per_carat", "making_charges_percentage", "gst_percentage"]
+from .models import Category, Design, ProductMedia, Product, RateCard
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name", "slug"]
+        fields = ["id", "name", "slug", "is_active"]
 
 
 class ProductMediaSerializer(serializers.ModelSerializer):
@@ -20,62 +16,84 @@ class ProductMediaSerializer(serializers.ModelSerializer):
         fields = ["url", "kind", "sort_order"]
 
 
-class ProductInstanceSerializer(serializers.ModelSerializer):
-    gold_value = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-    diamond_value = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-    making_charges = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-    gst_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-    calculated_price = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-
+class ProductSerializer(serializers.ModelSerializer):
+    """The physical, sellable piece."""
     class Meta:
-        model = ProductInstance
-        fields = ["id", "item_code", "karat", "gold_color", "ring_size", "status",
-                  "actual_net_weight", "actual_diamond_weight", "actual_color_stone_weight",
-                  "report_lab", "report_number", "price",
-                  "gold_value", "diamond_value", "making_charges", "gst_amount", "calculated_price"]
+        model = Product
+        fields = ["id", "item_code", "karat", "gold_color", "ring_size", "diamond_grade",
+                  "status", "price", "actual_net_weight", "actual_diamond_weight",
+                  "actual_color_stone_weight", "report_lab", "report_number"]
 
 
-class ProductListSerializer(serializers.ModelSerializer):
+class RateCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RateCard
+        fields = ["gold_rate_14kt", "gold_rate_18kt", "diamond_rates", "default_grade",
+                  "making_charges_percentage", "gst_percentage"]
+
+
+def design_from_price(obj):
+    """'From' price: cheapest in-stock piece, else MTO estimate @ default grade (14Kt)."""
+    inst = obj.products.filter(status="in_stock").order_by("price").first()
+    if inst:
+        return float(inst.price)
+    rc = RateCard.get()
+    net = float(obj.base_net_weight_14kt)
+    dia = float(obj.total_diamond_weight)
+    gold_value = net * float(rc.gold_rate_14kt)
+    dia_value = dia * float(rc.rate_for_grade(rc.default_grade))
+    making = (gold_value + dia_value) * (float(rc.making_charges_percentage) / 100)
+    gst = (gold_value + dia_value + making) * (float(rc.gst_percentage) / 100)
+    return round(gold_value + dia_value + making + gst)
+
+
+class DesignListSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    base_price = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
 
     class Meta:
-        model = Product
-        fields = [
-            "id", "design_code", "slug", "name", "category", "category_name", "category_slug",
-            "base_price", "total_diamond_weight", "media", "in_stock"
-        ]
+        model = Design
+        fields = ["id", "design_code", "slug", "name", "category", "category_name",
+                  "category_slug", "base_net_weight_14kt", "total_diamond_weight",
+                  "base_price", "in_stock", "media"]
+
+    def get_base_price(self, obj):
+        return design_from_price(obj)
 
     def get_in_stock(self, obj):
-        return any(i.status == "in_stock" for i in obj.instances.all())
+        return obj.products.filter(status="in_stock").exists()
 
 
-class ProductDetailSerializer(serializers.ModelSerializer):
+class DesignDetailSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
-    instances = ProductInstanceSerializer(many=True, read_only=True)
+    products = ProductSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    base_price = serializers.SerializerMethodField()
     rate_card = serializers.SerializerMethodField()
 
     class Meta:
-        model = Product
-        fields = [
-            "id", "design_code", "slug", "name", "category", "category_name", "category_slug",
-            "description", "base_net_weight_14kt", "base_price", "total_diamond_weight",
-            "diamond_weight_round_melle", "pointer_solitaire_weight", "fancy_cut_weight",
-            "color_stone_weight", "diamond_color", "diamond_clarity",
-            "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
-            "media", "instances", "rate_card"
-        ]
+        model = Design
+        fields = ["id", "design_code", "slug", "name", "category", "category_name",
+                  "category_slug", "description", "base_net_weight_14kt",
+                  "size_weight_refs", "total_diamond_weight", "diamond_weight_round_melle",
+                  "pointer_solitaire_weight", "fancy_cut_weight", "color_stone_weight",
+                  "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
+                  "base_price", "media", "products", "rate_card"]
+
+    def get_base_price(self, obj):
+        return design_from_price(obj)
 
     def get_rate_card(self, obj):
         rc = RateCard.get()
         return {
             "gold_rate_14kt": float(rc.gold_rate_14kt),
             "gold_rate_18kt": float(rc.gold_rate_18kt),
-            "diamond_rate_per_carat": float(rc.diamond_rate_per_carat),
+            "diamond_rates": {k: float(v) for k, v in rc.grade_choices().items()},
+            "default_grade": rc.default_grade,
             "making_charges_percentage": float(rc.making_charges_percentage),
             "gst_percentage": float(rc.gst_percentage),
         }

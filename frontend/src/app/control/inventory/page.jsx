@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import controlApi from "@/api/controlClient";
+import Link from "next/link";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -114,7 +115,10 @@ export default function InventoryPage() {
         <div>
             <div className="flex items-center justify-between mb-8">
                 <h1 className="font-serif text-4xl">Inventory</h1>
-                <p className="text-sm text-ink/60">{products.length} designs</p>
+                <div className="flex items-center gap-4">
+                    <p className="text-sm text-ink/60">{products.length} designs</p>
+                    <Link href="/control/inventory/new" className="btn-solid">+ New Design</Link>
+                </div>
             </div>
 
             {selectedProduct ? (

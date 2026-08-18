@@ -6,7 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from accounts.models import validate_indian_phone
-from catalog.models import ProductInstance
+from catalog.models import Product
 
 
 class Address(models.Model):
@@ -61,7 +61,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
-    instance = models.OneToOneField(ProductInstance, on_delete=models.PROTECT, related_name="order_item")
+    instance = models.OneToOneField(Product, on_delete=models.PROTECT, related_name="order_item")
     product_name = models.CharField(max_length=220)
     variant_label = models.CharField(max_length=120, blank=True)
     quantity = models.PositiveIntegerField(default=1)

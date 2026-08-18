@@ -22,6 +22,8 @@ This also allows category management, products move from one category to other c
 
 12. In the control panel and on the rate_card page, it shows that updating rates changes rate for made on order items and in stock items' prices are static. Make them all dynamic.
 
+13. Implement search functionality in the website.
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
@@ -38,3 +40,12 @@ Tax calculation beyond GST percentage
 staff id: email@gmail.com password@123 9876543210
 
 normal id: email2@gmail.com password@123 9876543211
+
+
+STUFF TO TAKE CARE OF WHILE CREATING A DESIGN
+1. We are now using Designs and Products instead of product and product instances.
+2. Ask whether we need to add a design or a product. Design is the blueprint, product is an actual product. 
+   When we add a product, if doesn't exist, a new design is created automatically from that information.
+3. When creating the design of a ring, it asked for net weight. Ask for net weight @ size 12 in case of ring.
+4. We also don't need to ask color clarity in design. But when creating a product, we need to ask. 
+   When we add a design, automatically assume that we are selling IJ/SI, JK/SI or HI/SI. Prices for these will be fixed and set in rate_card
