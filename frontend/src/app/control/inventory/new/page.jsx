@@ -209,8 +209,8 @@ export default function NewPage() {
                     ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
                     diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
                     actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
-                    actual_diamond_weight: productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : null,
-                    actual_color_stone_weight: 0,
+                    actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
+                    actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
                     report_lab: productForm.report_lab,
                     report_number: productForm.report_number,
                     hallmark_number: productForm.hallmark_number,
@@ -280,7 +280,7 @@ export default function NewPage() {
                 <div className="grid grid-cols-2 gap-6">
                     <div>
                         <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
-                        <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
+                        <input type="number" step="0.001" min="0" max={200} value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
                     </div>
                     {isRingDesign && (
                         <div>
@@ -292,19 +292,19 @@ export default function NewPage() {
                     )}
                     <div>
                         <label className={labelCls}>Round / Melle (Ct)</label>
-                        <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} placeholder="blank = none" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Pointer / Solitaire (Ct)</label>
-                        <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Fancy Cut (Ct)</label>
-                        <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Color Stone (Ct)</label>
-                        <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
                     </div>
                 </div>
                 {isRingDesign && <p className="text-xs text-ink/50 mt-3">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
@@ -346,23 +346,23 @@ export default function NewPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Actual Net Weight (g)</label>
-                        <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.001" min="0" max={200} value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Melle (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Pointer (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Fancy (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Color Stone (Ct)</label>
-                        <input type="number" step="0.01" value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Cert Lab</label>
@@ -380,7 +380,7 @@ export default function NewPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Hallmark Number</label>
-                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} maxLength={6} className={inputCls} />
+                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} maxLength={100} className={inputCls} />
                     </div>
                 </div>
             </div>

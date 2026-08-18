@@ -73,19 +73,19 @@ export default function RateCardPage() {
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold 14Kt (₹/g)</label>
-                            <input type="number" step="0.01" value={form.gold_rate_14kt} onChange={(e) => setForm({ ...form, gold_rate_14kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                            <input type="number" step="0.01" min="0" max={500000} value={form.gold_rate_14kt} onChange={(e) => setForm({ ...form, gold_rate_14kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
                         </div>
-                        <div>
+                        <div>   
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold 18Kt (₹/g)</label>
-                            <input type="number" step="0.01" value={form.gold_rate_18kt} onChange={(e) => setForm({ ...form, gold_rate_18kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                            <input type="number" step="0.01" min="0" max={500000} value={form.gold_rate_18kt} onChange={(e) => setForm({ ...form, gold_rate_18kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Making Charges (%)</label>
-                            <input type="number" step="0.01" value={form.making} onChange={(e) => setForm({ ...form, making: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                            <input type="number" step="0.01" min="0" max={100} value={form.making} onChange={(e) => setForm({ ...form, making: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">GST (%)</label>
-                            <input type="number" step="0.01" value={form.gst} onChange={(e) => setForm({ ...form, gst: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                            <input type="number" step="0.01" min="0" max={100} value={form.gst} onChange={(e) => setForm({ ...form, gst: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
                         </div>
                     </div>
 

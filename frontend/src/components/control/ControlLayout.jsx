@@ -10,6 +10,7 @@ const navItems = [
   { label: "Inventory", href: "/control/inventory", icon: "🏪" },
   { label: "Rate Card", href: "/control/rate-card", icon: "💰" },
   { label: "Customers", href: "/control/customers", icon: "👥" },
+  { label: "Import/Export", href: "/control/import-export", icon: "📥" },
 ];
 
 export default function ControlLayout({ children }) {
