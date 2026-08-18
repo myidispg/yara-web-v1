@@ -22,6 +22,7 @@ const controlApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  deleteDesign: (designId) => api.delete(`/control/products/${designId}/delete_design/`),
 
   // Products (physical pieces)
   getInstances: () => api.get("/control/instances/"),

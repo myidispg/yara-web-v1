@@ -11,6 +11,7 @@ const RING_SLUGS = ["rings", "solitaires", "color-stone"];
 
 const inputCls = "w-full border border-line rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold-dark";
 const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2";
+const sectionCls = "text-xs uppercase tracking-[0.2em] font-semibold text-gold-dark mb-4";
 
 export default function NewPage() {
     const router = useRouter();
@@ -27,13 +28,15 @@ export default function NewPage() {
     const [designForm, setDesignForm] = useState({
         category: "", name: "", design_code: "", description: "",
         ref_weight: "", ref_size: "12",
-        melle: "0", pointer: "0", fancy: "0", cstone: "0",
+        melle: "", pointer: "", fancy: "", cstone: "",
     });
     const [useNewDesign, setUseNewDesign] = useState(false);
     const [existingDesignId, setExistingDesignId] = useState("");
     const [productForm, setProductForm] = useState({
+        item_code: "", 
         karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
-        actual_net_weight: "", actual_diamond_weight: "", report_lab: "IGI", report_number: "",
+        actual_net_weight: "", a_melle: "", a_pointer: "", a_fancy: "", a_cstone: "",
+        report_lab: "IGI", report_number: "", hallmark_number: "",
     });
 
     useEffect(() => {
@@ -67,6 +70,9 @@ export default function NewPage() {
     const isRingDesign = RING_SLUGS.includes(selectedCategory?.slug);
     const targetDesign = designs.find((d) => String(d.id) === String(existingDesignId));
     const productDesignIsRing = targetDesign ? RING_SLUGS.includes(targetDesign.category_slug) : false;
+    const ringContext = mode === "product" ? (useNewDesign ? isRingDesign : productDesignIsRing) : isRingDesign;
+
+    const sum3 = (a, b, c) => (parseFloat(a) || 0) + (parseFloat(b) || 0) + (parseFloat(c) || 0);
 
     const estimate = (netG, diaCt, karat, grade) => {
         if (!rateCard || !netG) return 0;
@@ -78,20 +84,36 @@ export default function NewPage() {
         return Math.round(gv + dv + making + gst);
     };
 
-    const getRefWeight = () => {
-        if (!targetDesign || !productDesignIsRing) return targetDesign?.base_net_weight_14kt || 0;
+    // Reference net weight (14Kt) at the piece's ring size
+    const designRefNetAtSize = () => {
+        if (useNewDesign || mode === "design") {
+            const base = parseFloat(designForm.ref_weight) || 0;
+            const refSize = parseInt(designForm.ref_size) || 12;
+            const size = parseInt(productForm.ring_size);
+            let w = base;
+            if (ringContext && size) w = base * Math.pow(1.03, Math.floor((size - refSize) / 2));
+            return w;
+        }
+        if (!targetDesign) return 0;
         const refs = targetDesign.size_weight_refs || {};
         const size = productForm.ring_size || "12";
-        return refs[size] || targetDesign.base_net_weight_14kt;
+        return Number(refs[size] ?? targetDesign.base_net_weight_14kt) || 0;
     };
 
-    const getRefDia = () => {
-        return targetDesign?.total_diamond_weight || 0;
-    };
+    const designDiaTotal = () =>
+        mode === "product" && !useNewDesign
+            ? Number(targetDesign?.total_diamond_weight || 0)
+            : sum3(designForm.melle, designForm.pointer, designForm.fancy);
 
     const liveEstimate = () => {
-        const net = productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : getRefWeight();
-        const dia = productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : getRefDia();
+        const enteredNet = productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null;
+        const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
+        let net = enteredNet;
+        if (net == null) {
+            net = designRefNetAtSize();
+            if (productForm.karat === "18Kt") net *= 1.2;
+        }
+        const dia = enteredDia > 0 ? enteredDia : designDiaTotal();
         return estimate(net, dia, productForm.karat, productForm.diamond_grade);
     };
 
@@ -116,17 +138,18 @@ export default function NewPage() {
     };
 
     const steps = mode === "design"
-        ? ["Basics", "Materials", "Media", "Review"]
-        : ["Design", "Product Details", ...(useNewDesign ? ["Media"] : []), "Review"];
+        ? ["Basics", "References", "Media", "Review"]
+        : ["Design", "The Piece", ...(useNewDesign ? ["Media"] : []), "Review"];
 
     const designBasicsValid = designForm.category && designForm.name.trim() && designForm.design_code.trim();
+    const refsValid = parseFloat(designForm.ref_weight) > 0;
     const canProceed = () => {
         if (step === 0) {
             if (mode === "design") return !!designBasicsValid;
-            if (useNewDesign) return !!designBasicsValid && parseFloat(designForm.ref_weight) > 0;
+            if (useNewDesign) return !!designBasicsValid && refsValid;
             return !!existingDesignId;
         }
-        if (step === 1 && mode === "design") return parseFloat(designForm.ref_weight) > 0;
+        if (step === 1 && mode === "design") return refsValid;
         return true;
     };
 
@@ -148,16 +171,19 @@ export default function NewPage() {
             }
             if (files.length && useNewDesign) await uploadFiles(designId);
 
+            const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
             await controlApi.addInstance(designId, {
+                item_code: productForm.item_code,
                 karat: productForm.karat,
                 gold_color: productForm.gold_color,
-                ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
+                ring_size: ringContext ? (productForm.ring_size || null) : null,
                 diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
                 actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
-                actual_diamond_weight: productForm.actual_diamond_weight ? parseFloat(productForm.actual_diamond_weight) : null,
-                actual_color_stone_weight: 0,
+                actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
+                actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
                 report_lab: productForm.report_lab,
                 report_number: productForm.report_number,
+                hallmark_number: productForm.hallmark_number,
             });
             router.push("/control/inventory");
         } catch (err) {
@@ -215,37 +241,119 @@ export default function NewPage() {
 
     const materialsFields = (
         <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-                <div>
-                    <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
-                    <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
-                </div>
-                {isRingDesign && (
+            <div>
+                <p className={sectionCls}>Design References (blueprint for Made-to-Order quotes)</p>
+                <div className="grid grid-cols-2 gap-6">
                     <div>
-                        <label className={labelCls}>Entered Weight Is For Size</label>
-                        <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
-                            {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
+                        <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
+                        <input type="number" step="0.001" value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
+                    </div>
+                    {isRingDesign && (
+                        <div>
+                            <label className={labelCls}>Entered Weight Is For Size</label>
+                            <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
+                                {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
+                            </select>
+                        </div>
+                    )}
+                    <div>
+                        <label className={labelCls}>Round / Melle (Ct)</label>
+                        <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Pointer / Solitaire (Ct)</label>
+                        <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Fancy Cut (Ct)</label>
+                        <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Color Stone (Ct)</label>
+                        <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                </div>
+                {isRingDesign && <p className="text-xs text-ink/50 mt-3">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
+            </div>
+        </div>
+    );
+
+    const pieceFields = (
+        <div className="space-y-6">
+            <div>
+                <p className={sectionCls}>This Physical Piece (measured)</p>
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <label className={labelCls}>Karat</label>
+                        <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
+                            <option>14Kt</option><option>18Kt</option>
                         </select>
                     </div>
-                )}
-                <div>
-                    <label className={labelCls}>Round / Melle (Ct)</label>
-                    <input type="number" step="0.01" value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} className={inputCls} />
-                </div>
-                <div>
-                    <label className={labelCls}>Pointer / Solitaire (Ct)</label>
-                    <input type="number" step="0.01" value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} className={inputCls} />
-                </div>
-                <div>
-                    <label className={labelCls}>Fancy Cut (Ct)</label>
-                    <input type="number" step="0.01" value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} className={inputCls} />
-                </div>
-                <div>
-                    <label className={labelCls}>Color Stone (Ct)</label>
-                    <input type="number" step="0.01" value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} className={inputCls} />
+                    <div>
+                        <label className={labelCls}>Gold Color</label>
+                        <select value={productForm.gold_color} onChange={(e) => setProductForm({ ...productForm, gold_color: e.target.value })} className={inputCls}>
+                            <option>Yellow</option><option>Rose</option><option>White</option>
+                        </select>
+                    </div>
+                    {ringContext && (
+                        <div>
+                            <label className={labelCls}>Ring Size</label>
+                            <input value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} placeholder="e.g., 12" className={inputCls} />
+                        </div>
+                    )}
+                    <div>
+                        <label className={labelCls}>Diamond Grade</label>
+                        <select value={productForm.diamond_grade} onChange={(e) => setProductForm({ ...productForm, diamond_grade: e.target.value })} className={inputCls}>
+                            {gradeBands.map((g) => <option key={g}>{g}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Actual Net Weight (g)</label>
+                        <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Actual Melle (Ct)</label>
+                        <input type="number" step="0.01" value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Actual Pointer (Ct)</label>
+                        <input type="number" step="0.01" value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Actual Fancy (Ct)</label>
+                        <input type="number" step="0.01" value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Actual Color Stone (Ct)</label>
+                        <input type="number" step="0.01" value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Cert Lab</label>
+                        <select value={productForm.report_lab} onChange={(e) => setProductForm({ ...productForm, report_lab: e.target.value })} className={inputCls}>
+                            <option>IGI</option><option>GIA</option><option>SGL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Cert Number</label>
+                        <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Product Code (item_code)</label>
+                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="blank = auto-generate" className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Hallmark Number</label>
+                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} className={inputCls} />
+                    </div>
                 </div>
             </div>
-            {isRingDesign && <p className="text-xs text-ink/50">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
+            <div className="bg-cream rounded-xl p-6 flex items-center justify-between">
+                <p className="text-sm text-ink/60">Estimated price (live rates, {productForm.diamond_grade})</p>
+                <p className="text-2xl font-serif">{inr(liveEstimate())}</p>
+            </div>
+            <p className="text-xs text-ink/50">
+                Diamond total = melle + pointer + fancy. Entered weights are stored on this product and folded into the design's size references (running average) for better future estimates. Blank fields fall back to the design references.
+            </p>
         </div>
     );
 
@@ -272,6 +380,9 @@ export default function NewPage() {
             <p className="text-xs text-ink/50">Files upload to secure storage after the record is created. Media is optional.</p>
         </div>
     );
+
+    const isReviewStep = step === steps.length - 1;
+    const isMediaStep = !isReviewStep && step === 2 && (mode === "design" || useNewDesign);
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -311,70 +422,17 @@ export default function NewPage() {
                                     <option value="">Choose a design…</option>
                                     {designs.map((d) => <option key={d.id} value={d.id}>{d.design_code} — {d.name}</option>)}
                                 </select>
-                                {preselectedDesignId && <p className="text-xs text-ink/50 mt-1">Pre-selected from inventory view. You can change if needed.</p>}
+                                {preselectedDesignId && <p className="text-xs text-ink/50 mt-1">Pre-selected from inventory view.</p>}
                             </div>
                         )}
                     </div>
                 ))}
 
-                {step === 1 && (mode === "design" ? materialsFields : (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <label className={labelCls}>Karat</label>
-                                <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
-                                    <option>14Kt</option><option>18Kt</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Gold Color</label>
-                                <select value={productForm.gold_color} onChange={(e) => setProductForm({ ...productForm, gold_color: e.target.value })} className={inputCls}>
-                                    <option>Yellow</option><option>Rose</option><option>White</option>
-                                </select>
-                            </div>
-                            {productDesignIsRing && (
-                                <div>
-                                    <label className={labelCls}>Ring Size</label>
-                                    <input value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} placeholder="e.g., 12" className={inputCls} />
-                                </div>
-                            )}
-                            <div>
-                                <label className={labelCls}>Diamond Grade</label>
-                                <select value={productForm.diamond_grade} onChange={(e) => setProductForm({ ...productForm, diamond_grade: e.target.value })} className={inputCls}>
-                                    {gradeBands.map((g) => <option key={g}>{g}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Actual Net Weight (g)</label>
-                                <input type="number" step="0.001" value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design reference" className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Actual Diamond (Ct)</label>
-                                <input type="number" step="0.01" value={productForm.actual_diamond_weight} onChange={(e) => setProductForm({ ...productForm, actual_diamond_weight: e.target.value })} placeholder="blank = design reference" className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Cert Lab</label>
-                                <select value={productForm.report_lab} onChange={(e) => setProductForm({ ...productForm, report_lab: e.target.value })} className={inputCls}>
-                                    <option>IGI</option><option>GIA</option><option>SGL</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Cert Number</label>
-                                <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} className={inputCls} />
-                            </div>
-                        </div>
-                        <div className="bg-cream rounded-xl p-6 flex items-center justify-between">
-                            <p className="text-sm text-ink/60">Estimated price (live rates, {productForm.diamond_grade})</p>
-                            <p className="text-2xl font-serif">{inr(liveEstimate())}</p>
-                        </div>
-                        <p className="text-xs text-ink/50">When fields are blank, the design's reference weights are used. The entered weight updates the design's size references (running average) for better future estimates.</p>
-                    </div>
-                ))}
+                {step === 1 && (mode === "design" ? materialsFields : pieceFields)}
 
-                {step === 2 && mode === "design" && mediaStep}
-                {step === 2 && mode === "product" && useNewDesign && mediaStep}
+                {isMediaStep && mediaStep}
 
-                {((mode === "design" && step === 3) || (mode === "product" && ((useNewDesign && step === 3) || (!useNewDesign && step === 2)))) && (
+                {isReviewStep && (
                     <div className="space-y-4 text-sm">
                         <div className="grid grid-cols-2 gap-6">
                             <div>
@@ -383,7 +441,11 @@ export default function NewPage() {
                                     <>
                                         <p className="font-serif text-xl">{designForm.name}</p>
                                         <p className="text-ink/60">{selectedCategory?.name} · {designForm.design_code}</p>
-                                        <p className="text-ink/60">{designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`}</p>
+                                        <p className="text-ink/60">
+                                            {designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`} ·
+                                            dia {sum3(designForm.melle, designForm.pointer, designForm.fancy).toFixed(2)} Ct
+                                            {(parseFloat(designForm.cstone) || 0) > 0 && ` · stone ${parseFloat(designForm.cstone).toFixed(2)} Ct`}
+                                        </p>
                                     </>
                                 ) : (
                                     <p className="font-serif text-xl">{targetDesign?.name} <span className="text-sm text-ink/50">({targetDesign?.design_code})</span></p>
@@ -392,7 +454,16 @@ export default function NewPage() {
                             <div>
                                 <p className={labelCls}>Summary</p>
                                 {mode === "product" && (
-                                    <p className="text-ink/70">{productForm.karat} {productForm.gold_color}{productDesignIsRing && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}</p>
+                                    <p className="text-ink/70">
+                                        {productForm.karat} {productForm.gold_color}
+                                        {ringContext && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}
+                                    </p>
+                                )}
+                                {mode === "product" && (
+                                    <p className="text-ink/70">
+                                        Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
+                                        dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2) || "refs"} Ct
+                                    </p>
                                 )}
                                 {(mode === "design" || useNewDesign) && <p className="text-ink/70">Media files: {files.length}</p>}
                             </div>

@@ -71,6 +71,17 @@ export default function InventoryPage() {
         }
     };
 
+    const deleteDesign = async () => {
+        if (!confirm(`Delete design "${selected.name}"? This cannot be undone.`)) return;
+        try {
+            await controlApi.deleteDesign(selected.id);
+            setSelected(null);
+            await loadProducts();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to delete design');
+        }
+    };
+
     if (loading) return <div className="text-center py-12">Loading inventory...</div>;
 
     return (
@@ -96,9 +107,17 @@ export default function InventoryPage() {
                                 <h2 className="font-serif text-2xl mb-2">{selected.name}</h2>
                                 <p className="text-sm text-ink/60">Design Code: {selected.design_code} · {selected.category_name}</p>
                             </div>
-                            <Link href={`/control/inventory/${selected.id}/edit`} className="btn-outline text-sm">
-                                Edit Design
-                            </Link>
+                            <div className="flex gap-2">
+                                <Link href={`/control/inventory/${selected.id}/edit`} className="btn-outline text-sm">
+                                    Edit Design
+                                </Link>
+                                <button
+                                    onClick={deleteDesign}
+                                    className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50"
+                                >
+                                    Delete Design
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-4 gap-6 mb-4">
@@ -177,6 +196,7 @@ export default function InventoryPage() {
                             <thead className="bg-cream/50">
                                 <tr>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Item Code</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Hallmark</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Grade</th>
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Weight</th>
@@ -191,6 +211,7 @@ export default function InventoryPage() {
                                     return (
                                         <tr key={p.id} className="border-b border-line hover:bg-cream/30">
                                             <td className="px-6 py-4 font-mono text-sm">{p.item_code}</td>
+                                            <td className="px-6 py-4 text-sm">{p.hallmark_number || '—'}</td>
                                             <td className="px-6 py-4 text-sm">
                                                 {p.karat} {p.gold_color}
                                                 {p.ring_size && ` · Size ${p.ring_size}`}
