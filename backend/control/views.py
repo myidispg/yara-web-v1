@@ -183,13 +183,13 @@ class DesignViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="import-template.csv"'
         w = csv.writer(response)
-        w.writerow(['design_code', 'item_code', 'karat', 'gold_color', 'ring_size',
+        w.writerow(['design_code', 'design_name', 'item_code', 'karat', 'gold_color', 'ring_size',
                     'diamond_grade', 'actual_net_weight', 'actual_melle', 'actual_pointer',
                     'actual_fancy', 'actual_color_stone', 'cert_lab', 'cert_number', 'hallmark_number'])
-        w.writerow(['RG-001', 'YRA-RG001-001', '18Kt', 'Yellow', '12', 'IJ/SI',
+        w.writerow(['RG-001', 'Aura Diamond Ring', 'YRA-RG001-001', '18Kt', 'Yellow', '12', 'IJ/SI',
                     '3.500', '0.10', '0.50', '0.00', '0.00', 'IGI', '12345', 'HMK-001'])
         return response
-
+    
     @action(detail=False, methods=['post'], url_path='import-products')
     def import_products(self, request):
         csv_file = request.FILES.get('file')
@@ -316,7 +316,6 @@ class DesignViewSet(viewsets.ModelViewSet):
                         p.report_lab, p.report_number, p.hallmark_number,
                         float(p.price), p.status])
         return response
-
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
