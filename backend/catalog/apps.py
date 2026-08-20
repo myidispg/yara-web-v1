@@ -6,5 +6,8 @@ class CatalogConfig(AppConfig):
     name = "catalog"
 
     def ready(self):
-        from .scheduler import start_gold_rate_scheduler
-        start_gold_rate_scheduler()
+        import os
+        if os.environ.get('RUN_MAIN') == 'true' or 'runserver' not in __import__('sys').argv:
+            from .scheduler import start_gold_rate_scheduler
+            start_gold_rate_scheduler()
+            print("[gold-scheduler] ✓ thread started")
