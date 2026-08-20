@@ -263,6 +263,11 @@ class RateCard(models.Model):
         help_text="Minimum ₹ change to trigger update (when using amount threshold)"
     )
 
+    auto_fetch_interval_minutes = models.PositiveIntegerField(
+        default=30,
+        help_text="How often to fetch (in minutes). Set to 1 for testing."
+    )
+
     class Meta:
         verbose_name = "Rate Card"
         verbose_name_plural = "Rate Card"

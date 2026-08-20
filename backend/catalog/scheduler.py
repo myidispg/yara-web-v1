@@ -1,5 +1,6 @@
 import threading
 import time
+import traceback
 from datetime import timedelta
 from io import StringIO
 
@@ -8,51 +9,72 @@ from django.db import connections, transaction
 from django.utils import timezone
 
 
-def _seconds_to_next_slot():
-    """Seconds until the next :00 or :30 boundary (+1s buffer)."""
-    now = timezone.localtime()
-    target = now.replace(minute=0 if now.minute < 30 else 30, second=0, microsecond=0)
-    if target <= now:
-        target += timedelta(minutes=30)
-    return (target - now).total_seconds() + 1
+def _seconds_until_next_run():
+    """How many seconds until the next scheduled run."""
+    from catalog.models import RateCard
+    try:
+        rc = RateCard.get()
+        if not rc.last_auto_run_at:
+            return 5  # first run in 5 seconds
+        interval = rc.auto_fetch_interval_minutes
+        next_run = rc.last_auto_run_at + timedelta(minutes=interval)
+        delta = (next_run - timezone.now()).total_seconds()
+        return max(delta, 1)
+    except Exception:
+        return 60
 
 
-def _run_if_due():
+def _try_run():
+    """Attempt a single fetch cycle. Returns True if fetch actually executed."""
     from catalog.models import RateCard
 
-    # DB-level single-flight lock: only ONE process per 29 minutes may run
     with transaction.atomic():
         rc = RateCard.objects.select_for_update().get(pk=1)
+
         if not rc.auto_fetch_enabled:
-            print("[gold-scheduler] skipped: auto-fetch disabled")
-            return
+            print("[gold-scheduler] skip: auto-fetch disabled")
+            return False
+
         now = timezone.localtime()
-        if not (6 <= now.hour < 23):  # market window: 6 AM – 11 PM IST
-            print("[gold-scheduler] skipped: outside 6AM-11PM IST")
-            return
-        if rc.last_auto_run_at and (timezone.now() - rc.last_auto_run_at) < timedelta(minutes=29):
-            print("[gold-scheduler] skipped: another process ran recently")
-            return
+        if not (6 <= now.hour < 23):
+            print(f"[gold-scheduler] skip: outside 6AM-11PM IST (hour={now.hour})")
+            return False
+
+    # Outside the lock: do the actual fetch
+    print(f"[gold-scheduler] ▶ fetching at {timezone.localtime():%Y-%m-%d %H:%M:%S} IST")
+    out = StringIO()
+    try:
+        call_command("fetch_gold_rates", stdout=out)
+        print(f"[gold-scheduler] ✓ {out.getvalue().strip() or 'ok'}")
+    except Exception as e:
+        print(f"[gold-scheduler] ✗ error: {e}")
+        traceback.print_exc()
+
+    # Stamp the run regardless of outcome so we don't spam retries
+    with transaction.atomic():
+        rc = RateCard.objects.select_for_update().get(pk=1)
         rc.last_auto_run_at = timezone.now()
         rc.save(update_fields=["last_auto_run_at"])
-
-    print(f"[gold-scheduler] fetching at {timezone.localtime():%Y-%m-%d %H:%M:%S} IST")
-    out = StringIO()
-    call_command("fetch_gold_rates", stdout=out)
-    print(f"[gold-scheduler] result: {out.getvalue().strip()}")
+    return True
 
 
 def _loop():
+    print("[gold-scheduler] loop started")
     while True:
         try:
-            secs = _seconds_to_next_slot()
-            print(f"[gold-scheduler] sleeping {int(secs // 60)}m to next :00/:30 slot")
+            secs = _seconds_until_next_run()
+            print(f"[gold-scheduler] sleeping {int(secs)}s")
             time.sleep(secs)
-            _run_if_due()
-        except Exception:
-            pass  # scheduler thread must never die
+            _try_run()
+        except Exception as e:
+            print(f"[gold-scheduler] loop error: {e}")
+            traceback.print_exc()
+            time.sleep(30)
         finally:
-            connections.close_all()
+            try:
+                connections.close_all()
+            except Exception:
+                pass
 
 
 def start_gold_rate_scheduler():
