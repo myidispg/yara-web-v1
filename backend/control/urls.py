@@ -4,13 +4,14 @@ from rest_framework.routers import DefaultRouter
 from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignViewSet,
                     OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
                     NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView, 
-                    AnalyticsSummaryView, AnalyticsTimeseriesView)
+                    AnalyticsSummaryView, AnalyticsTimeseriesView, CategoryViewSet)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
 router.register(r'products', DesignViewSet, basename='admin-products')
 router.register(r'instances', ProductViewSet, basename='admin-instances')
 router.register(r'customers', CustomerViewSet, basename='admin-customers')
+router.register(r'categories', CategoryViewSet, basename='admin-categories')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -24,4 +25,4 @@ urlpatterns = [
     path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='admin-notifications-all-read'),
     path('analytics/summary/', AnalyticsSummaryView.as_view(), name='admin-analytics-summary'),
     path('analytics/timeseries/', AnalyticsTimeseriesView.as_view(), name='admin-analytics-timeseries'),
-]
+] + router.urls

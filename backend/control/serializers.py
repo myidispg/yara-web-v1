@@ -66,13 +66,19 @@ class StaffDesignSerializer(serializers.ModelSerializer):
 
 class StaffCategorySerializer(serializers.ModelSerializer):
     product_count = serializers.SerializerMethodField()
+    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
+    subcategories = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'product_count']
+        fields = ['id', 'name', 'slug', 'is_active', 'parent', 'parent_name', 'product_count', 'subcategories']
 
     def get_product_count(self, obj):
         return obj.designs.count()
+
+    def get_subcategories(self, obj):
+        children = obj.subcategories.all().order_by('name')
+        return StaffCategorySerializer(children, many=True).data
 
 
 class RateCardSerializer(serializers.ModelSerializer):

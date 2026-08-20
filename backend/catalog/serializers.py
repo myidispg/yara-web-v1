@@ -5,10 +5,16 @@ from .models import Category, Design, ProductMedia, Product, RateCard
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    subcategories = serializers.SerializerMethodField()
+    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
+
     class Meta:
         model = Category
-        fields = ["id", "name", "slug", "is_active"]
+        fields = ["id", "name", "slug", "is_active", "parent", "parent_name", "subcategories"]
 
+    def get_subcategories(self, obj):
+        children = obj.subcategories.filter(is_active=True).order_by('name')
+        return CategorySerializer(children, many=True).data
 
 class ProductMediaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -67,7 +73,7 @@ def design_from_price(obj):
 
 class DesignListSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
-    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_name = serializers.CharField(source="category.full_path", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
     base_price = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()

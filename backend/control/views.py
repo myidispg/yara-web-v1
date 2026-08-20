@@ -7,7 +7,7 @@ from django.core.files.storage import default_storage
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -476,3 +476,55 @@ class AnalyticsTimeseriesView(APIView):
     def get(self, request):
         days = int(request.query_params.get('days', 30))
         return Response(get_revenue_timeseries(days))
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsStaff]
+    serializer_class = StaffCategorySerializer
+
+    def get_queryset(self):
+        if self.action == 'list':
+            return Category.objects.filter(parent__isnull=True).order_by('name')
+        return Category.objects.all()
+
+    class CreateUpdateSerializer(serializers.ModelSerializer):
+        slug = serializers.SlugField(required=False, allow_blank=True)
+
+        class Meta:
+            model = Category
+            fields = ['id', 'name', 'slug', 'is_active', 'parent']
+
+        def validate(self, data):
+            from django.utils.text import slugify
+            parent = data.get('parent') or getattr(self.instance, 'parent', None)
+            if self.instance and parent and parent.pk == self.instance.pk:
+                raise serializers.ValidationError({'parent': 'A category cannot be its own parent.'})
+            if parent and parent.parent_id:
+                raise serializers.ValidationError({'parent': 'Only one level of subcategories is allowed.'})
+            name = data.get('name')
+            if name:
+                slug = (data.get('slug') or '').strip() or slugify(name)
+                base, n = slug, 2
+                qs = Category.objects.all()
+                if self.instance:
+                    qs = qs.exclude(pk=self.instance.pk)
+                while qs.filter(slug=slug).exists():
+                    slug = f"{base}-{n}"
+                    n += 1
+                data['slug'] = slug
+            return data
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.CreateUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(StaffCategorySerializer(instance).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.CreateUpdateSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(StaffCategorySerializer(instance).data)
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
