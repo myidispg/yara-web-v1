@@ -25,7 +25,7 @@ def _seconds_until_next_run():
 
 
 def _try_run():
-    """Attempt a single fetch cycle. Returns True if fetch actually executed."""
+    """Attempt a single fetch cycle."""
     from catalog.models import RateCard
 
     with transaction.atomic():
@@ -40,7 +40,6 @@ def _try_run():
             print(f"[gold-scheduler] skip: outside 6AM-11PM IST (hour={now.hour})")
             return False
 
-    # Outside the lock: do the actual fetch
     print(f"[gold-scheduler] ▶ fetching at {timezone.localtime():%Y-%m-%d %H:%M:%S} IST")
     out = StringIO()
     try:
@@ -50,7 +49,6 @@ def _try_run():
         print(f"[gold-scheduler] ✗ error: {e}")
         traceback.print_exc()
 
-    # Stamp the run regardless of outcome so we don't spam retries
     with transaction.atomic():
         rc = RateCard.objects.select_for_update().get(pk=1)
         rc.last_auto_run_at = timezone.now()

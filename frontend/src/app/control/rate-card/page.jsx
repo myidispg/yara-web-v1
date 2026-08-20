@@ -14,7 +14,14 @@ export default function RateCardPage() {
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
     const [form, setForm] = useState({ gold_rate_14kt: "", gold_rate_18kt: "", making: "", gst: "", default_grade: "" });
-    const [auto, setAuto] = useState({ enabled: false, interval: "30", increment: "0.50", thresholdType: "percentage", thresholdPct: "0.50", thresholdAmt: "500" });
+    const [auto, setAuto] = useState({ 
+        enabled: false, 
+        interval: "30",
+        increment: "0.50", 
+        thresholdType: "percentage", 
+        thresholdPct: "0.50", 
+        thresholdAmt: "500" 
+    });
     const [bands, setBands] = useState([]);
     const [newBand, setNewBand] = useState({ name: "", rate: "" });
 
@@ -34,11 +41,11 @@ export default function RateCardPage() {
             });
             setAuto({
                 enabled: !!data.auto_fetch_enabled,
+                interval: String(data.auto_fetch_interval_minutes || 30),
                 increment: data.increment_percentage?.toString() ?? "0.50",
                 thresholdType: data.change_threshold_type || "percentage",
                 thresholdPct: data.change_threshold_percentage?.toString() ?? "0.50",
                 thresholdAmt: data.change_threshold_amount?.toString() ?? "500",
-                interval: String(data.auto_fetch_interval_minutes || 30),
             });
             setBands(Object.entries(data.diamond_rates || {}).map(([name, rate]) => ({ name, rate: String(rate) })));
         } catch (err) {
@@ -64,11 +71,11 @@ export default function RateCardPage() {
                 diamond_rates,
                 default_grade: form.default_grade,
                 auto_fetch_enabled: auto.enabled,
+                auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
                 increment_percentage: parseFloat(auto.increment),
                 change_threshold_type: auto.thresholdType,
                 change_threshold_percentage: parseFloat(auto.thresholdPct),
                 change_threshold_amount: parseFloat(auto.thresholdAmt),
-                auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
             };
             const { data } = await controlApi.updateRateCard(payload);
             setRateCard(data);
@@ -158,7 +165,7 @@ export default function RateCardPage() {
                         <div className="space-y-4">
                             <label className="flex items-center gap-3 text-sm font-semibold cursor-pointer">
                                 <input type="checkbox" checked={auto.enabled} onChange={(e) => setAuto({ ...auto, enabled: e.target.checked })} className="w-4 h-4" />
-                                Enable auto-fetch (6 AM – 11 PM IST, every 30 min)
+                                Enable auto-fetch (6 AM – 11 PM IST)
                             </label>
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Fetch Interval (minutes)</label>

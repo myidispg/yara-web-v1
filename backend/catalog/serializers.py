@@ -42,6 +42,7 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_gst_amount(self, obj):
         return float(obj.gst_amount)
 
+
 class RateCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCard
@@ -96,8 +97,9 @@ class DesignDetailSerializer(serializers.ModelSerializer):
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
                   "category_slug", "description", "base_net_weight_14kt",
-                  "size_weight_refs", "total_diamond_weight", "diamond_weight_round_melle",
-                  "pointer_solitaire_weight", "fancy_cut_weight", "color_stone_weight",
+                  "size_weight_refs", "total_diamond_weight",
+                  "diamond_weight_round_melle", "pointer_solitaire_weight",
+                  "fancy_cut_weight", "color_stone_weight",
                   "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
                   "base_price", "media", "products", "rate_card"]
 
