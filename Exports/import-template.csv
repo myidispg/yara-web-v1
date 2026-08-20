@@ -1,2 +1,2 @@
-design_code,item_code,karat,gold_color,ring_size,diamond_grade,actual_net_weight,actual_melle,actual_pointer,actual_fancy,actual_color_stone,cert_lab,cert_number,hallmark_number
-RG-001,YRA-RG001-001,18Kt,Yellow,12,IJ/SI,3.500,0.10,0.50,0.00,0.00,IGI,12345,HMK-001
+design_code,design_name,item_code,karat,gold_color,ring_size,diamond_grade,actual_net_weight,actual_melle,actual_pointer,actual_fancy,actual_color_stone,cert_lab,cert_number,hallmark_number
+RG-001,Aura Diamond Ring,YRA-RG001-001,18Kt,Yellow,12,IJ/SI,3.500,0.10,0.50,0.00,0.00,IGI,12345,HMK-001

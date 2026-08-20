@@ -29,6 +29,12 @@ This also allows category management, products move from one category to other c
 
 16. I wanted to delete a desing with existing products. So, it didn't allow me to delete that design until I deleted products. Make an option to delete products also. 
 
+17. When importing from csv, there should be an option to create designs also.
+
+18. Mantaign Date uploaded for each product and design 
+
+19. Filter, sort, grid view and list view for control panel. Select multiple products, designs and delete. 
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
