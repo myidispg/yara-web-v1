@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import controlApi from "@/api/controlClient";
 
 const inr = (n) =>
@@ -14,46 +14,80 @@ export default function RateCardPage() {
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
     const [form, setForm] = useState({ gold_rate_14kt: "", gold_rate_18kt: "", making: "", gst: "", default_grade: "" });
-    const [auto, setAuto] = useState({ 
-        enabled: false, 
+    const [auto, setAuto] = useState({
+        enabled: false,
         interval: "30",
-        increment: "0.50", 
-        thresholdType: "percentage", 
-        thresholdPct: "0.50", 
-        thresholdAmt: "500" 
+        increment: "0.50",
+        thresholdType: "percentage",
+        thresholdPct: "0.50",
+        thresholdAmt: "500"
     });
     const [bands, setBands] = useState([]);
     const [newBand, setNewBand] = useState({ name: "", rate: "" });
+    const [lastRefreshed, setLastRefreshed] = useState(null);
 
-    useEffect(() => { load(); }, []);
+    // Track whether form is being edited to prevent overwriting user input
+    const formDirtyRef = useRef(false);
 
+    // Initial load (full form + bands)
     const load = async () => {
         try {
-            const [{ data }, hist] = await Promise.all([controlApi.getRateCard(), controlApi.getRateHistory().catch(() => ({ data: [] }))]);
+            const [{ data }, hist] = await Promise.all([
+                controlApi.getRateCard(),
+                controlApi.getRateHistory().catch(() => ({ data: [] }))
+            ]);
             setRateCard(data);
             setHistory(hist.data || []);
-            setForm({
-                gold_rate_14kt: data.gold_rate_14kt.toString(),
-                gold_rate_18kt: data.gold_rate_18kt.toString(),
-                making: data.making_charges_percentage.toString(),
-                gst: data.gst_percentage.toString(),
-                default_grade: data.default_grade,
-            });
-            setAuto({
-                enabled: !!data.auto_fetch_enabled,
-                interval: String(data.auto_fetch_interval_minutes || 30),
-                increment: data.increment_percentage?.toString() ?? "0.50",
-                thresholdType: data.change_threshold_type || "percentage",
-                thresholdPct: data.change_threshold_percentage?.toString() ?? "0.50",
-                thresholdAmt: data.change_threshold_amount?.toString() ?? "500",
-            });
-            setBands(Object.entries(data.diamond_rates || {}).map(([name, rate]) => ({ name, rate: String(rate) })));
+            setLastRefreshed(new Date());
+            // Only update form state if user isn't actively editing
+            if (!formDirtyRef.current) {
+                setForm({
+                    gold_rate_14kt: data.gold_rate_14kt.toString(),
+                    gold_rate_18kt: data.gold_rate_18kt.toString(),
+                    making: data.making_charges_percentage.toString(),
+                    gst: data.gst_percentage.toString(),
+                    default_grade: data.default_grade,
+                });
+                setAuto({
+                    enabled: !!data.auto_fetch_enabled,
+                    interval: String(data.auto_fetch_interval_minutes || 30),
+                    increment: data.increment_percentage?.toString() ?? "0.50",
+                    thresholdType: data.change_threshold_type || "percentage",
+                    thresholdPct: data.change_threshold_percentage?.toString() ?? "0.50",
+                    thresholdAmt: data.change_threshold_amount?.toString() ?? "500",
+                });
+                setBands(Object.entries(data.diamond_rates || {}).map(([name, rate]) => ({ name, rate: String(rate) })));
+            }
         } catch (err) {
             console.error("Failed to load rate card:", err);
         } finally {
             setLoading(false);
         }
     };
+
+    // Lightweight auto-refresh (just rateCard + history, not the form)
+    const autoRefresh = async () => {
+        try {
+            const [{ data }, hist] = await Promise.all([
+                controlApi.getRateCard(),
+                controlApi.getRateHistory().catch(() => ({ data: [] }))
+            ]);
+            setRateCard(data);
+            setHistory(hist.data || []);
+            setLastRefreshed(new Date());
+        } catch (err) {
+            // Silent fail for auto-refresh
+        }
+    };
+
+    useEffect(() => {
+        load();
+        const timer = setInterval(autoRefresh, 15000); // every 15 seconds
+        return () => clearInterval(timer);
+    }, []);
+
+    const markFormDirty = () => { formDirtyRef.current = true; };
+    const markFormClean = () => { formDirtyRef.current = false; };
 
     const save = async (e) => {
         e.preventDefault();
@@ -77,9 +111,10 @@ export default function RateCardPage() {
                 change_threshold_percentage: parseFloat(auto.thresholdPct),
                 change_threshold_amount: parseFloat(auto.thresholdAmt),
             };
-            const { data } = await controlApi.updateRateCard(payload);
-            setRateCard(data);
-            alert("Rate card updated successfully!");
+            await controlApi.updateRateCard(payload);
+            markFormClean();
+            await load(); // reload everything after save
+            alert("Settings updated successfully!");
         } catch (err) {
             alert("Failed to update: " + JSON.stringify(err.response?.data || err.message));
         } finally {
@@ -109,10 +144,17 @@ export default function RateCardPage() {
 
     return (
         <div>
-            <h1 className="font-serif text-4xl mb-8">Rate Card</h1>
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="font-serif text-4xl">Rate Card</h1>
+                {lastRefreshed && (
+                    <p className="text-xs text-ink/50">
+                        Auto-refreshed: {lastRefreshed.toLocaleTimeString("en-IN")} (every 15s)
+                    </p>
+                )}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <form onSubmit={save} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
+                <form onSubmit={save} onChange={markFormDirty} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
                     <h2 className="font-serif text-2xl">Live Rates</h2>
 
                     <div className="grid grid-cols-2 gap-6">
@@ -197,12 +239,14 @@ export default function RateCardPage() {
                                 )}
                             </div>
                             <p className="text-xs text-ink/50">
-                                Formula: fetched 24Kt ₹/10g → round up to nearest 100 → add markup % → round up to nearest 100. Rates update only when the result differs from the current rate by at least the threshold. Manual rate setting above always remains available.
+                                Formula: fetched 24Kt ₹/10g → round up to nearest 100 → add markup % → round up to nearest 100. Rates update only when the result differs from the current rate by at least the threshold.
                             </p>
                         </div>
                     </div>
 
-                    <button type="submit" disabled={saving} className="btn-solid w-full">{saving ? "Saving..." : "Update Rate Card"}</button>
+                    <button type="submit" disabled={saving} className="btn-solid w-full">
+                        {saving ? "Saving..." : "Update Interval / Thresholds / Markup"}
+                    </button>
                 </form>
 
                 <div className="space-y-6 min-w-0">
@@ -218,15 +262,21 @@ export default function RateCardPage() {
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-ink/60">Status</span>
-                                <span className={`font-semibold ${auto.enabled ? "text-green-600" : "text-ink/50"}`}>{auto.enabled ? "Enabled" : "Disabled"}</span>
+                                <span className={`font-semibold ${auto.enabled ? "text-green-600" : "text-ink/50"}`}>
+                                    {auto.enabled ? "Enabled" : "Disabled"}
+                                </span>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <span className="text-ink/60">Last successful fetch</span>
-                                <span className="font-semibold text-right">{lastFetch ? new Date(lastFetch.fetched_at).toLocaleString("en-IN") : "—"}</span>
+                                <span className="font-semibold text-right">
+                                    {lastFetch ? new Date(lastFetch.fetched_at).toLocaleString("en-IN") : "—"}
+                                </span>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <span className="text-ink/60">Last rate auto-update</span>
-                                <span className="font-semibold text-right">{lastApplied ? new Date(lastApplied.fetched_at).toLocaleString("en-IN") : "—"}</span>
+                                <span className="font-semibold text-right">
+                                    {lastApplied ? new Date(lastApplied.fetched_at).toLocaleString("en-IN") : "—"}
+                                </span>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <span className="text-ink/60">Last scheduler check</span>
@@ -254,7 +304,9 @@ export default function RateCardPage() {
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-ink/60">18Kt vs 14Kt Premium</span>
-                                <span className="font-semibold">{((parseFloat(form.gold_rate_18kt) / parseFloat(form.gold_rate_14kt) - 1) * 100).toFixed(1)}%</span>
+                                <span className="font-semibold">
+                                    {((parseFloat(form.gold_rate_18kt) / parseFloat(form.gold_rate_14kt) - 1) * 100).toFixed(1)}%
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-ink/60">Active Grade Bands</span>
