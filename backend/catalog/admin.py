@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Design, ProductMedia, Product, RateCard
+from .models import Category, Design, ProductMedia, Product, RateCard, GoldRateHistory, Notification
 
 
 class ProductMediaInline(admin.TabularInline):
@@ -36,4 +36,31 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(RateCard)
 class RateCardAdmin(admin.ModelAdmin):
-    list_display = ["gold_rate_14kt", "gold_rate_18kt", "default_grade", "updated_at"]
+    list_display = ["gold_rate_14kt", "gold_rate_18kt", "default_grade", 
+                    "auto_fetch_enabled", "updated_at"]
+    fieldsets = (
+        (None, {
+            'fields': ('gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
+                      'making_charges_percentage', 'gst_percentage')
+        }),
+        ('Auto-Fetch Settings', {
+            'fields': ('auto_fetch_enabled', 'increment_percentage', 
+                      'change_threshold_type', 'change_threshold_percentage', 
+                      'change_threshold_amount')
+        }),
+    )
+
+
+@admin.register(GoldRateHistory)
+class GoldRateHistoryAdmin(admin.ModelAdmin):
+    list_display = ['fetched_at', 'raw_24kt_rate', 'calculated_rate', 
+                   'previous_rate', 'rate_applied', 'fetch_successful']
+    list_filter = ['rate_applied', 'fetch_successful', 'fetched_at']
+    readonly_fields = ['fetched_at', 'raw_24kt_rate', 'calculated_rate', 
+                      'previous_rate', 'rate_applied', 'fetch_successful', 'error_message']
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'message_type', 'message', 'read']
+    list_filter = ['message_type', 'read', 'created_at']

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+import NotificationBell from "./NotificationBell";
+
 const navItems = [
   { label: "Dashboard", href: "/control", icon: "📊" },
   { label: "Orders", href: "/control/orders", icon: "📦" },
@@ -65,6 +67,7 @@ export default function ControlLayout({ children }) {
           {children}
         </div>
       </main>
+      <NotificationBell />
     </div>
   );
 }

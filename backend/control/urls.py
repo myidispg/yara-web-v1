@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignViewSet,
-                    OrderViewSet, ProductViewSet, RateCardView)
+                    OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
+                    NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
@@ -14,5 +15,10 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard/', DashboardView.as_view(), name='admin-dashboard'),
     path('rate-card/', RateCardView.as_view(), name='admin-rate-card'),
+    path('rate-card/fetch-now/', RateCardFetchNowView.as_view(), name='admin-rate-fetch-now'),
     path('categories/', CategoryListView.as_view(), name='admin-categories'),
+    path('rate-history/', GoldRateHistoryView.as_view(), name='admin-rate-history'),
+    path('notifications/', NotificationListView.as_view(), name='admin-notifications'),
+    path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='admin-notification-read'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='admin-notifications-all-read'),
 ]
