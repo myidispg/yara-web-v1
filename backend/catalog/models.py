@@ -11,13 +11,26 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
     is_active = models.BooleanField(default=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
 
     class Meta:
         verbose_name_plural = "categories"
 
     def __str__(self):
+        if self.parent:
+            return f"{self.parent.name} > {self.name}"
         return self.name
 
+    @property
+    def is_subcategory(self):
+        return self.parent is not None
+
+    @property
+    def full_path(self):
+        """Returns 'Parent > Child' or just 'Parent' for top-level."""
+        if self.parent:
+            return f"{self.parent.name} > {self.name}"
+        return self.name
 
 class Design(models.Model):
     """The blueprint. Always sellable — pieces without stock are Made-to-Order."""
