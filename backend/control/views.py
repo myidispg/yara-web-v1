@@ -17,6 +17,11 @@ from accounts.permissions import IsStaff
 from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
 from orders.models import Order
 
+from .analytics import (
+    get_revenue_summary, get_sales_by_category, get_top_designs,
+    get_stock_aging, get_channel_split, get_revenue_timeseries
+)
+
 from .serializers import (
     DesignCreateSerializer, ProductInputSerializer, RateCardSerializer,
     StaffCategorySerializer, StaffDesignSerializer, StaffOrderSerializer,
@@ -451,3 +456,23 @@ class NotificationMarkAllReadView(APIView):
     def post(self, request):
         Notification.objects.filter(read=False).update(read=True)
         return Response({'status': 'all_read'})
+
+class AnalyticsSummaryView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        return Response({
+            'revenue': get_revenue_summary(),
+            'by_category': get_sales_by_category(),
+            'top_designs': get_top_designs(),
+            'stock_aging': get_stock_aging(),
+            'channel_split': get_channel_split(),
+        })
+
+
+class AnalyticsTimeseriesView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        days = int(request.query_params.get('days', 30))
+        return Response(get_revenue_timeseries(days))
