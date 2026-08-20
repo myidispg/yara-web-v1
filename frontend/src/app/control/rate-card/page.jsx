@@ -11,27 +11,12 @@ export default function RateCardPage() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [fetching, setFetching] = useState(false);
+    const [fetchOutput, setFetchOutput] = useState("");
     const [form, setForm] = useState({ gold_rate_14kt: "", gold_rate_18kt: "", making: "", gst: "", default_grade: "" });
     const [auto, setAuto] = useState({ enabled: false, increment: "0.50", thresholdType: "percentage", thresholdPct: "0.50", thresholdAmt: "500" });
     const [bands, setBands] = useState([]);
     const [newBand, setNewBand] = useState({ name: "", rate: "" });
-
-    const [fetching, setFetching] = useState(false);
-    const [fetchOutput, setFetchOutput] = useState("");
-
-    const fetchNow = async () => {
-        setFetching(true);
-        setFetchOutput("");
-        try {
-            const { data } = await controlApi.fetchRatesNow();
-            setFetchOutput(data.output || "Done.");
-            await load();
-        } catch (err) {
-            setFetchOutput("Failed: " + (err.response?.data?.error || err.message));
-        } finally {
-            setFetching(false);
-        }
-    };
 
     useEffect(() => { load(); }, []);
 
@@ -93,6 +78,20 @@ export default function RateCardPage() {
         }
     };
 
+    const fetchNow = async () => {
+        setFetching(true);
+        setFetchOutput("");
+        try {
+            const { data } = await controlApi.fetchRatesNow();
+            setFetchOutput(data.output || "Done.");
+            await load();
+        } catch (err) {
+            setFetchOutput("Failed: " + (err.response?.data?.error || err.message));
+        } finally {
+            setFetching(false);
+        }
+    };
+
     if (loading) return <div className="text-center py-12">Loading rate card...</div>;
 
     const activeBands = bands.filter((b) => b.name.trim() && b.rate);
@@ -104,7 +103,7 @@ export default function RateCardPage() {
             <h1 className="font-serif text-4xl mb-8">Rate Card</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <form onSubmit={save} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6">
+                <form onSubmit={save} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
                     <h2 className="font-serif text-2xl">Live Rates</h2>
 
                     <div className="grid grid-cols-2 gap-6">
@@ -130,15 +129,15 @@ export default function RateCardPage() {
                         <h3 className="font-serif text-xl mb-3">Diamond Grade Bands (₹/carat)</h3>
                         <div className="space-y-3">
                             {bands.map((b, i) => (
-                                <div key={i} className="flex gap-3 items-center">
-                                    <input value={b.name} onChange={(e) => { const n = [...bands]; n[i].name = e.target.value; setBands(n); }} placeholder="Band (e.g., HI/SI)" className="flex-1 border border-line rounded-lg px-4 py-2 text-sm" />
-                                    <input type="number" value={b.rate} onChange={(e) => { const n = [...bands]; n[i].rate = e.target.value; setBands(n); }} placeholder="₹/ct (blank = ignored)" className="flex-1 border border-line rounded-lg px-4 py-2 text-sm" />
+                                <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center">
+                                    <input value={b.name} onChange={(e) => { const n = [...bands]; n[i].name = e.target.value; setBands(n); }} placeholder="Band (e.g., HI/SI)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
+                                    <input type="number" value={b.rate} onChange={(e) => { const n = [...bands]; n[i].rate = e.target.value; setBands(n); }} placeholder="₹/ct (blank = ignored)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
                                     <button type="button" onClick={() => setBands(bands.filter((_, x) => x !== i))} className="text-red-500 text-sm">✕</button>
                                 </div>
                             ))}
-                            <div className="flex gap-3 items-center">
-                                <input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder="Add custom band (e.g., EF/VVS)" className="flex-1 border border-line rounded-lg px-4 py-2 text-sm" />
-                                <input type="number" value={newBand.rate} onChange={(e) => setNewBand({ ...newBand, rate: e.target.value })} placeholder="₹/ct" className="flex-1 border border-line rounded-lg px-4 py-2 text-sm" />
+                            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center">
+                                <input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder="Add custom band (e.g., EF/VVS)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
+                                <input type="number" value={newBand.rate} onChange={(e) => setNewBand({ ...newBand, rate: e.target.value })} placeholder="₹/ct" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
                                 <button type="button" onClick={() => { if (newBand.name.trim()) { setBands([...bands, { ...newBand }]); setNewBand({ name: "", rate: "" }); } }} className="btn-outline text-xs">+ Add</button>
                             </div>
                         </div>
@@ -192,15 +191,13 @@ export default function RateCardPage() {
                     <button type="submit" disabled={saving} className="btn-solid w-full">{saving ? "Saving..." : "Update Rate Card"}</button>
                 </form>
 
-                <div className="space-y-6">
+                <div className="space-y-6 min-w-0">
                     <div className="bg-white rounded-xl border border-line p-8 shadow-card">
                         <h2 className="font-serif text-2xl mb-4 text-ink">Last Updated</h2>
                         <p className="text-ink/70 font-medium">
                             {rateCard?.updated_at ? new Date(rateCard.updated_at).toLocaleString("en-IN") : "Never"}
                         </p>
                     </div>
-
-                    
 
                     <div className="bg-white rounded-xl border border-line p-8 shadow-card">
                         <h3 className="font-serif text-xl mb-4">Auto-Fetch Status</h3>
@@ -217,6 +214,16 @@ export default function RateCardPage() {
                                 <span className="text-ink/60">Last rate auto-update</span>
                                 <span className="font-semibold text-right">{lastApplied ? new Date(lastApplied.fetched_at).toLocaleString("en-IN") : "—"}</span>
                             </div>
+                            <div className="flex justify-between gap-4">
+                                <span className="text-ink/60">Last scheduler check</span>
+                                <span className="font-semibold text-right">
+                                    {rateCard?.last_auto_run_at ? new Date(rateCard.last_auto_run_at).toLocaleString("en-IN") : "—"}
+                                </span>
+                            </div>
+                            <button type="button" onClick={fetchNow} disabled={fetching} className="btn-outline w-full mt-4">
+                                {fetching ? "Fetching…" : "Fetch Rates Now"}
+                            </button>
+                            {fetchOutput && <p className="text-xs text-ink/60 mt-2 whitespace-pre-wrap">{fetchOutput}</p>}
                         </div>
                     </div>
 
