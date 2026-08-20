@@ -81,7 +81,8 @@ class RateCardSerializer(serializers.ModelSerializer):
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
                   'making_charges_percentage', 'gst_percentage', 'updated_at',
                   'auto_fetch_enabled', 'increment_percentage', 'change_threshold_type',
-                  'change_threshold_percentage', 'change_threshold_amount', 'last_auto_run_at']
+                  'change_threshold_percentage', 'change_threshold_amount', 'last_auto_run_at', 
+                  'auto_fetch_interval_minutes']
 
 
 class GoldRateHistorySerializer(serializers.ModelSerializer):

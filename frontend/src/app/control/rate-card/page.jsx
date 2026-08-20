@@ -14,7 +14,7 @@ export default function RateCardPage() {
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
     const [form, setForm] = useState({ gold_rate_14kt: "", gold_rate_18kt: "", making: "", gst: "", default_grade: "" });
-    const [auto, setAuto] = useState({ enabled: false, increment: "0.50", thresholdType: "percentage", thresholdPct: "0.50", thresholdAmt: "500" });
+    const [auto, setAuto] = useState({ enabled: false, interval: "30", increment: "0.50", thresholdType: "percentage", thresholdPct: "0.50", thresholdAmt: "500" });
     const [bands, setBands] = useState([]);
     const [newBand, setNewBand] = useState({ name: "", rate: "" });
 
@@ -38,6 +38,7 @@ export default function RateCardPage() {
                 thresholdType: data.change_threshold_type || "percentage",
                 thresholdPct: data.change_threshold_percentage?.toString() ?? "0.50",
                 thresholdAmt: data.change_threshold_amount?.toString() ?? "500",
+                interval: String(data.auto_fetch_interval_minutes || 30),
             });
             setBands(Object.entries(data.diamond_rates || {}).map(([name, rate]) => ({ name, rate: String(rate) })));
         } catch (err) {
@@ -67,6 +68,7 @@ export default function RateCardPage() {
                 change_threshold_type: auto.thresholdType,
                 change_threshold_percentage: parseFloat(auto.thresholdPct),
                 change_threshold_amount: parseFloat(auto.thresholdAmt),
+                auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
             };
             const { data } = await controlApi.updateRateCard(payload);
             setRateCard(data);
@@ -158,6 +160,11 @@ export default function RateCardPage() {
                                 <input type="checkbox" checked={auto.enabled} onChange={(e) => setAuto({ ...auto, enabled: e.target.checked })} className="w-4 h-4" />
                                 Enable auto-fetch (6 AM – 11 PM IST, every 30 min)
                             </label>
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Fetch Interval (minutes)</label>
+                                <input type="number" step="1" min="1" max="1440" value={auto.interval} onChange={(e) => setAuto({ ...auto, interval: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" />
+                                <p className="text-[10px] text-ink/50 mt-1">Set to 1 for testing. Production: 30.</p>
+                            </div>
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Markup After Rounding (%)</label>
