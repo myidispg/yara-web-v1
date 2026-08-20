@@ -33,7 +33,12 @@ const controlApi = {
   // RateCard
   getRateCard: () => api.get("/control/rate-card/"),
   updateRateCard: (data) => api.put("/control/rate-card/", data),
-
+  getRateHistory: () => api.get("/control/rate-history/"),
+  getNotifications: () => api.get("/control/notifications/"),
+  markNotificationRead: (id) => api.post(`/control/notifications/${id}/read/`),
+  markAllNotificationsRead: () => api.post("/control/notifications/mark-all-read/"),
+  fetchRatesNow: () => api.post("/control/rate-card/fetch-now/"),
+  
   // Categories
   getCategories: () => api.get("/control/categories/"),
 

@@ -3,7 +3,7 @@ import secrets
 from rest_framework import serializers
 
 from accounts.models import User
-from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES
+from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
 from orders.models import Order, OrderItem
 
 
@@ -79,8 +79,22 @@ class RateCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCard
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
-                  'making_charges_percentage', 'gst_percentage', 'updated_at']
+                  'making_charges_percentage', 'gst_percentage', 'updated_at',
+                  'auto_fetch_enabled', 'increment_percentage', 'change_threshold_type',
+                  'change_threshold_percentage', 'change_threshold_amount', 'last_auto_run_at']
 
+
+class GoldRateHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoldRateHistory
+        fields = ['id', 'fetched_at', 'raw_24kt_rate', 'calculated_rate', 'previous_rate',
+                  'rate_applied', 'fetch_successful', 'error_message']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'message_type', 'created_at', 'read', 'link']
 
 class StaffOrderItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()

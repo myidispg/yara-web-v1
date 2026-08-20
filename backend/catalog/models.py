@@ -240,6 +240,28 @@ class RateCard(models.Model):
     making_charges_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
     gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=3.00)
     updated_at = models.DateTimeField(auto_now=True)
+    last_auto_run_at = models.DateTimeField(null=True, blank=True)
+
+    # Auto-fetch settings
+    auto_fetch_enabled = models.BooleanField(default=False, help_text="Enable automatic gold rate updates")
+    increment_percentage = models.DecimalField(
+        max_digits=4, decimal_places=2, default=0.50,
+        help_text="Percentage to add after rounding (e.g., 0.50 for 0.5%)"
+    )
+    change_threshold_type = models.CharField(
+        max_length=20,
+        choices=[('percentage', 'Percentage'), ('amount', 'Amount')],
+        default='percentage',
+        help_text="How to measure if rate changed enough to update"
+    )
+    change_threshold_percentage = models.DecimalField(
+        max_digits=4, decimal_places=2, default=0.50,
+        help_text="Minimum % change to trigger update (e.g., 0.50 for 0.5%)"
+    )
+    change_threshold_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=500,
+        help_text="Minimum ₹ change to trigger update (when using amount threshold)"
+    )
 
     class Meta:
         verbose_name = "Rate Card"
@@ -279,3 +301,43 @@ class RateCard(models.Model):
 
     def __str__(self):
         return f"Rate Card (updated {self.updated_at:%Y-%m-%d})"
+
+class GoldRateHistory(models.Model):
+    """Log of all gold rate fetches (last 30 days retained)."""
+    fetched_at = models.DateTimeField(auto_now_add=True)
+    raw_24kt_rate = models.IntegerField(null=True, blank=True, help_text="₹ per 10g of 24Kt from API")
+    calculated_rate = models.IntegerField(null=True, blank=True, help_text="After rounding formula")
+    previous_rate = models.IntegerField(null=True, blank=True, help_text="What was in DB before")
+    rate_applied = models.BooleanField(default=False, help_text="Did we update the rate card?")
+    fetch_successful = models.BooleanField(default=True)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-fetched_at']
+        verbose_name_plural = 'gold rate histories'
+
+    def __str__(self):
+        status = 'applied' if self.rate_applied else 'skipped'
+        return f"{self.fetched_at:%Y-%m-%d %H:%M} - {status}"
+
+
+class Notification(models.Model):
+    """System notifications shown in control panel."""
+    MESSAGE_TYPES = [
+        ('info', 'Info'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+        ('success', 'Success'),
+    ]
+    
+    message = models.TextField()
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='info')
+    created_at = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
+    link = models.CharField(max_length=200, blank=True, help_text="Optional link to related page")
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_message_type_display()}] {self.message[:50]}"

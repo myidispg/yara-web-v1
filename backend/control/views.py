@@ -14,13 +14,14 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from accounts.permissions import IsStaff
-from catalog.models import Category, Design, Product, ProductMedia, RateCard
+from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
 from orders.models import Order
 
 from .serializers import (
     DesignCreateSerializer, ProductInputSerializer, RateCardSerializer,
     StaffCategorySerializer, StaffDesignSerializer, StaffOrderSerializer,
-    StaffProductSerializer, StaffUserSerializer, create_product_for_design,
+    StaffProductSerializer, StaffUserSerializer, create_product_for_design, 
+    GoldRateHistorySerializer, NotificationSerializer
 )
 
 OPEN_STATUSES = ['placed', 'confirmed']
@@ -372,6 +373,20 @@ class RateCardView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(RateCardSerializer(rc).data)
 
+class RateCardFetchNowView(APIView):
+    permission_classes = [IsStaff]
+
+    def post(self, request):
+        from django.core.management import call_command
+        from io import StringIO
+        out = StringIO()
+        try:
+            call_command("fetch_gold_rates", "--force", stdout=out)
+            return Response({'status': 'ok', 'output': out.getvalue()})
+        except Exception as e:
+            return Response({'status': 'error', 'error': str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class CategoryListView(APIView):
     permission_classes = [IsStaff]
@@ -399,3 +414,40 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
             w.writerow([u.email, u.first_name, u.last_name, getattr(u, 'phone', ''),
                         u.date_joined.isoformat(), agg['c'] or 0, float(agg['s'] or 0)])
         return response
+
+
+class GoldRateHistoryView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        history = GoldRateHistory.objects.all()[:50]
+        return Response(GoldRateHistorySerializer(history, many=True).data)
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        notifications = Notification.objects.all()[:50]
+        return Response(NotificationSerializer(notifications, many=True).data)
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsStaff]
+
+    def post(self, request, pk=None):
+        try:
+            notification = Notification.objects.get(pk=pk)
+            notification.read = True
+            notification.save()
+            return Response({'status': 'read'})
+        except Notification.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class NotificationMarkAllReadView(APIView):
+    permission_classes = [IsStaff]
+
+    def post(self, request):
+        Notification.objects.filter(read=False).update(read=True)
+        return Response({'status': 'all_read'})
