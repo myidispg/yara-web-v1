@@ -38,7 +38,7 @@ const controlApi = {
   markNotificationRead: (id) => api.post(`/control/notifications/${id}/read/`),
   markAllNotificationsRead: () => api.post("/control/notifications/mark-all-read/"),
   fetchRatesNow: () => api.post("/control/rate-card/fetch-now/"),
-  
+
   // Categories
   getCategories: () => api.get("/control/categories/"),
 
@@ -57,6 +57,12 @@ const controlApi = {
   exportProducts: () => api.get('/control/products/export-products/', { responseType: 'blob' }),
   exportOrders: () => api.get('/control/orders/export-orders/', { responseType: 'blob' }),
   exportCustomers: () => api.get('/control/customers/export-customers/', { responseType: 'blob' }),
+
+  // Analytics
+  getAnalyticsSummary: () => api.get("/control/analytics/summary/"),
+  getAnalyticsTimeseries: (days = 30) => api.get(`/control/analytics/timeseries/?days=${days}`),
 };
+
+
 
 export default controlApi;

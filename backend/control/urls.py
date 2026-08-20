@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignViewSet,
                     OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
-                    NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView)
+                    NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView, 
+                    AnalyticsSummaryView, AnalyticsTimeseriesView)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
@@ -21,4 +22,6 @@ urlpatterns = [
     path('notifications/', NotificationListView.as_view(), name='admin-notifications'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='admin-notification-read'),
     path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='admin-notifications-all-read'),
+    path('analytics/summary/', AnalyticsSummaryView.as_view(), name='admin-analytics-summary'),
+    path('analytics/timeseries/', AnalyticsTimeseriesView.as_view(), name='admin-analytics-timeseries'),
 ]

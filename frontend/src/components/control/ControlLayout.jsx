@@ -7,7 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "./NotificationBell";
 
 const navItems = [
-  { label: "Dashboard", href: "/control", icon: "📊" },
+  { label: "Dashboard", href: "/control", icon: "🏡" },
+  { label: "Analytics", href: "/control/analytics", icon: "📊" },
   { label: "Orders", href: "/control/orders", icon: "📦" },
   { label: "Inventory", href: "/control/inventory", icon: "🏪" },
   { label: "Rate Card", href: "/control/rate-card", icon: "💰" },
