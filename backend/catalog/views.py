@@ -1,5 +1,7 @@
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.response import Response
 from django.db.models import F, Min, Q
 
 from .models import Category, Design
@@ -42,7 +44,13 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         search = p.get("search")
         if search:
-            qs = qs.filter(Q(name__icontains=search) | Q(design_code__icontains=search))
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(design_code__icontains=search) |
+                Q(description__icontains=search) |
+                Q(category__name__icontains=search) |
+                Q(category__slug__icontains=search)
+            )
 
         purity = p.getlist("purity")
         color = p.getlist("color")
@@ -65,3 +73,21 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             qs = qs.order_by("-created_at")
         return qs
+
+    @action(detail=False, methods=['get'])
+    def suggest(self, request):
+        """Lightweight autocomplete suggestions for the header search bar."""
+        q = (request.query_params.get('q') or '').strip()
+        if len(q) < 2:
+            return Response([])
+        qs = Design.objects.filter(is_active=True).filter(
+            Q(name__icontains=q) |
+            Q(design_code__icontains=q) |
+            Q(category__name__icontains=q)
+        ).select_related('category')[:8]
+        return Response([{
+            'slug': d.slug,
+            'name': d.name,
+            'design_code': d.design_code,
+            'category': d.category.name,
+        } for d in qs])
