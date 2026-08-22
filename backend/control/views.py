@@ -17,6 +17,10 @@ from accounts.permissions import IsStaff
 from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
 from orders.models import Order
 
+from .models import AuditLog
+from .serializers import AuditLogSerializer
+from datetime import timedelta
+
 from .analytics import (
     get_revenue_summary, get_sales_by_category, get_top_designs,
     get_stock_aging, get_channel_split, get_revenue_timeseries
@@ -539,3 +543,42 @@ class CategoryViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Cannot delete: designs are assigned to a subcategory.'},
                                 status=status.HTTP_400_BAD_REQUEST)
         return super().destroy(request, *args, **kwargs)
+
+class AuditLogListView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        qs = AuditLog.objects.select_related('user').all()
+
+        # Filters
+        user = request.query_params.get('user')
+        if user:
+            qs = qs.filter(user_id=user)
+
+        model = request.query_params.get('model')
+        if model:
+            qs = qs.filter(model_name=model)
+
+        action = request.query_params.get('action')
+        if action:
+            qs = qs.filter(action=action)
+
+        days = request.query_params.get('days')
+        if days:
+            try:
+                cutoff = timezone.now() - timedelta(days=int(days))
+                qs = qs.filter(timestamp__gte=cutoff)
+            except (ValueError, TypeError):
+                pass
+
+        # Limit for dashboard (default 50)
+        limit = request.query_params.get('limit')
+        if limit:
+            try:
+                qs = qs[:int(limit)]
+            except (ValueError, TypeError):
+                qs = qs[:50]
+        else:
+            qs = qs[:200]
+
+        return Response(AuditLogSerializer(qs, many=True).data)

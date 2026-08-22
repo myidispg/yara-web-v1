@@ -15,6 +15,7 @@ const navItems = [
   { label: "Rate Card", href: "/control/rate-card", icon: "💰" },
   { label: "Customers", href: "/control/customers", icon: "👥" },
   { label: "Import/Export", href: "/control/import-export", icon: "📥" },
+  { label: "Activity", href: "/control/activity", icon: "🕒" },
 ];
 
 export default function ControlLayout({ children }) {

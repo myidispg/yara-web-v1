@@ -6,6 +6,8 @@ from accounts.models import User
 from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
 from orders.models import Order, OrderItem
 
+from .models import AuditLog
+
 
 # ── Staff read serializers ────────────────────────────────────────────
 
@@ -300,3 +302,32 @@ class DesignCreateSerializer(serializers.ModelSerializer):
                 create_product_for_design(design, inst, rc)
 
         return design
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuditLog
+        fields = ['id', 'user', 'user_email', 'user_name', 'action', 'model_name',
+                  'object_id', 'object_repr', 'changes', 'timestamp', 'ip_address',
+                  'description']
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else "System"
+
+    def get_user_name(self, obj):
+        if not obj.user:
+            return "System"
+        full = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return full or obj.user.email
+
+    def get_description(self, obj):
+        actor = self.get_user_name(obj)
+        verb = {
+            'created': 'created',
+            'updated': 'updated',
+            'deleted': 'deleted',
+        }.get(obj.action, obj.action)
+        return f"{actor} {verb} {obj.model_name} '{obj.object_repr}'"

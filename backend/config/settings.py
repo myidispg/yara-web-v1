@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "accounts",
     "catalog",
     "orders",
+    "control",
 ]
 
 MIDDLEWARE = [
@@ -35,6 +36,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "control.middleware.AuditMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
