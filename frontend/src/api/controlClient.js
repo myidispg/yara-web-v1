@@ -41,6 +41,9 @@ const controlApi = {
 
   // Categories
   getCategories: () => api.get("/control/categories/"),
+  createCategory: (data) => api.post("/control/categories/", data),
+  updateCategory: (id, data) => api.patch(`/control/categories/${id}/`, data),
+  deleteCategory: (id) => api.delete(`/control/categories/${id}/`),
 
   // Customers
   getCustomers: () => api.get("/control/customers/"),

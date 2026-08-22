@@ -75,6 +75,7 @@ class DesignListSerializer(serializers.ModelSerializer):
     media = ProductMediaSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.full_path", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    is_ring = serializers.BooleanField(source="category.is_ring_family", read_only=True)
     base_price = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
 
@@ -82,7 +83,7 @@ class DesignListSerializer(serializers.ModelSerializer):
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
                   "category_slug", "base_net_weight_14kt", "total_diamond_weight",
-                  "base_price", "in_stock", "media"]
+                  "base_price", "in_stock", "media", "is_ring",]
 
     def get_base_price(self, obj):
         return design_from_price(obj)
@@ -96,6 +97,7 @@ class DesignDetailSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    is_ring = serializers.BooleanField(source="category.is_ring_family", read_only=True)
     base_price = serializers.SerializerMethodField()
     rate_card = serializers.SerializerMethodField()
 
@@ -107,7 +109,7 @@ class DesignDetailSerializer(serializers.ModelSerializer):
                   "diamond_weight_round_melle", "pointer_solitaire_weight",
                   "fancy_cut_weight", "color_stone_weight",
                   "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
-                  "base_price", "media", "products", "rate_card"]
+                  "base_price", "media", "products", "rate_card", "is_ring",]
 
     def get_base_price(self, obj):
         return design_from_price(obj)

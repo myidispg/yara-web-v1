@@ -73,10 +73,15 @@ export default function NewPage() {
     }, []);
 
     const gradeBands = rateCard ? Object.entries(rateCard.diamond_rates || {}).filter(([, v]) => v).map(([k]) => k) : [];
-    const selectedCategory = categories.find((c) => String(c.id) === String(designForm.category));
-    const isRingDesign = RING_SLUGS.includes(selectedCategory?.slug);
+    const flatCategories = categories.flatMap((c) => [
+        { id: c.id, label: c.name, slug: c.slug, parent_slug: null },
+        ...(c.subcategories || []).map((s) => ({ id: s.id, label: `${c.name} › ${s.name}`, slug: s.slug, parent_slug: c.slug })),
+    ]);
+    const isRingCat = (cat) => !!cat && (RING_SLUGS.includes(cat.slug) || RING_SLUGS.includes(cat.parent_slug));
+    const selectedCategory = flatCategories.find((c) => String(c.id) === String(designForm.category));
+    const isRingDesign = isRingCat(selectedCategory);
     const targetDesign = designs.find((d) => String(d.id) === String(existingDesignId));
-    const productDesignIsRing = targetDesign ? RING_SLUGS.includes(targetDesign.category_slug) : false;
+    const productDesignIsRing = targetDesign ? !!targetDesign.is_ring : false;
     const ringContext = mode === "product" ? (useNewDesign ? isRingDesign : productDesignIsRing) : isRingDesign;
 
     const sum3 = (a, b, c) => (parseFloat(a) || 0) + (parseFloat(b) || 0) + (parseFloat(c) || 0);
@@ -254,7 +259,7 @@ export default function NewPage() {
                     <label className={labelCls}>Category *</label>
                     <select value={designForm.category} onChange={(e) => setDesignForm({ ...designForm, category: e.target.value })} className={inputCls}>
                         <option value="">Select category…</option>
-                        {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {flatCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                 </div>
                 <div>
@@ -477,7 +482,7 @@ export default function NewPage() {
                                 {mode === "design" || useNewDesign ? (
                                     <>
                                         <p className="font-serif text-xl">{designForm.name}</p>
-                                        <p className="text-ink/60">{selectedCategory?.name} · {designForm.design_code}</p>
+                                        <p className="text-ink/60">{selectedCategory?.label} · {designForm.design_code}</p>
                                         <p className="text-ink/60">
                                             {designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`} ·
                                             dia {sum3(designForm.melle, designForm.pointer, designForm.fancy).toFixed(2)} Ct
