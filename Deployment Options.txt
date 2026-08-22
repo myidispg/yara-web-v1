@@ -1,0 +1,76 @@
+## 📌 The Direct Answer
+To deploy a reliable, live commercial e-commerce store where no data is deleted and servers never go to sleep, your absolute cheapest infrastructure cost is approximately ₹1,479 per month ($17 USD/month).
+To achieve this price point without compromising performance, your deployment architecture must be split across three distinct specialized providers:
+
+   1. Frontend: [Vercel Hobby Tier](https://vercel.com/pricing) (₹0)
+   2. Backend Engine: [Render Starter Web Service](https://render.com/pricing) (₹610 / $7) — Stays awake 24/7.
+   3. Database: [Neon Serverless Postgres](https://neon.tech/pricing) or [Supabase Launch Tier](https://supabase.com/pricing) (₹869 / $10) — Dedicated compute that never auto-pauses.
+   4. Media Files: [Cloudinary Free Tier](https://cloudinary.com/pricing) (₹0) — Permanent storage up to 25GB with automatic CDN delivery.
+
+------------------------------
+## 🖼️ Where and How to Store Images & Videos
+You must use Cloudinary linked to your Django models.
+
+* 
+* The Golden Rule: Never save actual media binaries inside your PostgreSQL database. Doing so will bloat your database size instantly, degrading performance and forcing you into massive billing tiers. Instead, you upload files to Cloudinary, and Django saves a lightweight Text URL string in your Postgres database.
+* Permanent & Safe: Cloudinary's free tier does not delete files, time-out, or expire. It stores your media permanently and includes a global Content Delivery Network (CDN) to ensure product images load instantly for your shoppers.
+* Ephemeral Storage Warning: If you attempt to save images locally on your Django server, they will be deleted permanently every single time you push code updates or your Render server restarts. Offloading to an external provider like Cloudinary is mandatory.
+* 
+
+------------------------------
+## 📊 Comprehensive Cost Breakdown (INR)
+Calculated at a current conservative conversion rate of ₹86.90 per $1 USD.
+
+| Service Component | Chosen Provider | Tier Details | Monthly Cost (USD) | Monthly Cost (INR) | Data Safety & Uptime Guarantee |
+|---|---|---|---|---|---|
+| 💻 Frontend Layout | Vercel | Hobby | $0.00 | ₹0 | Global edge network with 100% automated uptime. |
+| ⚙️ Django API Backend | Render | Starter | $7.00 | ~₹610 | No Sleeping. Processes background tasks and incoming API cart requests 24/7/365. |
+| 🗄️ PostgreSQL Database | Neon / Supabase | Production Starter | $10.00 | ~₹869 | No Auto-Pausing. Zero idle-timeouts, daily point-in-time recovery automated backups. |
+| 🎞️ Media Storage | Cloudinary | Free | $0.00 | ₹0 | Permanent assets. Includes up to 25 GB of monthly storage/bandwidth transformed assets. |
+| 💳 Total Base Store Budget | — | — | $17.00 | 📈 ~₹1,479 / month | 100% production-ready enterprise grade foundations with no data deletion policies. |
+
+------------------------------
+## 🛠️ Production Code Integration For Django
+Follow this exact blueprint to securely tie your production database and permanent media pipeline to Django:
+## 1. Setup Your Dependencies
+Install the required packages in your development terminal:
+
+pip install gunicorn dj-database-url psycopg2-binary cloudinary django-cloudinary-storage
+pip freeze > requirements.txt
+
+## 2. Configure settings.py for Database & Cloudinary
+
+import osimport dj_database_urlfrom pathlib import Path
+# 1. Permanent PostgreSQL Connection Configuration# Paste the Connection String provided by Neon or Supabase into your environment variablesDATABASES = {
+    'default': dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+# 2. Cloudinary Permanent File Engine ArchitectureINSTALLED_APPS = [
+    # ...
+    'cloudinary_storage', # Must be registered right above staticfiles
+    'cloudinary',
+    'django.contrib.staticfiles',
+    # ...
+]
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+## 3. Define the Safe Media Model
+Your Django models don't need any complex cloud alterations. The core code remains completely clean:
+
+from django.db import models
+class EcomProduct(models.Model):
+    title = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    # File is automatically captured, shipped to Cloudinary, and the clean URL string goes to Postgres
+    thumbnail = models.ImageField(upload_to='store/products/')
+    product_video = models.FileField(upload_to='store/videos/', blank=True, null=True)
+
+Would you like to walk through generating your production environment variables safely on Render, or do you need assistance structuring your CORS settings so the Vercel React frontend can firmly communicate with this Django API?
+
