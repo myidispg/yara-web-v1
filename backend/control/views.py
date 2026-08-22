@@ -319,7 +319,12 @@ class DesignViewSet(viewsets.ModelViewSet):
         w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
                     'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
                     'cert_lab', 'cert_number', 'hallmark_number', 'price', 'status'])
-        for p in Product.objects.select_related('design', 'design__category').all():
+        qs = Product.objects.select_related('design', 'design__category').all()
+        ids = request.query_params.get('ids')
+        if ids:
+            id_list = [i for i in ids.split(',') if i.strip().isdigit()]
+            qs = qs.filter(id__in=id_list)
+        for p in qs:
             w.writerow([p.item_code, p.design.design_code, p.design.name, p.design.category.name,
                         p.karat, p.gold_color, p.ring_size or '', p.diamond_grade,
                         float(p.actual_net_weight), float(p.actual_diamond_weight),
@@ -364,6 +369,70 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
         product.delete()
         return Response({'status': 'deleted'})
+
+    @action(detail=False, methods=['get'])
+    def flat(self, request):
+        """All products across all designs, for bulk operations."""
+        products = Product.objects.select_related('design').order_by('-id')
+        return Response([{
+            'id': p.id,
+            'item_code': p.item_code,
+            'design_id': p.design_id,
+            'design_code': p.design.design_code,
+            'design_name': p.design.name,
+            'karat': p.karat,
+            'gold_color': p.gold_color,
+            'ring_size': p.ring_size,
+            'diamond_grade': p.diamond_grade,
+            'status': p.status,
+            'price': float(p.price),
+            'actual_net_weight': float(p.actual_net_weight),
+            'hallmark_number': p.hallmark_number,
+        } for p in products])
+
+    @action(detail=False, methods=['post'], url_path='bulk-action')
+    def bulk_action(self, request):
+        ids = request.data.get('ids') or []
+        action_name = request.data.get('action')
+        if not isinstance(ids, list) or not ids:
+            return Response({'error': 'Provide a list of product ids.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if action_name not in ('mark_sold_offline', 'return_to_stock', 'delete'):
+            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        products = list(Product.objects.filter(id__in=ids))
+        processed, skipped = [], []
+        for p in products:
+            if action_name == 'mark_sold_offline':
+                if p.status != 'in_stock':
+                    skipped.append({'id': p.id, 'item_code': p.item_code,
+                                    'reason': f'status is {p.status}'})
+                    continue
+                p.status = 'sold_offline'
+                p.sold_at = timezone.now()
+                p.sold_to_user = request.user
+                p.sold_in_order = None
+                p.save()
+                processed.append(p.item_code)
+            elif action_name == 'return_to_stock':
+                if p.status == 'in_stock':
+                    skipped.append({'id': p.id, 'item_code': p.item_code,
+                                    'reason': 'already in stock'})
+                    continue
+                p.status = 'in_stock'
+                p.sold_at = None
+                p.sold_to_user = None
+                p.sold_in_order = None
+                p.save()
+                processed.append(p.item_code)
+            else:  # delete
+                if p.status != 'in_stock':
+                    skipped.append({'id': p.id, 'item_code': p.item_code,
+                                    'reason': f'cannot delete status "{p.status}" — return to stock first'})
+                    continue
+                processed.append(p.item_code)
+                p.delete()
+        return Response({'processed': processed, 'skipped': skipped})
 
 
 class RateCardView(APIView):

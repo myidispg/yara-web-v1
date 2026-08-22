@@ -30,6 +30,12 @@ const controlApi = {
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
 
+  // Bulk operations on products
+  getProductsFlat: () => api.get("/control/instances/flat/"),
+  bulkProductAction: (ids, action) => api.post("/control/instances/bulk-action/", { ids, action }),
+  exportSelectedProducts: (ids) =>
+    api.get(`/control/products/export-products/?ids=${ids.join(",")}`, { responseType: "blob" }),
+
   // RateCard
   getRateCard: () => api.get("/control/rate-card/"),
   updateRateCard: (data) => api.put("/control/rate-card/", data),
@@ -51,15 +57,15 @@ const controlApi = {
   // Import/Export
   importProducts: (file) => {
     const fd = new FormData();
-    fd.append('file', file);
-    return api.post('/control/products/import-products/', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    fd.append("file", file);
+    return api.post("/control/products/import-products/", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
-  downloadTemplate: () => api.get('/control/products/import-template/', { responseType: 'blob' }),
-  exportProducts: () => api.get('/control/products/export-products/', { responseType: 'blob' }),
-  exportOrders: () => api.get('/control/orders/export-orders/', { responseType: 'blob' }),
-  exportCustomers: () => api.get('/control/customers/export-customers/', { responseType: 'blob' }),
+  downloadTemplate: () => api.get("/control/products/import-template/", { responseType: "blob" }),
+  exportProducts: () => api.get("/control/products/export-products/", { responseType: "blob" }),
+  exportOrders: () => api.get("/control/orders/export-orders/", { responseType: "blob" }),
+  exportCustomers: () => api.get("/control/customers/export-customers/", { responseType: "blob" }),
 
   // Analytics
   getAnalyticsSummary: () => api.get("/control/analytics/summary/"),
@@ -68,7 +74,5 @@ const controlApi = {
   // Audit
   getAuditLogs: (params = {}) => api.get("/control/audit-logs/", { params }),
 };
-
-
 
 export default controlApi;

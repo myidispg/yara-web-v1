@@ -7,6 +7,8 @@ import controlApi from "@/api/controlClient";
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
+const RING_SLUGS = ["rings", "solitaires", "color-stone"];
+
 const INSTANCE_STATUS = {
     in_stock: { label: "In Stock", cls: "bg-green-100 text-green-800" },
     sold: { label: "Sold (Online)", cls: "bg-gray-200 text-gray-700" },
@@ -14,26 +16,33 @@ const INSTANCE_STATUS = {
     reserved: { label: "Reserved", cls: "bg-yellow-100 text-yellow-800" },
 };
 
-const RING_SLUGS = ["rings", "solitaires", "color-stone"];
-
 export default function InventoryPage() {
     const [products, setProducts] = useState([]);
+    const [allProducts, setAllProducts] = useState([]);
+    const [view, setView] = useState("designs");
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
+    // Bulk selection state
+    const [checked, setChecked] = useState([]);
+    const [statusFilter, setStatusFilter] = useState("");
+    const [bulkBusy, setBulkBusy] = useState(false);
+    const [bulkResult, setBulkResult] = useState(null);
+
     useEffect(() => {
-        loadProducts();
+        loadDesigns();
+        loadFlat();
     }, []);
 
     useEffect(() => {
         const handler = (e) => {
-            if (e.detail === "/control/inventory") setSelected(null);
+            if (e.detail === "/control/inventory") { setSelected(null); setView("designs"); }
         };
         window.addEventListener("control-nav", handler);
         return () => window.removeEventListener("control-nav", handler);
     }, []);
 
-    const loadProducts = async () => {
+    const loadDesigns = async () => {
         try {
             const { data } = await controlApi.getProducts();
             setProducts(data.results || data);
@@ -41,6 +50,15 @@ export default function InventoryPage() {
             console.error("Failed to load designs:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadFlat = async () => {
+        try {
+            const { data } = await controlApi.getProductsFlat();
+            setAllProducts(data);
+        } catch (err) {
+            console.error("Failed to load products:", err);
         }
     };
 
@@ -58,6 +76,7 @@ export default function InventoryPage() {
         try {
             await controlApi.markSoldOffline(productId);
             await viewDesign(selected.id);
+            await loadFlat();
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
         }
@@ -68,6 +87,7 @@ export default function InventoryPage() {
         try {
             await controlApi.returnToStock(productId);
             await viewDesign(selected.id);
+            await loadFlat();
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
         }
@@ -78,6 +98,7 @@ export default function InventoryPage() {
         try {
             await controlApi.deleteProduct(productId);
             await viewDesign(selected.id);
+            await loadFlat();
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to delete product');
         }
@@ -88,9 +109,56 @@ export default function InventoryPage() {
         try {
             await controlApi.deleteDesign(selected.id);
             setSelected(null);
-            await loadProducts();
+            await loadDesigns();
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to delete design');
+        }
+    };
+
+    // ── Bulk operations ────────────────────────────────────────────
+    const visibleProducts = statusFilter ? allProducts.filter((p) => p.status === statusFilter) : allProducts;
+    const allChecked = visibleProducts.length > 0 && visibleProducts.every((p) => checked.includes(p.id));
+
+    const toggleCheck = (id) =>
+        setChecked((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+
+    const toggleAll = () =>
+        setChecked(allChecked ? [] : visibleProducts.map((p) => p.id));
+
+    const runBulk = async (actionName) => {
+        const labels = {
+            mark_sold_offline: `Mark ${checked.length} product(s) as SOLD OFFLINE?`,
+            return_to_stock: `Return ${checked.length} product(s) to stock?`,
+            delete: `Permanently DELETE ${checked.length} product(s)? Only in-stock items will be deleted; others will be skipped.`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        setBulkResult(null);
+        try {
+            const { data } = await controlApi.bulkProductAction(checked, actionName);
+            setBulkResult(data);
+            setChecked([]);
+            await loadFlat();
+            await loadDesigns();
+            if (selected) await viewDesign(selected.id);
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const exportSelected = async () => {
+        try {
+            const { data } = await controlApi.exportSelectedProducts(checked);
+            const url = URL.createObjectURL(data);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "products-selected.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert("Export failed");
         }
     };
 
@@ -101,18 +169,110 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between mb-8">
                 <h1 className="font-serif text-4xl">Inventory</h1>
                 <div className="flex items-center gap-3">
+                    <div className="flex rounded-lg border border-line overflow-hidden">
+                        <button onClick={() => { setView("designs"); setSelected(null); }} className={`px-4 py-2 text-sm font-semibold ${view === "designs" ? "bg-ink text-white" : "bg-white text-ink/60 hover:text-ink"}`}>Designs</button>
+                        <button onClick={() => { setView("products"); setSelected(null); }} className={`px-4 py-2 text-sm font-semibold ${view === "products" ? "bg-ink text-white" : "bg-white text-ink/60 hover:text-ink"}`}>All Products</button>
+                    </div>
                     <p className="text-sm text-ink/60 mr-2">{products.length} designs</p>
-                    <Link
-                        href={selected ? `/control/inventory/new?mode=product&design_id=${selected.id}` : "/control/inventory/new?mode=product"}
-                        className="btn-outline"
-                    >
-                        + Add Product
-                    </Link>
+                    <Link href="/control/inventory/new?mode=product" className="btn-outline">+ Add Product</Link>
                     <Link href="/control/inventory/new?mode=design" className="btn-solid">+ Add Design</Link>
                 </div>
             </div>
 
-            {selected ? (
+            {view === "products" ? (
+                <div>
+                    {/* Bulk action bar */}
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }} className="border border-line rounded-lg px-4 py-2 text-sm bg-white">
+                            <option value="">All statuses</option>
+                            <option value="in_stock">In Stock</option>
+                            <option value="sold">Sold (Online)</option>
+                            <option value="sold_offline">Sold (Offline)</option>
+                            <option value="reserved">Reserved</option>
+                        </select>
+                        <span className="text-sm text-ink/60">{visibleProducts.length} products</span>
+                        {checked.length > 0 && (
+                            <div className="flex items-center gap-2 ml-auto bg-ink text-white rounded-lg px-4 py-2">
+                                <span className="text-sm font-semibold mr-2">{checked.length} selected</span>
+                                <button onClick={() => runBulk("mark_sold_offline")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Mark Sold Offline</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => runBulk("return_to_stock")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Return to Stock</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={exportSelected} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Export Selected</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => runBulk("delete")} disabled={bulkBusy} className="text-xs font-semibold text-red-300 hover:text-red-400 disabled:opacity-40">Delete</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => setChecked([])} className="text-xs text-white/60 hover:text-white">Clear</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {bulkResult && (
+                        <div className="mb-4 rounded-xl border border-line bg-cream p-4 text-sm">
+                            <p className="font-semibold">
+                                Done: {bulkResult.processed.length} processed
+                                {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                            </p>
+                            {bulkResult.skipped.length > 0 && (
+                                <ul className="mt-2 text-xs text-ink/60 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.skipped.map((s) => (
+                                        <li key={s.id}>• {s.item_code}: {s.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-cream/50">
+                                <tr>
+                                    <th className="px-4 py-3 w-10">
+                                        <input type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4" />
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Item Code</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Design</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Hallmark</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Weight</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Price</th>
+                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {visibleProducts.map((p) => {
+                                    const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-800" };
+                                    return (
+                                        <tr key={p.id} className="border-b border-line hover:bg-cream/30">
+                                            <td className="px-4 py-4">
+                                                <input type="checkbox" checked={checked.includes(p.id)} onChange={() => toggleCheck(p.id)} className="w-4 h-4" />
+                                            </td>
+                                            <td className="px-6 py-4 font-mono text-sm">{p.item_code}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <p className="font-medium">{p.design_name}</p>
+                                                <p className="text-xs text-ink/50">{p.design_code}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">{p.hallmark_number || "—"}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                {p.karat} {p.gold_color}
+                                                {p.ring_size && ` · Size ${p.ring_size}`}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
+                                            <td className="px-6 py-4 font-semibold">{inr(p.price)}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {visibleProducts.length === 0 && (
+                                    <tr><td colSpan="8" className="px-6 py-8 text-center text-sm text-ink/50">No products found.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : selected ? (
                 <div>
                     <button onClick={() => setSelected(null)} className="mb-6 text-sm text-gold-dark hover:text-ink">
                         ← Back to Inventory
@@ -128,10 +288,7 @@ export default function InventoryPage() {
                                 <Link href={`/control/inventory/${selected.id}/edit`} className="btn-outline text-sm">
                                     Edit Design
                                 </Link>
-                                <button
-                                    onClick={deleteDesign}
-                                    className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50"
-                                >
+                                <button onClick={deleteDesign} className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50">
                                     Delete Design
                                 </button>
                             </div>
