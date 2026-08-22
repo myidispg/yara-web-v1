@@ -64,6 +64,9 @@ const controlApi = {
   // Analytics
   getAnalyticsSummary: () => api.get("/control/analytics/summary/"),
   getAnalyticsTimeseries: (days = 30) => api.get(`/control/analytics/timeseries/?days=${days}`),
+
+  // Audit
+  getAuditLogs: (params = {}) => api.get("/control/audit-logs/", { params }),
 };
 
 

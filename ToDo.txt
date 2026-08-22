@@ -1,4 +1,5 @@
 1. On the homepage all product cards must swap images when hovered upon. Show maybe 2-3 small bullets like Emori to allow image selection.
+
 2. Visit DanaRebecca and see pages like sizing guide, diamond information, tips and tricks. Can be accessed at: https://www.danarebeccadesigns.com/pages/master-guide
 
 3. Add Google Validation for sign up and login, OTP validation.
@@ -41,6 +42,8 @@ This also allows category management, products move from one category to other c
 
 22. Allow from the product page in control panel to control which inventory it goes into. 
    Same for category page where we should be able to assign products into a category.
+
+23. Rates are not updating at 00 and 0:30 every hour.
 
 Features suggested by Qwen:
 OTP verification (deferred)
