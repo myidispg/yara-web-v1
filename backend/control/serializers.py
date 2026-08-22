@@ -33,6 +33,7 @@ class StaffProductSerializer(serializers.ModelSerializer):
 class StaffDesignSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name')
     category_slug = serializers.CharField(source='category.slug', read_only=True)
+    is_ring = serializers.BooleanField(source='category.is_ring_family', read_only=True)
     products = StaffProductSerializer(many=True, read_only=True)
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
@@ -42,7 +43,8 @@ class StaffDesignSerializer(serializers.ModelSerializer):
         model = Design
         fields = ['id', 'design_code', 'slug', 'name', 'category_name', 'base_net_weight_14kt',
                   'size_weight_refs', 'size_weight_counts', 'total_diamond_weight',
-                  'products', 'instance_count', 'in_stock_count', 'base_price', 'category_slug']
+                  'products', 'instance_count', 'in_stock_count', 'base_price', 'category_slug',
+                  'is_ring']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()

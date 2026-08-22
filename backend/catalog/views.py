@@ -27,13 +27,18 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = Design.objects.filter(is_active=True) \
-            .select_related("category") \
+            .select_related("category", "category__parent") \
             .prefetch_related("media", "products")
         p = self.request.query_params
 
+        # Subcategory filter takes priority
+        sub = p.get("sub")
         cat = p.get("category")
-        if cat:
-            qs = qs.filter(category__slug=cat)
+        if sub:
+            qs = qs.filter(category__slug=sub)
+        elif cat:
+            # Include parent + all its subcategories
+            qs = qs.filter(Q(category__slug=cat) | Q(category__parent__slug=cat))
 
         search = p.get("search")
         if search:

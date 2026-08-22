@@ -21,6 +21,14 @@ class Category(models.Model):
             return f"{self.parent.name} > {self.name}"
         return self.name
 
+    RING_FAMILY_SLUGS = ("rings", "solitaires", "color-stone")
+
+    @property
+    def is_ring_family(self):
+        return self.slug in self.RING_FAMILY_SLUGS or (
+            self.parent is not None and self.parent.slug in self.RING_FAMILY_SLUGS
+        )
+
     @property
     def is_subcategory(self):
         return self.parent is not None
@@ -75,7 +83,7 @@ class Design(models.Model):
 
     @property
     def is_ring(self):
-        return self.category.slug in ("rings", "solitaires", "color-stone")
+        return self.category.is_ring_family
 
     @property
     def total_diamond_weight(self):

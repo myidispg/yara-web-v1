@@ -528,3 +528,14 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.designs.exists():
+            return Response({'error': 'Cannot delete: designs are assigned to this category.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        for sub in instance.subcategories.all():
+            if sub.designs.exists():
+                return Response({'error': 'Cannot delete: designs are assigned to a subcategory.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        return super().destroy(request, *args, **kwargs)

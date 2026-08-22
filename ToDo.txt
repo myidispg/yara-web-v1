@@ -35,6 +35,13 @@ This also allows category management, products move from one category to other c
 
 19. Filter, sort, grid view and list view for control panel. Select multiple products, designs and delete. 
 
+20. On the storefront, there should be an option to browse all categories?
+
+21. Can a product have multiple categories?
+
+22. Allow from the product page in control panel to control which inventory it goes into. 
+   Same for category page where we should be able to assign products into a category.
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)

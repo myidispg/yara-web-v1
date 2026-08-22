@@ -51,14 +51,23 @@ export default function CategoryPage() {
     const [mounted, setMounted] = useState(false);
     const sentinelRef = useRef(null);
     const seqRef = useRef(0);
+    const [subcategories, setSubcategories] = useState([]);
+    const [selectedSub, setSelectedSub] = useState("");
 
     const [title, subtitle] = TITLES[slug] ?? ["Fine Jewellery", "Handcrafted natural diamond jewellery in 14Kt & 18Kt solid gold."];
 
     useEffect(() => {
         document.title = `${title} | YA-RA Jewels`;
         setMounted(true);
-    }, [title]);
-
+        // Fetch subcategories for this category
+        api.get(`/categories/?slug=${slug}`).then(({ data }) => {
+            const cats = data.results || data;
+            const parent = cats.find((c) => c.slug === slug);
+            if (parent && parent.subcategories) {
+                setSubcategories(parent.subcategories);
+            }
+        }).catch(() => setSubcategories([]));
+    }, [title, slug]);
     const hasMore = items.length < total;
     const activeCount = sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0);
 
@@ -72,6 +81,7 @@ export default function CategoryPage() {
 
     const buildParams = (offset) => {
         const p = { category: slug, limit: PAGE, offset, sort };
+        if (selectedSub) p.sub = selectedSub;
         if (sel.karat.length) p.purity = sel.karat;
         if (sel.color.length) p.color = sel.color;
         if (inStockOnly) p.in_stock = "1";
@@ -97,7 +107,7 @@ export default function CategoryPage() {
         if (!mounted) return;
         setItems([]); setTotal(0);
         fetchPage(0, false);
-    }, [slug, sel, inStockOnly, sort, mounted]);
+    }, [slug, sel, inStockOnly, sort, selectedSub, mounted]);
 
     useEffect(() => {
         const node = sentinelRef.current;
@@ -121,8 +131,8 @@ export default function CategoryPage() {
         <button
             onClick={() => toggle(group, value)}
             className={`text-xs font-medium px-4 py-2 rounded-full border transition-colors ${sel[group].includes(value)
-                    ? "border-ink bg-ink text-white"
-                    : "border-line bg-white text-ink hover:border-ink hover:bg-ink hover:text-white"
+                ? "border-ink bg-ink text-white"
+                : "border-line bg-white text-ink hover:border-ink hover:bg-ink hover:text-white"
                 }`}
         >
             {children ?? value}
@@ -194,7 +204,33 @@ export default function CategoryPage() {
                 <Link href="/" className="hover:text-gold-dark">Home</Link> / Jewellery / {title}
             </p>
             <h1 className="font-serif text-4xl md:text-5xl mb-2">{title}</h1>
-            <p className="text-sm text-ink/60 mb-8">{subtitle}</p>
+            <p className="text-sm text-ink/60 mb-6">{subtitle}</p>
+
+            {subcategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-8 pb-6 border-b border-line">
+                    <button
+                        onClick={() => setSelectedSub("")}
+                        className={`text-xs font-medium px-4 py-2 rounded-full border transition-colors ${!selectedSub
+                                ? "border-ink bg-ink text-white"
+                                : "border-line bg-white text-ink hover:border-ink hover:bg-ink hover:text-white"
+                            }`}
+                    >
+                        All
+                    </button>
+                    {subcategories.map((sub) => (
+                        <button
+                            key={sub.id}
+                            onClick={() => setSelectedSub(sub.slug)}
+                            className={`text-xs font-medium px-4 py-2 rounded-full border transition-colors ${selectedSub === sub.slug
+                                    ? "border-ink bg-ink text-white"
+                                    : "border-line bg-white text-ink hover:border-ink hover:bg-ink hover:text-white"
+                                }`}
+                        >
+                            {sub.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <span className="text-xs text-ink/50">Showing {items.length} of {total} Designs</span>
