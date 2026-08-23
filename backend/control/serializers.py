@@ -40,7 +40,10 @@ class StaffProductSerializer(serializers.ModelSerializer):
                   'sold_at', 'sold_in_order_number', 'sold_in_order_id', 'sold_to_email',
                   'created_at', 'design_id', 'design_code', 'design_name', 'category_name',
                   'gold_value', 'diamond_value', 'making_charges', 'gst_amount']
-
+        
+        read_only_fields = ['item_code', 'status', 'actual_net_weight',
+                            'actual_diamond_weight', 'actual_color_stone_weight']
+        
     def get_sold_in_order_number(self, obj):
         return obj.sold_in_order.order_number if obj.sold_in_order else None
 

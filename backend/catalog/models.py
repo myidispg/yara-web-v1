@@ -205,6 +205,19 @@ class Product(models.Model):
     sold_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @classmethod
+    def calculate_price(cls, net_weight, diamond_weight, karat, diamond_grade, rate_card=None):
+        """Pure calculation — no instance needed. Uses current rate card."""
+        from catalog.models import RateCard
+        rc = rate_card or RateCard.get()
+        gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
+        grade_rate = float(rc.rate_for_grade(diamond_grade))
+        gold_value = float(net_weight) * gold_rate
+        diamond_value = float(diamond_weight) * grade_rate
+        making = (gold_value + diamond_value) * (float(rc.making_charges_percentage) / 100)
+        gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+        return round(gold_value + diamond_value + making + gst, 2)
+
     def __str__(self):
         return self.item_code
 
