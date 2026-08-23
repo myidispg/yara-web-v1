@@ -37,7 +37,7 @@ from .serializers import (
     DesignCreateSerializer, ProductInputSerializer, RateCardSerializer,
     StaffCategorySerializer, StaffDesignSerializer, StaffOrderSerializer,
     StaffProductSerializer, StaffUserSerializer, create_product_for_design, 
-    GoldRateHistorySerializer, NotificationSerializer
+    GoldRateHistorySerializer, NotificationSerializer, DesignUpdateSerializer
 )
 
 OPEN_STATUSES = ['placed', 'confirmed']
@@ -143,8 +143,10 @@ class DesignViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return DesignCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return DesignUpdateSerializer
         return StaffDesignSerializer
-
+    
     @action(detail=True, methods=['post'])
     def add_instance(self, request, pk=None):
         design = self.get_object()
@@ -193,6 +195,41 @@ class DesignViewSet(viewsets.ModelViewSet):
             )
         design.delete()
         return Response({'status': 'deleted'})
+
+    @action(detail=True, methods=['delete'], url_path='media/(?P<media_id>[0-9]+)')
+    def delete_media(self, request, pk=None, media_id=None):
+        design = self.get_object()
+        media = design.media.filter(id=media_id).first()
+        if not media:
+            return Response({'error': 'Media not found'}, status=status.HTTP_404_NOT_FOUND)
+        media.delete()
+        return Response({'status': 'deleted'})
+
+    @action(detail=False, methods=['post'], url_path='bulk-action')
+    def bulk_action(self, request):
+        ids = request.data.get('ids') or []
+        action_name = request.data.get('action')
+        if not isinstance(ids, list) or not ids:
+            return Response({'error': 'Provide a list of design ids.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if action_name not in ('activate', 'deactivate', 'delete'):
+            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        designs = list(Design.objects.filter(id__in=ids))
+        processed, skipped = [], []
+        for d in designs:
+            if action_name in ('activate', 'deactivate'):
+                d.is_active = (action_name == 'activate')
+                d.save(update_fields=['is_active'])
+                processed.append(d.design_code)
+            else:  # delete
+                if d.products.exists():
+                    skipped.append({'id': d.id, 'item_code': d.design_code,
+                                    'reason': f'has {d.products.count()} product(s) — delete products first'})
+                    continue
+                processed.append(d.design_code)
+                d.delete()
+        return Response({'processed': processed, 'skipped': skipped})
 
     # Import/Export CSV
     @action(detail=False, methods=['get'], url_path='import-template')
