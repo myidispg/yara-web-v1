@@ -136,10 +136,10 @@ class RateCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCard
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
-                  'making_charges_percentage', 'gst_percentage', 'updated_at',
-                  'auto_fetch_enabled', 'increment_percentage', 'change_threshold_type',
-                  'change_threshold_percentage', 'change_threshold_amount', 'last_auto_run_at', 
-                  'auto_fetch_interval_minutes']
+                  'making_charges_percentage', 'making_fixed_per_gram', 'making_pct_24kt', 
+                  'gst_percentage', 'updated_at', 'auto_fetch_enabled', 'increment_percentage', 
+                  'change_threshold_type', 'change_threshold_percentage', 'change_threshold_amount', 
+                  'last_auto_run_at', 'auto_fetch_interval_minutes']
 
 
 class GoldRateHistorySerializer(serializers.ModelSerializer):
@@ -226,18 +226,34 @@ def create_product_for_design(design, inst, rc):
     else:
         item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
                      f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+    
+    # Calculate price with new making formula
+    gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
+    grade_rate = float(rc.rate_for_grade(grade))
+    
+    gold_value = net * gold_rate
+    diamond_value = dia * grade_rate
+    
+    # NEW: Making = (fixed per gram + % of 24Kt gold) × net weight
+    gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+    making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+    making = making_per_gram * net
+    
+    gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+    price = round(gold_value + diamond_value + making + gst, 2)
         
     product = Product.objects.create(
         design=design, item_code=item_code, karat=karat, gold_color=inst['gold_color'],
         ring_size=size, diamond_grade=grade, status='in_stock',
-        price=price_for(net, dia, karat, grade, rc),
+        price=price,
         actual_net_weight=net, actual_diamond_weight=dia,
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
         report_lab=inst.get('report_lab', ''), 
         report_number=inst.get('report_number', ''),
         hallmark_number=inst.get('hallmark_number', '')
-        )
+    )
 
+    # PRESERVED: Weight recording logic
     net_14kt = net / 1.2 if karat == "18Kt" else net
     if design.is_ring and size:
         design.record_actual_weight(size, net_14kt)
