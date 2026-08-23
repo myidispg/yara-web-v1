@@ -504,6 +504,8 @@ class RateCardView(APIView):
         return Response(RateCardSerializer(RateCard.get()).data)
 
     def put(self, request):
+        from catalog.utils import recalculate_all_prices, recalculate_prices_async
+        
         rc = RateCard.get()
         ser = RateCardSerializer(rc, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
@@ -511,7 +513,23 @@ class RateCardView(APIView):
         if rc.default_grade not in rc.grade_choices():
             return Response({'error': f'default_grade must be a band with a rate'},
                             status=status.HTTP_400_BAD_REQUEST)
-        return Response(RateCardSerializer(rc).data)
+        
+        # Determine update mode
+        update_mode = request.data.get('update_mode', 'none')  # 'sync', 'async', 'none'
+        result = {'status': 'saved', 'products_updated': 0, 'mode': update_mode}
+        
+        if update_mode == 'sync':
+            # Synchronous: recalculate in this request
+            count = recalculate_all_prices(rate_card=rc, user=request.user, reason="rate_card_manual_sync")
+            result['products_updated'] = count
+        elif update_mode == 'async':
+            # Asynchronous: spawn background thread
+            recalculate_prices_async(rate_card=rc, user=request.user, reason="rate_card_manual_async")
+            result['status'] = 'saved_async_started'
+            result['message'] = 'Price recalculation started in background'
+        # else 'none': just save rate card, no recalc
+        
+        return Response(result)
 
 class RateCardFetchNowView(APIView):
     permission_classes = [IsStaff]

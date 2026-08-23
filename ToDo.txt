@@ -45,6 +45,10 @@ This also allows category management, products move from one category to other c
 
 23. Rates are not updating at 00 and 0:30 every hour.
 
+24. In the analytics, I want to see how many items sold month wise, year wise, how many grams sold, how many carats sold.
+
+25. In the analytics, how many items we have in stock, how many grams of gold (14kt, 18kt) and how many carats of diamonds.
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
