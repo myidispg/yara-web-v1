@@ -22,7 +22,7 @@ This also allows category management, products move from one category to other c
 
 12. In the control panel and on the rate_card page, it shows that updating rates changes rate for made on order items and in stock items' prices are static. Make them all dynamic.
 
-13. Implement search functionality in the website.
+13. Implement search functionality in the website. (Done)
 
 14. Search functionality on the control panel and inventory (search for customer, design, product, certificates, hallmark, invoice)
 

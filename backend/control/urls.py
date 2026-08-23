@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignViewSet,
                     OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
                     NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView, 
-                    AnalyticsSummaryView, AnalyticsTimeseriesView, CategoryViewSet, AuditLogListView)
+                    AnalyticsSummaryView, AnalyticsTimeseriesView, CategoryViewSet, AuditLogListView,
+                    SearchTrackView, SearchAnalyticsView)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
@@ -26,4 +27,6 @@ urlpatterns = [
     path('analytics/summary/', AnalyticsSummaryView.as_view(), name='admin-analytics-summary'),
     path('analytics/timeseries/', AnalyticsTimeseriesView.as_view(), name='admin-analytics-timeseries'),
     path('audit-logs/', AuditLogListView.as_view(), name='admin-audit-logs'),
+    path('search/track/', SearchTrackView.as_view(), name='search-track'),
+    path('search-analytics/', SearchAnalyticsView.as_view(), name='admin-search-analytics'),
 ] + router.urls

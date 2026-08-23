@@ -4,13 +4,20 @@ import csv
 from django.http import HttpResponse
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, F, Min
 from django.utils import timezone
 
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from rest_framework.permissions import AllowAny
+from django.db.models import Max
+from django.db.models.functions import TruncDate
+from .models import AuditLog, SearchLog
+
+from rest_framework.pagination import LimitOffsetPagination
 
 from accounts.models import User
 from accounts.permissions import IsStaff
@@ -651,3 +658,71 @@ class AuditLogListView(APIView):
             qs = qs[:200]
 
         return Response(AuditLogSerializer(qs, many=True).data)
+
+class SearchTrackView(APIView):
+    """Public endpoint: storefront records a committed search."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        import re
+        term = re.sub(r'\s+', ' ', (request.data.get('q') or '')).strip().lower()[:100]
+        if len(term) < 2:
+            return Response({'status': 'ignored'})
+        try:
+            results = max(int(request.data.get('results') or 0), 0)
+        except (TypeError, ValueError):
+            results = 0
+        SearchLog.objects.create(term=term, results_count=results)
+        # Retention: keep only last 90 days
+        SearchLog.objects.filter(searched_at__lt=timezone.now() - timedelta(days=90)).delete()
+        return Response({'status': 'ok'})
+
+
+class SearchAnalyticsView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+        except (TypeError, ValueError):
+            days = 30
+        cutoff = timezone.now() - timedelta(days=days)
+        qs = SearchLog.objects.filter(searched_at__gte=cutoff)
+
+        total = qs.count()
+        zero = qs.filter(results_count=0).count()
+
+        top = (qs.values('term')
+               .annotate(count=Count('id'), last=Max('searched_at'))
+               .order_by('-count')[:20])
+
+        zero_terms = (qs.filter(results_count=0)
+                      .values('term')
+                      .annotate(count=Count('id'), last=Max('searched_at'))
+                      .order_by('-count')[:20])
+
+        # Daily volume with gap-filling
+        daily_qs = (qs.annotate(d=TruncDate('searched_at'))
+                    .values('d')
+                    .annotate(count=Count('id'))
+                    .order_by('d'))
+        daily_map = {row['d']: row['count'] for row in daily_qs}
+        daily = []
+        from datetime import date, timedelta as td
+        current = (timezone.now() - td(days=days - 1)).date()
+        today = timezone.now().date()
+        while current <= today:
+            daily.append({'date': current.isoformat(), 'count': daily_map.get(current, 0)})
+            current += td(days=1)
+
+        return Response({
+            'total_searches': total,
+            'unique_terms': qs.values('term').distinct().count(),
+            'zero_result_searches': zero,
+            'top_terms': [{'term': t['term'], 'count': t['count'],
+                           'last': t['last'].isoformat()} for t in top],
+            'zero_terms': [{'term': t['term'], 'count': t['count'],
+                            'last': t['last'].isoformat()} for t in zero_terms],
+            'daily': daily,
+        })
