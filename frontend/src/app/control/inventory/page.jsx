@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
 const inr = (n) =>
@@ -17,6 +18,7 @@ const INSTANCE_STATUS = {
 };
 
 export default function InventoryPage() {
+    const router = useRouter();
     const [products, setProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [view, setView] = useState("designs");
@@ -272,11 +274,11 @@ export default function InventoryPage() {
                                 {visibleProducts.map((p) => {
                                     const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-800" };
                                     return (
-                                        <tr key={p.id} className="border-b border-line hover:bg-cream/30">
-                                            <td className="px-4 py-4">
+                                        <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-line hover:bg-cream/30 cursor-pointer">
+                                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                                                 <input type="checkbox" checked={checked.includes(p.id)} onChange={() => toggleCheck(p.id)} className="w-4 h-4" />
                                             </td>
-                                            <td className="px-6 py-4 font-mono text-sm">{p.item_code}</td>
+                                            <td className="px-6 py-4 font-mono text-sm text-gold-dark font-semibold">{p.item_code}</td>
                                             <td className="px-6 py-4 text-sm">
                                                 <p className="font-medium">{p.design_name}</p>
                                                 <p className="text-xs text-ink/50">{p.design_code}</p>
@@ -428,8 +430,8 @@ export default function InventoryPage() {
                                 {selected.products.map((p) => {
                                     const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-800" };
                                     return (
-                                        <tr key={p.id} className="border-b border-line hover:bg-cream/30">
-                                            <td className="px-6 py-4 font-mono text-sm">{p.item_code}</td>
+                                                                                <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-line hover:bg-cream/30 cursor-pointer">
+                                            <td className="px-6 py-4 font-mono text-sm text-gold-dark font-semibold">{p.item_code}</td>
                                             <td className="px-6 py-4 text-sm">{p.hallmark_number || '—'}</td>
                                             <td className="px-6 py-4 text-sm">
                                                 {p.karat} {p.gold_color}
@@ -443,7 +445,7 @@ export default function InventoryPage() {
                                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
                                                 {p.sold_in_order_number && <p className="text-[10px] text-ink/50 mt-1">→ {p.sold_in_order_number}</p>}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-3">
                                                     {p.status === "in_stock" ? (
                                                         <button onClick={() => markSoldOffline(p.id)} className="text-sm text-gold-dark hover:text-ink font-semibold">Mark Sold</button>
