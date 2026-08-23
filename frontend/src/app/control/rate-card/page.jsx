@@ -13,7 +13,14 @@ export default function RateCardPage() {
     const [saving, setSaving] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
-    const [form, setForm] = useState({ gold_rate_14kt: "", gold_rate_18kt: "", making: "", gst: "", default_grade: "" });
+    const [form, setForm] = useState({ 
+        gold_rate_14kt: "", 
+        gold_rate_18kt: "", 
+        making_fixed_per_gram: "", 
+        making_pct_24kt: "", 
+        gst: "", 
+        default_grade: "" 
+    });
     const [auto, setAuto] = useState({
         enabled: false,
         interval: "30",
@@ -44,7 +51,8 @@ export default function RateCardPage() {
                 setForm({
                     gold_rate_14kt: data.gold_rate_14kt.toString(),
                     gold_rate_18kt: data.gold_rate_18kt.toString(),
-                    making: data.making_charges_percentage.toString(),
+                    making_fixed_per_gram: data.making_fixed_per_gram?.toString() || "0",
+                    making_pct_24kt: data.making_pct_24kt?.toString() || "0",
                     gst: data.gst_percentage.toString(),
                     default_grade: data.default_grade,
                 });
@@ -100,7 +108,8 @@ export default function RateCardPage() {
             const payload = {
                 gold_rate_14kt: parseFloat(form.gold_rate_14kt),
                 gold_rate_18kt: parseFloat(form.gold_rate_18kt),
-                making_charges_percentage: parseFloat(form.making),
+                making_fixed_per_gram: parseFloat(form.making_fixed_per_gram) || 0,
+                making_pct_24kt: parseFloat(form.making_pct_24kt) || 0,
                 gst_percentage: parseFloat(form.gst),
                 diamond_rates,
                 default_grade: form.default_grade,
@@ -166,9 +175,38 @@ export default function RateCardPage() {
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold 18Kt (₹/g)</label>
                             <input type="number" step="1" min="0" max="500000" value={form.gold_rate_18kt} onChange={(e) => setForm({ ...form, gold_rate_18kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
                         </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Making Charges (%)</label>
-                            <input type="number" step="0.01" min="0" max="100" value={form.making} onChange={(e) => setForm({ ...form, making: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                                                <div className="col-span-2">
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Making Charges (Per Gram)</label>
+                            <p className="text-xs text-ink/50 mb-3">Total = Fixed amount + (% × 24Kt gold rate)</p>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[9px] uppercase tracking-[0.16em] text-ink/50 block mb-1">Fixed ₹/gram</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={form.making_fixed_per_gram}
+                                        onChange={(e) => setForm({ ...form, making_fixed_per_gram: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3"
+                                        placeholder="400"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] uppercase tracking-[0.16em] text-ink/50 block mb-1">% of 24Kt</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        value={form.making_pct_24kt}
+                                        onChange={(e) => setForm({ ...form, making_pct_24kt: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3"
+                                        placeholder="4"
+                                        required
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">GST (%)</label>

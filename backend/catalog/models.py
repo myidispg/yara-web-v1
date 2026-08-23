@@ -210,14 +210,30 @@ class Product(models.Model):
         """Pure calculation — no instance needed. Uses current rate card."""
         from catalog.models import RateCard
         rc = rate_card or RateCard.get()
+        
+        # Gold rate based on karat
         gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
+        
+        # Diamond rate based on grade
         grade_rate = float(rc.rate_for_grade(diamond_grade))
+        
+        # Gold value
         gold_value = float(net_weight) * gold_rate
+        
+        # Diamond value
         diamond_value = float(diamond_weight) * grade_rate
-        making = (gold_value + diamond_value) * (float(rc.making_charges_percentage) / 100)
+        
+        # Making charges: fixed per gram + % of 24Kt gold
+        # Derive 24Kt from 18Kt (24Kt = 18Kt × 24/18)
+        gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+        making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+        making = making_per_gram * float(net_weight)
+        
+        # GST
         gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+        
         return round(gold_value + diamond_value + making + gst, 2)
-
+    
     def __str__(self):
         return self.item_code
 
@@ -273,6 +289,8 @@ class RateCard(models.Model):
     diamond_rates = models.JSONField(default=dict, blank=True)   # {"HI/SI": 60000, ...}
     default_grade = models.CharField(max_length=20, default="IJ/SI")
     making_charges_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
+    making_fixed_per_gram = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    making_pct_24kt = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=3.00)
     updated_at = models.DateTimeField(auto_now=True)
     last_auto_run_at = models.DateTimeField(null=True, blank=True)
