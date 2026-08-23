@@ -18,13 +18,21 @@ const STATUS = {
 export default function ControlProductPage() {
     const { id } = useParams();
     const router = useRouter();
-    const [p, setP] = useState(null);
+        const [p, setP] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [edit, setEdit] = useState(null);
 
     const load = async () => {
         try {
-            const { data } = await controlApi.getProductDetail(id);
+                        const { data } = await controlApi.getProductDetail(id);
             setP(data);
+            setEdit({
+                price: String(data.price),
+                diamond_grade: data.diamond_grade || "",
+                report_lab: data.report_lab || "",
+                report_number: data.report_number || "",
+                hallmark_number: data.hallmark_number || "",
+            });
         } catch (e) {
             console.error("Failed to load product:", e);
         } finally {
@@ -57,6 +65,22 @@ export default function ControlProductPage() {
             router.push(`/control/inventory?design=${p.design_id}`);
         } catch (err) {
             alert(err.response?.data?.error || "Cannot delete this product.");
+        }
+    };
+
+        const saveEdit = async () => {
+        try {
+            await controlApi.updateProduct(p.id, {
+                price: parseFloat(edit.price),
+                diamond_grade: edit.diamond_grade.trim(),
+                report_lab: edit.report_lab.trim(),
+                report_number: edit.report_number.trim(),
+                hallmark_number: edit.hallmark_number.trim(),
+            });
+            alert("Product updated.");
+            load();
+        } catch (err) {
+            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
         }
     };
 
@@ -139,6 +163,38 @@ export default function ControlProductPage() {
                         </Link>
                     )}
                 </div>
+                        </div>
+
+            {/* Edit Product */}
+            <div className="bg-white rounded-xl border border-line p-6 shadow-card mt-6 max-w-2xl">
+                <h3 className="font-serif text-xl mb-4">Edit Product</h3>
+                {edit && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Price (₹)</label>
+                            <input type="number" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Diamond Grade</label>
+                            <input value={edit.diamond_grade} onChange={(e) => setEdit({ ...edit, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Report Lab</label>
+                            <input value={edit.report_lab} onChange={(e) => setEdit({ ...edit, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Report Number</label>
+                            <input value={edit.report_number} onChange={(e) => setEdit({ ...edit, report_number: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
+                        </div>
+                        <div className="sm:col-span-2">
+                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Hallmark (HUID)</label>
+                            <input value={edit.hallmark_number} onChange={(e) => setEdit({ ...edit, hallmark_number: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
+                        </div>
+                        <div className="sm:col-span-2">
+                            <button onClick={saveEdit} className="btn-solid w-full text-sm">Save Changes</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

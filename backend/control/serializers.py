@@ -5,6 +5,7 @@ from rest_framework import serializers
 from accounts.models import User
 from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
 from orders.models import Order, OrderItem
+from catalog.serializers import ProductMediaSerializer
 
 from .models import AuditLog
 
@@ -67,16 +68,20 @@ class StaffDesignSerializer(serializers.ModelSerializer):
     category_slug = serializers.CharField(source='category.slug', read_only=True)
     is_ring = serializers.BooleanField(source='category.is_ring_family', read_only=True)
     products = StaffProductSerializer(many=True, read_only=True)
+    media = ProductMediaSerializer(many=True, read_only=True)
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Design
-        fields = ['id', 'design_code', 'slug', 'name', 'category_name', 'base_net_weight_14kt',
-                  'size_weight_refs', 'size_weight_counts', 'total_diamond_weight',
-                  'products', 'instance_count', 'in_stock_count', 'base_price', 'category_slug',
-                  'is_ring', 'created_at']
+        fields = ['id', 'design_code', 'slug', 'name', 'description', 'category',
+                  'category_name', 'category_slug', 'is_ring', 'is_active',
+                  'base_net_weight_14kt', 'size_weight_refs', 'size_weight_counts',
+                  'total_diamond_weight', 'diamond_weight_round_melle',
+                  'pointer_solitaire_weight', 'fancy_cut_weight', 'color_stone_weight',
+                  'products', 'instance_count', 'in_stock_count', 'base_price',
+                  'created_at', 'media']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()
@@ -96,6 +101,15 @@ class StaffDesignSerializer(serializers.ModelSerializer):
 
     def get_in_stock_count(self, obj):
         return obj.products.filter(status='in_stock').count()
+
+class DesignUpdateSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+
+    class Meta:
+        model = Design
+        fields = ['name', 'design_code', 'description', 'category', 'is_active',
+                  'diamond_weight_round_melle', 'pointer_solitaire_weight',
+                  'fancy_cut_weight', 'color_stone_weight']
 
 
 class StaffCategorySerializer(serializers.ModelSerializer):

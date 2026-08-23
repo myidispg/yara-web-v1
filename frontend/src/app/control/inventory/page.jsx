@@ -25,6 +25,7 @@ export default function InventoryPage() {
 
     // Bulk selection state
     const [checked, setChecked] = useState([]);
+    const [checkedDesigns, setCheckedDesigns] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
     const [bulkBusy, setBulkBusy] = useState(false);
     const [bulkResult, setBulkResult] = useState(null);
@@ -166,6 +167,27 @@ export default function InventoryPage() {
             URL.revokeObjectURL(url);
         } catch {
             alert("Export failed");
+        }
+    };
+
+    const runDesignBulk = async (actionName) => {
+        const labels = {
+            activate: `Activate ${checkedDesigns.length} design(s) (show on storefront)?`,
+            deactivate: `Deactivate ${checkedDesigns.length} design(s) (hide from storefront)?`,
+            delete: `Permanently DELETE ${checkedDesigns.length} design(s)? Designs with products will be skipped.`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        setBulkResult(null);
+        try {
+            const { data } = await controlApi.bulkDesignAction(checkedDesigns, actionName);
+            setBulkResult(data);
+            setCheckedDesigns([]);
+            await loadDesigns();
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
         }
     };
 
@@ -446,24 +468,83 @@ export default function InventoryPage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map((d) => (
-                        <div key={d.id} onClick={() => viewDesign(d.id)} className="bg-white rounded-xl border border-line p-6 shadow-card hover:shadow-hero cursor-pointer transition-shadow">
-                            <h3 className="font-serif text-xl mb-2">{d.name}</h3>
-                            <p className="text-sm text-ink/60 mb-4">{d.design_code} · {d.category_name}</p>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">Products</p>
-                                    <p className="font-semibold">{d.instance_count}</p>
+                <div>
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <input type="checkbox"
+                            checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                            onChange={() => setCheckedDesigns(
+                                products.every((d) => checkedDesigns.includes(d.id))
+                                    ? []
+                                    : products.map((d) => d.id)
+                            )}
+                            className="w-4 h-4" />
+                        <span className="text-sm text-ink/60">Select all designs</span>
+                        {checkedDesigns.length > 0 && (
+                            <div className="flex items-center gap-2 ml-auto bg-ink text-white rounded-lg px-4 py-2">
+                                <span className="text-sm font-semibold mr-2">{checkedDesigns.length} selected</span>
+                                <button onClick={() => runDesignBulk("activate")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Activate</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => runDesignBulk("deactivate")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Deactivate</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => runDesignBulk("delete")} disabled={bulkBusy} className="text-xs font-semibold text-red-300 hover:text-red-400 disabled:opacity-40">Delete</button>
+                                <span className="text-white/30">|</span>
+                                <button onClick={() => setCheckedDesigns([])} className="text-xs text-white/60 hover:text-white">Clear</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {bulkResult && (
+                        <div className="mb-4 rounded-xl border border-line bg-cream p-4 text-sm">
+                            <p className="font-semibold">
+                                Done: {bulkResult.processed.length} processed
+                                {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                            </p>
+                            {bulkResult.skipped.length > 0 && (
+                                <ul className="mt-2 text-xs text-ink/60 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.skipped.map((s) => (
+                                        <li key={s.id}>• {s.item_code}: {s.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {products.map((d) => (
+                            <div key={d.id} onClick={() => viewDesign(d.id)} className="relative bg-white rounded-xl border border-line shadow-card hover:shadow-hero cursor-pointer transition-shadow overflow-hidden">
+                                <div className="absolute top-3 left-3 z-10 bg-white/90 rounded p-1" onClick={(e) => e.stopPropagation()}>
+                                    <input type="checkbox" checked={checkedDesigns.includes(d.id)} onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])} className="w-4 h-4" />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">In Stock</p>
-                                    <p className="font-semibold text-green-600">{d.in_stock_count}</p>
+                                <div className="aspect-[4/3] bg-cream">
+                                    {d.media?.length > 0 ? (
+                                        d.media[0].kind === "video"
+                                            ? <video src={d.media[0].url} className="w-full h-full object-cover" muted />
+                                            : <img src={d.media[0].url} alt={d.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-ink/30 text-xs uppercase tracking-[0.2em]">No media</div>
+                                    )}
+                                </div>
+                                <div className="p-6">
+                                    <h3 className="font-serif text-xl mb-2">{d.name}</h3>
+                                    <p className="text-sm text-ink/60 mb-4">
+                                        {d.design_code} · {d.category_name}
+                                        {!d.is_active && <span className="ml-2 text-red-500 text-xs font-semibold">INACTIVE</span>}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">Products</p>
+                                            <p className="font-semibold">{d.instance_count}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">In Stock</p>
+                                            <p className="font-semibold text-green-600">{d.in_stock_count}</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm font-semibold">From {inr(d.base_price)}</p>
                                 </div>
                             </div>
-                            <p className="text-sm font-semibold">From {inr(d.base_price)}</p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
