@@ -73,6 +73,9 @@ const controlApi = {
 
   // Audit
   getAuditLogs: (params = {}) => api.get("/control/audit-logs/", { params }),
+
+  // Search analytics
+  getSearchAnalytics: (days = 30) => api.get("/control/search-analytics/", { params: { days } }),
 };
 
 export default controlApi;

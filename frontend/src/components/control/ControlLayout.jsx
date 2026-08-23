@@ -16,6 +16,7 @@ const navItems = [
   { label: "Customers", href: "/control/customers", icon: "👥" },
   { label: "Import/Export", href: "/control/import-export", icon: "📥" },
   { label: "Activity", href: "/control/activity", icon: "🕒" },
+  { label: "Search Insights", href: "/control/search-analytics", icon: "🔍" },
 ];
 
 export default function ControlLayout({ children }) {

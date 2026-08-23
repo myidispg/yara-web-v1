@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/client";
@@ -52,6 +52,8 @@ export default function Navbar() {
     const { count } = useCart();
     const { user } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const initialPathRef = useRef(null);
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -60,6 +62,30 @@ export default function Navbar() {
     const [searching, setSearching] = useState(false);
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
+
+    // Lock body scroll when search is open; restore when closed or on unmount
+    useEffect(() => {
+        if (!mounted) return;
+        const originalOverflow = document.body.style.overflow;
+        if (searchOpen) {
+            document.body.style.overflow = "hidden";
+        }
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, [searchOpen, mounted]);
+
+    // Auto-close search on route change (ignore first render)
+    useEffect(() => {
+        if (initialPathRef.current === null) {
+            initialPathRef.current = pathname;
+            return;
+        }
+        if (pathname !== initialPathRef.current) {
+            closeSearch();
+            initialPathRef.current = pathname;
+        }
+    }, [pathname]);
 
     useEffect(() => {
         if (query.trim().length < 2) { setResults([]); return; }
@@ -144,8 +170,14 @@ export default function Navbar() {
                                 autoFocus
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === "Escape" && closeSearch()}
-                                placeholder="Search rings, earrings, pendants…"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Escape") closeSearch();
+                                    if (e.key === "Enter" && query.trim().length >= 2) {
+                                        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                                        closeSearch();
+                                    }
+                                }}
+                                placeholder="Search rings, earrings, pendants… (Enter for full results)"
                                 className="flex-1 bg-transparent border-b border-charcoal/30 py-2 text-base focus:outline-none focus:border-gold-dark"
                             />
                             <button onClick={closeSearch} className="text-charcoal hover:text-gold-dark" aria-label="Close search">
@@ -178,6 +210,18 @@ export default function Navbar() {
 
                         {!searching && query.trim().length >= 2 && results.length === 0 && (
                             <p className="text-sm text-ink/55 mt-4">No pieces match "{query}".</p>
+                        )}
+
+                        {!searching && results.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                                    closeSearch();
+                                }}
+                                className="mt-4 w-full text-center text-xs uppercase tracking-[0.2em] font-semibold text-gold-dark hover:text-ink py-2.5 border border-line rounded-lg"
+                            >
+                                View all results for "{query}" →
+                            </button>
                         )}
                     </div>
                 </div>
