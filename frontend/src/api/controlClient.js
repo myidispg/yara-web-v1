@@ -29,6 +29,8 @@ const controlApi = {
   getInstances: () => api.get("/control/instances/"),
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
+  getProductDetail: (id) => api.get(`/control/instances/${id}/`),
+  globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),
@@ -53,6 +55,7 @@ const controlApi = {
 
   // Customers
   getCustomers: () => api.get("/control/customers/"),
+  getCustomerFull: (id) => api.get(`/control/customers/${id}/full/`),
 
   // Import/Export
   importProducts: (file) => {

@@ -71,6 +71,13 @@ export default function InventoryPage() {
         }
     };
 
+    // Deep link: /control/inventory?design=ID opens that design directly
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const designId = params.get("design");
+        if (designId) viewDesign(designId);
+    }, []);
+
     const markSoldOffline = async (productId) => {
         if (!confirm("Mark this product as SOLD OFFLINE (showroom sale)?")) return;
         try {

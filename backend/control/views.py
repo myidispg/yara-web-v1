@@ -500,6 +500,18 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
                         u.date_joined.isoformat(), agg['c'] or 0, float(agg['s'] or 0)])
         return response
 
+    @action(detail=True, methods=['get'])
+    def full(self, request, pk=None):
+        user = self.get_object()
+        orders = user.orders.order_by('-created_at')
+        active = orders.exclude(status='cancelled')
+        return Response({
+            'customer': StaffUserSerializer(user).data,
+            'orders': StaffOrderSerializer(orders, many=True).data,
+            'total_orders': active.count(),
+            'total_spent': float(active.aggregate(s=Sum('total'))['s'] or 0),
+        })
+
 
 class GoldRateHistoryView(APIView):
     permission_classes = [IsStaff]
@@ -725,4 +737,40 @@ class SearchAnalyticsView(APIView):
             'zero_terms': [{'term': t['term'], 'count': t['count'],
                             'last': t['last'].isoformat()} for t in zero_terms],
             'daily': daily,
+        })
+
+class GlobalSearchView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        q = (request.query_params.get('q') or '').strip()
+        if len(q) < 2:
+            return Response({'designs': [], 'products': [], 'orders': [], 'customers': []})
+
+        designs = Design.objects.filter(
+            Q(design_code__icontains=q) | Q(name__icontains=q)
+        ).select_related('category')[:10]
+
+        products = Product.objects.filter(
+            Q(item_code__icontains=q) |
+            Q(hallmark_number__icontains=q) |
+            Q(report_number__icontains=q)
+        ).select_related('design', 'design__category')[:10]
+
+        orders = Order.objects.filter(
+            Q(order_number__icontains=q)
+        ).select_related('user')[:10]
+
+        customers = User.objects.filter(is_staff=False).filter(
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(phone__icontains=q)
+        )[:10]
+
+        return Response({
+            'designs': StaffDesignSerializer(designs, many=True).data,
+            'products': StaffProductSerializer(products, many=True).data,
+            'orders': StaffOrderSerializer(orders, many=True).data,
+            'customers': StaffUserSerializer(customers, many=True).data,
         })
