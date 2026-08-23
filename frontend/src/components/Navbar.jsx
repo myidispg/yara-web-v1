@@ -54,6 +54,7 @@ export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
     const initialPathRef = useRef(null);
+    const isControl = pathname.startsWith("/control");
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -130,13 +131,15 @@ export default function Navbar() {
                 <div className="flex-1 md:hidden" />
 
                 <div className="flex items-center gap-5">
-                    <button
-                        onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-                        className="text-charcoal hover:text-gold-dark transition-colors"
-                        aria-label="Search"
-                    >
-                        <SearchIcon />
-                    </button>
+                    {!isControl && (
+                        <button
+                            onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+                            className="text-charcoal hover:text-gold-dark transition-colors"
+                            aria-label="Search"
+                        >
+                            <SearchIcon />
+                        </button>
+                    )}
 
                     <Link
                         href={user ? "/account" : "/auth"}
@@ -161,7 +164,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {searchOpen && (
+                        {searchOpen && !isControl && (
                 <div className="border-t border-line bg-ivory px-6 lg:px-10 py-5">
                     <div className="max-w-3xl mx-auto">
                         <div className="flex items-center gap-4">

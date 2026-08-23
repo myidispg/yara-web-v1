@@ -203,6 +203,7 @@ class Product(models.Model):
     sold_in_order = models.ForeignKey("orders.Order", on_delete=models.SET_NULL,
                                       null=True, blank=True, related_name="purchased_items")
     sold_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.item_code
