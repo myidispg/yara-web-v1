@@ -97,14 +97,28 @@ export default function RateCardPage() {
     const markFormDirty = () => { formDirtyRef.current = true; };
     const markFormClean = () => { formDirtyRef.current = false; };
 
-    const save = async (e) => {
+        const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [savingMode, setSavingMode] = useState(null); // 'sync', 'async', or null
+
+    const handleSaveClick = (e) => {
         e.preventDefault();
+        
+        // Count in-stock products not in orders
+        // We'll estimate from the dashboard or show a generic message
+        setShowConfirmDialog(true);
+    };
+
+    const confirmSave = async (mode) => {
+        setShowConfirmDialog(false);
+        setSavingMode(mode);
         setSaving(true);
+        
         try {
             const diamond_rates = {};
             bands.forEach((b) => {
                 if (b.name.trim() && b.rate) diamond_rates[b.name.trim()] = parseFloat(b.rate);
             });
+            
             const payload = {
                 gold_rate_14kt: parseFloat(form.gold_rate_14kt),
                 gold_rate_18kt: parseFloat(form.gold_rate_18kt),
@@ -119,15 +133,24 @@ export default function RateCardPage() {
                 change_threshold_type: auto.thresholdType,
                 change_threshold_percentage: parseFloat(auto.thresholdPct),
                 change_threshold_amount: parseFloat(auto.thresholdAmt),
+                update_mode: mode,  // 'sync' or 'async'
             };
-            await controlApi.updateRateCard(payload);
+            
+            const { data } = await controlApi.updateRateCard(payload);
             markFormClean();
-            await load(); // reload everything after save
-            alert("Settings updated successfully!");
+            
+            if (mode === 'sync') {
+                alert(`Settings updated! ${data.products_updated} product prices recalculated.`);
+                await load();
+            } else {
+                alert(`Settings saved! Price recalculation started in background. Changes will appear within 1-2 minutes.`);
+                await load();
+            }
         } catch (err) {
             alert("Failed to update: " + JSON.stringify(err.response?.data || err.message));
         } finally {
             setSaving(false);
+            setSavingMode(null);
         }
     };
 
@@ -163,7 +186,7 @@ export default function RateCardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <form onSubmit={save} onChange={markFormDirty} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
+                                <form onChange={markFormDirty} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
                     <h2 className="font-serif text-2xl">Live Rates</h2>
 
                     <div className="grid grid-cols-2 gap-6">
@@ -282,10 +305,48 @@ export default function RateCardPage() {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={saving} className="btn-solid w-full">
-                        {saving ? "Saving..." : "Update Interval / Thresholds / Markup"}
+                    <button type="button" onClick={handleSaveClick} disabled={saving} className="btn-solid w-full">
+                        {saving ? "Saving..." : "Update Rate Card"}
                     </button>
                 </form>
+
+                {/* Confirmation Dialog */}
+                {showConfirmDialog && (
+                    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowConfirmDialog(false)}>
+                        <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+                            <h2 className="font-serif text-2xl mb-4">Update Rate Card</h2>
+                            <p className="text-sm text-ink/70 mb-6">
+                                This will update pricing parameters. Choose how to recalculate existing product prices:
+                            </p>
+                            
+                            <div className="space-y-3 mb-6">
+                                <button
+                                    onClick={() => confirmSave('sync')}
+                                    className="w-full text-left border border-line rounded-lg p-4 hover:border-gold-dark hover:bg-cream transition-colors"
+                                >
+                                    <p className="font-semibold mb-1">Synchronous (Wait)</p>
+                                    <p className="text-xs text-ink/60">
+                                        Recalculate prices now. You'll wait ~1-3 seconds while all in-stock products are updated. Best for small catalogs (&lt;500 products).
+                                    </p>
+                                </button>
+                                
+                                <button
+                                    onClick={() => confirmSave('async')}
+                                    className="w-full text-left border border-line rounded-lg p-4 hover:border-gold-dark hover:bg-cream transition-colors"
+                                >
+                                    <p className="font-semibold mb-1">Asynchronous (Background)</p>
+                                    <p className="text-xs text-ink/60">
+                                        Save settings immediately. Price recalculation happens in the background over the next 1-2 minutes. Best for large catalogs or when you're in a hurry.
+                                    </p>
+                                </button>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowConfirmDialog(false)} className="btn-outline flex-1">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-6 min-w-0">
                     <div className="bg-white rounded-xl border border-line p-8 shadow-card">
@@ -329,12 +390,17 @@ export default function RateCardPage() {
                         </div>
                     </div>
 
-                    <div className="bg-cream rounded-xl p-8">
+                                        <div className="bg-cream rounded-xl p-8">
                         <h3 className="font-serif text-xl mb-4">Impact Notice</h3>
-                        <p className="text-sm text-ink/70 leading-relaxed">
-                            Updating rates recalculates prices for newly created products and Made-to-Order quotes.
-                            Existing in-stock products keep their locked-in prices.
+                        <p className="text-sm text-ink/70 leading-relaxed mb-2">
+                            <strong>When you update the rate card:</strong>
                         </p>
+                        <ul className="text-sm text-ink/70 leading-relaxed space-y-1 list-disc list-inside">
+                            <li>All in-stock products will be recalculated immediately (sync) or in the background (async)</li>
+                            <li>Prices locked into existing orders will NOT change</li>
+                            <li>Made-to-Order quotes will use the new rates</li>
+                            <li>Sold/offline-sold products retain their historical prices</li>
+                        </ul>
                     </div>
 
                     <div className="bg-white rounded-xl border border-line p-8 shadow-card">
