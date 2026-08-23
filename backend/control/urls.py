@@ -5,7 +5,7 @@ from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignView
                     OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
                     NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView, 
                     AnalyticsSummaryView, AnalyticsTimeseriesView, CategoryViewSet, AuditLogListView,
-                    SearchTrackView, SearchAnalyticsView, GlobalSearchView)
+                    SearchTrackView, SearchAnalyticsView, GlobalSearchView, PricePreviewView)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
@@ -30,4 +30,5 @@ urlpatterns = [
     path('search/track/', SearchTrackView.as_view(), name='search-track'),
     path('search-analytics/', SearchAnalyticsView.as_view(), name='admin-search-analytics'),
     path('global-search/', GlobalSearchView.as_view(), name='admin-global-search'),
+    path('price-preview/', PricePreviewView.as_view(), name='price-preview'),
 ] + router.urls

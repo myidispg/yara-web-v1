@@ -27,7 +27,8 @@ const controlApi = {
   bulkDesignAction: (ids, action) => api.post(`/control/products/bulk-action/`, { ids, action }),
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
-  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+  // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+    updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
 
   // Products (physical pieces)
   getInstances: () => api.get("/control/instances/"),
@@ -35,6 +36,7 @@ const controlApi = {
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
   getProductDetail: (id) => api.get(`/control/instances/${id}/`),
   globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
+    previewPrice: (data) => api.post("/control/price-preview/", data),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),

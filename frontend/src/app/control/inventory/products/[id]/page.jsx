@@ -15,24 +15,29 @@ const STATUS = {
     reserved: { label: "Reserved", cls: "bg-yellow-100 text-yellow-800" },
 };
 
+const KARAT_OPTIONS = ["14Kt", "18Kt"];
+const COLOR_OPTIONS = ["Yellow", "Rose", "White"];
+const RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
+
 export default function ControlProductPage() {
     const { id } = useParams();
     const router = useRouter();
-        const [p, setP] = useState(null);
+    const [p, setP] = useState(null);
+    const [design, setDesign] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [edit, setEdit] = useState(null);
+    const [showEdit, setShowEdit] = useState(false);
+    const [editForm, setEditForm] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [previewPrice, setPreviewPrice] = useState(null);
 
     const load = async () => {
         try {
-                        const { data } = await controlApi.getProductDetail(id);
+            const { data } = await controlApi.getProductDetail(id);
             setP(data);
-            setEdit({
-                price: String(data.price),
-                diamond_grade: data.diamond_grade || "",
-                report_lab: data.report_lab || "",
-                report_number: data.report_number || "",
-                hallmark_number: data.hallmark_number || "",
-            });
+            if (data.design) {
+                const d = await controlApi.getProduct(data.design);
+                setDesign(d.data || d);
+            }
         } catch (e) {
             console.error("Failed to load product:", e);
         } finally {
@@ -43,8 +48,59 @@ export default function ControlProductPage() {
     useEffect(() => { load(); }, [id]);
 
     useEffect(() => {
+        if (!editForm || !p) return;
+        const fetchPreview = async () => {
+            try {
+                const { data } = await controlApi.previewPrice({
+                    product_id: p.id,
+                    karat: editForm.karat,
+                    diamond_grade: editForm.diamond_grade,
+                });
+                setPreviewPrice(data.price);
+            } catch (err) {
+                console.error("Preview failed:", err);
+            }
+        };
+        fetchPreview();
+    }, [editForm?.karat, editForm?.diamond_grade, p]);
+
+    useEffect(() => {
         document.title = p ? `${p.item_code} | Control Panel` : "Product | Control Panel";
     }, [p]);
+
+    const openEdit = () => {
+        setEditForm({
+            karat: p.karat,
+            gold_color: p.gold_color,
+            ring_size: p.ring_size || "",
+            diamond_grade: p.diamond_grade,
+            report_lab: p.report_lab || "",
+            report_number: p.report_number || "",
+            hallmark_number: p.hallmark_number || "",
+        });
+        setShowEdit(true);
+    };
+
+    const saveEdit = async () => {
+        setSaving(true);
+        try {
+            const payload = {
+                karat: editForm.karat,
+                gold_color: editForm.gold_color,
+                ring_size: editForm.ring_size || null,
+                diamond_grade: editForm.diamond_grade,
+                report_lab: editForm.report_lab.trim(),
+                report_number: editForm.report_number.trim(),
+                hallmark_number: editForm.hallmark_number.trim(),
+            }; await controlApi.updateProduct(p.id, payload);
+            setShowEdit(false);
+            await load();
+        } catch (err) {
+            alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const markSold = async () => {
         if (!confirm("Mark this product as SOLD OFFLINE (showroom sale)?")) return;
@@ -68,26 +124,11 @@ export default function ControlProductPage() {
         }
     };
 
-        const saveEdit = async () => {
-        try {
-            await controlApi.updateProduct(p.id, {
-                price: parseFloat(edit.price),
-                diamond_grade: edit.diamond_grade.trim(),
-                report_lab: edit.report_lab.trim(),
-                report_number: edit.report_number.trim(),
-                hallmark_number: edit.hallmark_number.trim(),
-            });
-            alert("Product updated.");
-            load();
-        } catch (err) {
-            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
-        }
-    };
-
     if (loading) return <div className="text-center py-12">Loading product…</div>;
     if (!p) return <div className="text-center py-12">Product not found.</div>;
 
     const st = STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-700" };
+    const isRing = design?.is_ring || false;
 
     const Row = ({ label, value }) => (
         <div className="flex justify-between gap-4 text-sm py-1.5">
@@ -111,13 +152,14 @@ export default function ControlProductPage() {
                     <p className="text-sm text-ink/60 mt-1">{p.design_name} · {p.category_name}</p>
                 </div>
                 <div className="flex gap-2">
+                    <button onClick={openEdit} className="btn-solid text-sm">Edit Product</button>
                     {p.status === "in_stock" ? (
                         <>
-                            <button onClick={markSold} className="btn-solid text-sm">Mark Sold Offline</button>
+                            <button onClick={markSold} className="btn-outline text-sm">Mark Sold Offline</button>
                             <button onClick={deleteProduct} className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50">Delete</button>
                         </>
                     ) : (
-                        <button onClick={returnToStock} className="btn-solid text-sm">Return to Stock</button>
+                        <button onClick={returnToStock} className="btn-outline text-sm text-green-700 border-green-700 hover:bg-green-50">Return to Stock</button>
                     )}
                 </div>
             </div>
@@ -163,39 +205,97 @@ export default function ControlProductPage() {
                         </Link>
                     )}
                 </div>
+            </div>
+
+            {/* Media Gallery */}
+            {design?.media && design.media.length > 0 && (
+                <div className="mt-8 bg-white rounded-xl border border-line p-6 shadow-card">
+                    <h3 className="font-serif text-xl mb-4">Product Media</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {design.media.map((m, i) => (
+                            <div key={i} className="aspect-square rounded-lg overflow-hidden bg-cream">
+                                {m.kind === "video" ? (
+                                    <video src={m.url} className="w-full h-full object-cover" controls muted />
+                                ) : (
+                                    <img src={m.url} alt={p.design_name} className="w-full h-full object-cover" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEdit && editForm && (
+                <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowEdit(false)}>
+                    <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="font-serif text-2xl mb-6">Edit {p.item_code}</h2>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Karat</label>
+                                    <select value={editForm.karat} onChange={(e) => setEditForm({ ...editForm, karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        {KARAT_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold Colour</label>
+                                    <select value={editForm.gold_color} onChange={(e) => setEditForm({ ...editForm, gold_color: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {isRing && (
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Ring Size</label>
+                                    <select value={editForm.ring_size} onChange={(e) => setEditForm({ ...editForm, ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        <option value="">No size</option>
+                                        {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Grade</label>
+                                <input value={editForm.diamond_grade} onChange={(e) => setEditForm({ ...editForm, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IJ/SI" />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Calculated Price (₹)</label>
+                                <div className="w-full border border-line rounded-lg px-4 py-3 text-sm bg-cream font-semibold">
+                                    {inr(previewPrice || p.price)}
+                                </div>
+                                <p className="text-[10px] text-ink/50 mt-1">Auto-calculated based on weight, karat, and grade</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Certificate Lab</label>
+                                    <input value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IGI, GIA" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Certificate Number</label>
+                                    <input value={editForm.report_number} onChange={(e) => setEditForm({ ...editForm, report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Hallmark (HUID)</label>
+                                <input value={editForm.hallmark_number} onChange={(e) => setEditForm({ ...editForm, hallmark_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., HMK-001" />
+                            </div>
                         </div>
 
-            {/* Edit Product */}
-            <div className="bg-white rounded-xl border border-line p-6 shadow-card mt-6 max-w-2xl">
-                <h3 className="font-serif text-xl mb-4">Edit Product</h3>
-                {edit && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Price (₹)</label>
-                            <input type="number" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Diamond Grade</label>
-                            <input value={edit.diamond_grade} onChange={(e) => setEdit({ ...edit, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Report Lab</label>
-                            <input value={edit.report_lab} onChange={(e) => setEdit({ ...edit, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Report Number</label>
-                            <input value={edit.report_number} onChange={(e) => setEdit({ ...edit, report_number: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div className="sm:col-span-2">
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-1">Hallmark (HUID)</label>
-                            <input value={edit.hallmark_number} onChange={(e) => setEdit({ ...edit, hallmark_number: e.target.value })} className="w-full border border-line rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div className="sm:col-span-2">
-                            <button onClick={saveEdit} className="btn-solid w-full text-sm">Save Changes</button>
+                        <div className="flex gap-3 mt-8">
+                            <button onClick={() => setShowEdit(false)} className="btn-outline flex-1">Cancel</button>
+                            <button onClick={saveEdit} disabled={saving} className="btn-solid flex-1">
+                                {saving ? "Saving…" : "Save Changes"}
+                            </button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

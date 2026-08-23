@@ -381,6 +381,24 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = StaffProductSerializer
     queryset = Product.objects.all()
 
+    def perform_update(self, serializer):
+        """Recalculate price based on current karat + grade + weights."""
+        instance = serializer.instance
+        # Use new values from the update if provided, else current values
+        new_karat = serializer.validated_data.get('karat', instance.karat)
+        new_grade = serializer.validated_data.get('diamond_grade', instance.diamond_grade)
+        new_price = Product.calculate_price(
+            net_weight=instance.actual_net_weight,
+            diamond_weight=instance.actual_diamond_weight,
+            karat=new_karat,
+            diamond_grade=new_grade,
+        )
+        serializer.save(price=new_price)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs.setdefault('partial', True)
+        return self.update(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'])
     def mark_sold_offline(self, request, pk=None):
         product = self.get_object()
@@ -811,3 +829,25 @@ class GlobalSearchView(APIView):
             'orders': StaffOrderSerializer(orders, many=True).data,
             'customers': StaffUserSerializer(customers, many=True).data,
         })
+
+class PricePreviewView(APIView):
+    """Returns calculated price for a given product with hypothetical changes."""
+    permission_classes = [IsStaff]
+
+    def post(self, request):
+        product_id = request.data.get('product_id')
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=404)
+        
+        karat = request.data.get('karat', product.karat)
+        grade = request.data.get('diamond_grade', product.diamond_grade)
+        
+        price = Product.calculate_price(
+            net_weight=product.actual_net_weight,
+            diamond_weight=product.actual_diamond_weight,
+            karat=karat,
+            diamond_grade=grade,
+        )
+        return Response({'price': price})
