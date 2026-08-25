@@ -203,9 +203,8 @@ export default function AccountPage() {
                         {(profile.addresses || []).map((addr) => (
                             <div key={addr.id} className="border border-line rounded-lg p-4 relative">
                                 {addr.is_default && <span className="absolute top-2 right-2 text-[9px] bg-gold-dark text-white px-2 py-0.5 rounded-full">DEFAULT</span>}
-                                <p className="font-semibold text-sm">{addr.full_name}</p>
-                                <p className="text-xs text-ink/70 mt-1">{addr.phone}</p>
-                                <p className="text-xs text-ink/70 mt-1">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
+                                <p className="font-semibold text-sm capitalize mb-2">{addr.label || "Home"}</p>
+                                <p className="text-xs text-ink/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
                                 <p className="text-xs text-ink/70">{addr.city}, {addr.state} - {addr.pincode}</p>
                                 <div className="flex gap-2 mt-3">
                                     {!addr.is_default && <button onClick={() => setDefault(addr.id)} className="text-xs text-gold-dark font-semibold">Set Default</button>}
