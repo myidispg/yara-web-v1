@@ -3,11 +3,9 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from catalog.models import Product
-from .models import Address, Order
+from .models import Address, Order, OrderItem
 from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer
 
-from decimal import Decimal
-from django.utils import timezone
 
 class AddressViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -74,85 +72,15 @@ class OrderViewSet(viewsets.ModelViewSet):
         """Override create to return the order serialized with OrderSerializer."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = self.perform_create(serializer)
+        
+        # This calls OrderCreateSerializer.create() which handles everything:
+        # - Stock allocation
+        # - MTO fabrication and pricing
+        # - Order item creation
+        # - Product status updates
+        order = serializer.save()
         
         # Return the order serialized with OrderSerializer (not OrderCreateSerializer)
         response_serializer = OrderSerializer(order)
         headers = self.get_success_headers(response_serializer.data)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def perform_create(self, serializer):
-        """Create the order and return it."""
-        user = self.request.user
-        address = serializer.validated_data['address']
-        payment_method = serializer.validated_data['payment_method']
-        items_data = serializer.validated_data['items']
-        
-        # Calculate subtotal
-        subtotal = Decimal('0')
-        for item in items_data:
-            design = item['design']
-            karat = item['karat']
-            gold_color = item['gold_color']
-            ring_size = (item.get('ring_size') or '').strip() or None
-            quantity = item['quantity']
-            
-            # Find matching product
-            product = Product.objects.filter(
-                design=design, karat=karat, gold_color=gold_color,
-                ring_size=ring_size, status='in_stock'
-            ).first()
-            
-            if not product:
-                # Mark as MTO if not available
-                pass
-            
-            if product:
-                subtotal += product.price * quantity
-        
-        # Create order
-        order = Order.objects.create(
-            user=user,
-            address=address,
-            payment_method=payment_method,
-            subtotal=subtotal,
-            shipping_fee=Decimal('0'),
-            total=subtotal,
-        )
-        
-        # Create order items
-        for item in items_data:
-            design = item['design']
-            karat = item['karat']
-            gold_color = item['gold_color']
-            ring_size = (item.get('ring_size') or '').strip() or None
-            quantity = item['quantity']
-            
-            # Find matching product
-            product = Product.objects.filter(
-                design=design, karat=karat, gold_color=gold_color,
-                ring_size=ring_size, status='in_stock'
-            ).first()
-            
-            if product:
-                variant_label = f"{karat} {gold_color}"
-                if ring_size:
-                    variant_label += f" · Size {ring_size}"
-                
-                OrderItem.objects.create(
-                    order=order,
-                    instance=product,
-                    product_name=design.name,
-                    variant_label=variant_label,
-                    quantity=quantity,
-                    unit_price=product.price,
-                    line_total=product.price * quantity,
-                )
-                # Mark product as sold
-                product.status = 'sold'
-                product.sold_at = timezone.now()
-                product.sold_in_order = order
-                product.sold_to_user = user
-                product.save()
-        
-        return order
