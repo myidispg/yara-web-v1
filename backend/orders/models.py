@@ -44,6 +44,14 @@ class Order(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     shipping_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # Timeline timestamps
+    placed_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -57,6 +65,19 @@ class Order(models.Model):
         if not self.order_number:
             self.order_number = f"VR-{timezone.now():%y%m%d}-{secrets.token_hex(2).upper()}"
         super().save(*args, **kwargs)
+
+    def get_timeline(self):
+        """Return a list of {status, timestamp} for the order's progression."""
+        timeline = [{"status": "placed", "timestamp": self.placed_at}]
+        if self.confirmed_at:
+            timeline.append({"status": "confirmed", "timestamp": self.confirmed_at})
+        if self.shipped_at:
+            timeline.append({"status": "shipped", "timestamp": self.shipped_at})
+        if self.delivered_at:
+            timeline.append({"status": "delivered", "timestamp": self.delivered_at})
+        if self.cancelled_at:
+            timeline.append({"status": "cancelled", "timestamp": self.cancelled_at})
+        return timeline
 
 
 class OrderItem(models.Model):

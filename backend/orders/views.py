@@ -2,6 +2,8 @@ from rest_framework.decorators import action
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
+from django.utils import timezone
+
 from catalog.models import Product
 from .models import Address, Order, OrderItem
 from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer
@@ -81,3 +83,32 @@ class OrderViewSet(viewsets.ModelViewSet):
         response_serializer = OrderSerializer(order)
         headers = self.get_success_headers(response_serializer.data)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=["post"], url_path="update_status")
+    def update_status(self, request, pk=None):
+        """Update order status and set the corresponding timestamp."""
+        order = self.get_object()
+        new_status = request.data.get("status")
+        
+        valid_statuses = ["confirmed", "shipped", "delivered", "cancelled"]
+        if new_status not in valid_statuses:
+            return Response(
+                {"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = new_status
+        # Set the corresponding timestamp
+        if new_status == "confirmed":
+            order.confirmed_at = timezone.now()
+        elif new_status == "shipped":
+            order.shipped_at = timezone.now()
+        elif new_status == "delivered":
+            order.delivered_at = timezone.now()
+        elif new_status == "cancelled":
+            order.cancelled_at = timezone.now()
+        
+        order.save()
+        
+        response_serializer = OrderSerializer(order)
+        return Response(response_serializer.data)
