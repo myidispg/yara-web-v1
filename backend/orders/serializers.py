@@ -16,6 +16,10 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = ["id", "label", "full_name", "phone", "line1", "line2",
                   "city", "state", "pincode", "is_default"]
+        extra_kwargs = {
+            'full_name': {'required': False, 'allow_blank': True},
+            'phone': {'required': False, 'allow_blank': True},
+        }
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -26,8 +30,13 @@ class AddressSerializer(serializers.ModelSerializer):
         if not validated_data.get("phone"):
             validated_data["phone"] = user.phone or ""
         
-        if validated_data.get("is_default"):
+        # If this is the user's first address, make it default
+        if not Address.objects.filter(user=user).exists():
+            validated_data["is_default"] = True
+        elif validated_data.get("is_default"):
+            # If user explicitly wants this as default, unset others
             Address.objects.filter(user=user, is_default=True).update(is_default=False)
+        
         return Address.objects.create(user=user, **validated_data)
 
 class OrderItemSerializer(serializers.ModelSerializer):
