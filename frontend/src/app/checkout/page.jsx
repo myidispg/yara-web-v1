@@ -110,28 +110,27 @@ export default function CheckoutPage() {
     };
 
     const submitOrder = async (itemsPayload, expectedMtoItems = []) => {
-        let addressId = selectedAddressId;
-
-        // If using a new address, create it first
-        if (useNewAddress) {
-            const addressPayload = {
-                label: newAddress.label,
-                line1: newAddress.line1,
-                line2: newAddress.line2 || "",
-                city: newAddress.city,
-                state: newAddress.state,
-                pincode: newAddress.pincode,
-            };
-            const { data: addressData } = await api.post("/addresses/", addressPayload);
-            addressId = addressData.id;
-        }
+        const addressPayload = {
+            label: "home",
+            full_name: `${form.first_name} ${form.last_name}`.trim(),
+            phone: form.phone,
+            line1: form.address,
+            line2: form.landmark ?? "",
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode,
+            is_default: true,
+        };
+        const { data: addressData } = await api.post("/addresses/", addressPayload);
+        const addressId = addressData.id;
 
         const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
         const { data } = await api.post("/orders/", orderPayload);
         clear();
 
-        // Only show dialog 2 if there are SURPRISE MTO items (in stock during preview, out now)
+        // Only show Dialog 2 if there are UNEXPECTED MTO items (stock changed after preview)
         const unexpectedMto = (data.mto_items || []).filter(item => !expectedMtoItems.includes(item));
+
         if (unexpectedMto.length > 0) {
             setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: unexpectedMto, preOrder: false });
         } else {
@@ -214,12 +213,16 @@ export default function CheckoutPage() {
                             <button
                                 onClick={async () => {
                                     const payload = mtoDialog.itemsPayload;
-                                    const expected = mtoDialog.items; // these MTO items were expected
+                                    const expected = mtoDialog.items; // These were already confirmed
                                     setMtoDialog(null);
                                     setPlacing(true);
                                     setError("");
-                                    try { await submitOrder(payload, expected); }
-                                    catch (err) { handleOrderError(err); setPlacing(false); }
+                                    try {
+                                        await submitOrder(payload, expected);
+                                    } catch (err) {
+                                        handleOrderError(err);
+                                        setPlacing(false);
+                                    }
                                 }}
                                 className="btn-solid flex-1"
                             >
@@ -301,8 +304,8 @@ export default function CheckoutPage() {
                                     <label
                                         key={addr.id}
                                         className={`block border rounded-xl p-5 cursor-pointer transition-colors ${!useNewAddress && selectedAddressId === addr.id
-                                                ? "border-gold bg-cream shadow-card"
-                                                : "border-charcoal/15 hover:border-gold/50"
+                                            ? "border-gold bg-cream shadow-card"
+                                            : "border-charcoal/15 hover:border-gold/50"
                                             }`}
                                     >
                                         <div className="flex items-start gap-4">
@@ -413,8 +416,8 @@ export default function CheckoutPage() {
                                         value={newAddress.pincode}
                                         onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
                                         className={`w-full bg-transparent border-b py-2 text-sm focus:outline-none ${newAddress.pincode && newAddress.pincode.length !== 6
-                                                ? "border-red-500 focus:border-red-500"
-                                                : "border-charcoal/25 focus:border-gold"
+                                            ? "border-red-500 focus:border-red-500"
+                                            : "border-charcoal/25 focus:border-gold"
                                             }`}
                                     />
                                     {newAddress.pincode && newAddress.pincode.length !== 6 && (
