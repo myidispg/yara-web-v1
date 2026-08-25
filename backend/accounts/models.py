@@ -31,6 +31,10 @@ class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
     phone = models.CharField(max_length=10, unique=True, validators=[validate_indian_phone])
     is_staff = models.BooleanField(default=False)
+    gender = models.CharField(max_length=20, blank=True, choices=[
+        ('male', 'Male'), ('female', 'Female'), ('other', 'Other'), ('prefer_not_to_say', 'Prefer not to say')
+    ])
+    date_of_birth = models.DateField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["phone"]

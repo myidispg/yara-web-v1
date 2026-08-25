@@ -2,121 +2,193 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import api from "@/api/client";
 
-const inr = (n) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
-
-const STATUS_STYLES = {
-    delivered: "bg-[#3E5C4B] text-white",
-    shipped: "bg-gold-dark text-white",
-    in_transit: "bg-gold-dark text-white",
-    processing: "bg-ink/10 text-ink/70",
-    pending: "bg-ink/10 text-ink/70",
-};
-
-const statusLabel = (s) =>
-    ({ delivered: "Delivered", shipped: "In Transit (Insured)", in_transit: "In Transit (Insured)", processing: "Processing", pending: "Processing" }[s] ?? s ?? "Processing");
-
 export default function AccountPage() {
-    const { user, logout } = useAuth();
-    const router = useRouter();
+    const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
-    const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [editing, setEditing] = useState(false);
+    const [form, setForm] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [showAddressForm, setShowAddressForm] = useState(false);
+    const [addressForm, setAddressForm] = useState({});
 
     useEffect(() => {
-        document.title = "My Account | YA-RA Jewels";
-        setMounted(true);
+        load();
     }, []);
 
-    useEffect(() => {
-        if (mounted && !user) {
-            router.push("/auth");
+    const load = async () => {
+        try {
+            const [profileRes, ordersRes] = await Promise.all([
+                api.getProfile(),   // Changed from api.get("/api/auth/me/")
+                api.getOrders(),    // Changed from api.get("/api/orders/")
+            ]);
+            setUser(profileRes.data);
+            setOrders(ordersRes.data.results || ordersRes.data);
+            setForm({
+                first_name: profileRes.data.first_name || "",
+                last_name: profileRes.data.last_name || "",
+                gender: profileRes.data.gender || "",
+                date_of_birth: profileRes.data.date_of_birth || "",
+            });
+        } catch (err) {
+            console.error("Failed to load profile:", err);
+        } finally {
+            setLoading(false);
         }
-    }, [mounted, user, router]);
+    };
 
-    useEffect(() => {
-        if (mounted && user) {
-            (async () => {
-                try {
-                    const { data } = await api.get("/orders/");
-                    const list = data?.results ?? data;
-                    if (Array.isArray(list)) setOrders(list);
-                } catch {
-                    setOrders([]);
-                }
-            })();
+    const saveProfile = async () => {
+        setSaving(true);
+        try {
+            const { data } = await api.updateProfile(form); // Changed from api.patch
+            setUser(data);
+            setEditing(false);
+            alert("Profile updated!");
+        } catch (err) {
+            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
+        } finally {
+            setSaving(false);
         }
-    }, [mounted, user]);
+    };
 
-    if (!mounted || !user) return (
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12">
-            <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-2">Loading…</p>
-        </div>
-    );
+    const saveAddress = async () => {
+        try {
+            await api.createAddress(addressForm); // Changed from api.post
+            setShowAddressForm(false);
+            setAddressForm({});
+            await load();
+            alert("Address saved!");
+        } catch (err) {
+            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
+        }
+    };
+
+    const setDefault = async (id) => {
+        await api.setDefaultAddress(id); // Changed from api.post
+        await load();
+    };
+
+    const deleteAddress = async (id) => {
+        if (!confirm("Delete this address?")) return;
+        await api.deleteAddress(id); // Changed from api.delete
+        await load();
+    };
+
+    if (loading) return <div className="text-center py-12">Loading...</div>;
+    if (!user) return <div className="text-center py-12">Please log in.</div>;
 
     return (
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12">
-            <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-2">YA-RA Account</p>
-            <h1 className="font-serif text-4xl md:text-5xl mb-10">
-                My Account{user?.first_name ? <span className="text-ink/40 text-2xl md:text-3xl"> — {user.first_name}</span> : null}
-            </h1>
+        <div className="max-w-7xl mx-auto px-8 py-12">
+            <h1 className="font-serif text-4xl mb-8">My Account</h1>
 
-            <div className="flex flex-col lg:flex-row gap-10 items-start">
-                <aside className="bg-ink text-white p-8 rounded-xl w-full lg:w-80 shrink-0">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-gold mb-3 font-semibold">Member Profile</p>
-                    <p className="font-serif text-2xl mb-1">{[user?.first_name, user?.last_name].filter(Boolean).join(" ") || "Guest"}</p>
-                    <p className="text-xs text-white/60 mb-8">{user?.email}</p>
-                    <nav className="space-y-4 text-sm border-t border-white/10 pt-6">
-                        <Link href="/policies" className="block hover:text-gold transition-colors">Policies & Certifications</Link>
-                        <Link href="/" className="block hover:text-gold transition-colors">Continue Shopping</Link>
-                        <button
-                            onClick={() => { logout(); router.push("/"); }}
-                            className="text-[10px] uppercase tracking-[0.14em] font-medium text-gold underline underline-offset-4"
-                        >
-                            Logout
-                        </button>
-                    </nav>
-                </aside>
-
-                <section className="flex-1 w-full">
-                    <h2 className="font-serif text-2xl mb-6">Recent Orders</h2>
-                    {orders.length ? (
-                        <div className="space-y-5">
-                            {orders.map((o) => {
-                                const status = (o.status ?? "processing").toLowerCase();
-                                return (
-                                    <div key={o.id || o.order_number} className="bg-white rounded-xl border border-line shadow-card p-5 flex flex-col sm:flex-row justify-between gap-4">
-                                        <div>
-                                            <p className="font-serif text-lg text-ink">
-                                                Order {o.order_number ?? o.reference ?? `#YARA-${o.id}`}
-                                            </p>
-                                            <p className="text-xs text-ink/60 mt-1">
-                                                {o.items?.map((i) => i.product_name ?? i.name).filter(Boolean).join(", ") || "Fine jewellery"}
-                                            </p>
-                                            <p className="text-xs text-ink/40 mt-1">
-                                                {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : ""}
-                                            </p>
-                                        </div>
-                                        <div className="flex sm:flex-col items-start sm:items-end justify-between gap-3">
-                                            <p className="font-semibold text-ink">{inr(o.total ?? 0)}</p>
-                                            <span className={`text-[10px] uppercase tracking-[0.12em] font-medium px-3 py-1.5 rounded-full ${STATUS_STYLES[status] ?? STATUS_STYLES.processing}`}>
-                                                {statusLabel(status)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Profile Card */}
+                <div className="bg-white rounded-xl border border-line p-8 shadow-card">
+                    <h2 className="font-serif text-2xl mb-6">Profile</h2>
+                    {!editing ? (
+                        <>
+                            <div className="space-y-3 text-sm">
+                                <div><span className="text-ink/60">Email:</span> <span className="font-semibold">{user.email}</span></div>
+                                <div><span className="text-ink/60">Phone:</span> <span className="font-semibold">{user.phone || "—"}</span></div>
+                                <div><span className="text-ink/60">Name:</span> <span className="font-semibold">{user.first_name} {user.last_name}</span></div>
+                                <div><span className="text-ink/60">Gender:</span> <span className="font-semibold">{user.gender || "—"}</span></div>
+                                <div><span className="text-ink/60">Date of Birth:</span> <span className="font-semibold">{user.date_of_birth || "—"}</span></div>
+                            </div>
+                            <button onClick={() => setEditing(true)} className="btn-outline w-full mt-6">Edit Profile</button>
+                        </>
                     ) : (
-                        <div className="bg-white rounded-xl border border-line shadow-card p-8 text-center">
-                            <p className="text-sm text-ink/60 mb-4">No orders yet.</p>
-                            <Link href="/" className="btn-outline inline-block">Explore the collection →</Link>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">First Name</label>
+                                <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Last Name</label>
+                                <input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Gender</label>
+                                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full border border-line rounded px-3 py-2">
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer_not_to_say">Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Date of Birth</label>
+                                <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={saveProfile} disabled={saving} className="btn-solid flex-1">{saving ? "Saving..." : "Save"}</button>
+                                <button onClick={() => setEditing(false)} className="btn-outline flex-1">Cancel</button>
+                            </div>
                         </div>
                     )}
-                </section>
+                </div>
+
+                {/* Addresses */}
+                <div className="bg-white rounded-xl border border-line p-8 shadow-card">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="font-serif text-2xl">Addresses</h2>
+                        <button onClick={() => setShowAddressForm(!showAddressForm)} className="text-sm text-gold-dark font-semibold">+ Add</button>
+                    </div>
+                    {showAddressForm && (
+                        <div className="mb-6 space-y-3 border border-line rounded-lg p-4 bg-cream">
+                            <input placeholder="Full Name" value={addressForm.full_name || ""} onChange={(e) => setAddressForm({ ...addressForm, full_name: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <input placeholder="Phone" value={addressForm.phone || ""} onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <input placeholder="Address Line 1" value={addressForm.line1 || ""} onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <input placeholder="Address Line 2 (optional)" value={addressForm.line2 || ""} onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <div className="grid grid-cols-2 gap-2">
+                                <input placeholder="City" value={addressForm.city || ""} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                                <input placeholder="State" value={addressForm.state || ""} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            </div>
+                            <input placeholder="PIN Code" value={addressForm.pincode || ""} onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <button onClick={saveAddress} className="btn-solid w-full">Save Address</button>
+                        </div>
+                    )}
+                    <div className="space-y-4">
+                        {(user.addresses || []).map((addr) => (
+                            <div key={addr.id} className="border border-line rounded-lg p-4 relative">
+                                {addr.is_default && <span className="absolute top-2 right-2 text-[9px] bg-gold-dark text-white px-2 py-0.5 rounded-full">DEFAULT</span>}
+                                <p className="font-semibold text-sm">{addr.full_name}</p>
+                                <p className="text-xs text-ink/70 mt-1">{addr.phone}</p>
+                                <p className="text-xs text-ink/70 mt-1">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
+                                <p className="text-xs text-ink/70">{addr.city}, {addr.state} - {addr.pincode}</p>
+                                <div className="flex gap-2 mt-3">
+                                    {!addr.is_default && <button onClick={() => setDefault(addr.id)} className="text-xs text-gold-dark font-semibold">Set Default</button>}
+                                    <button onClick={() => deleteAddress(addr.id)} className="text-xs text-red-600 font-semibold">Delete</button>
+                                </div>
+                            </div>
+                        ))}
+                        {(!user.addresses || user.addresses.length === 0) && <p className="text-sm text-ink/50">No addresses saved yet.</p>}
+                    </div>
+                </div>
+
+                {/* Order History */}
+                <div className="bg-white rounded-xl border border-line p-8 shadow-card">
+                    <h2 className="font-serif text-2xl mb-6">Order History</h2>
+                    <div className="space-y-4">
+                        {orders.map((order) => (
+                            <Link key={order.id} href={`/account/orders/${order.id}`} className="block border border-line rounded-lg p-4 hover:bg-cream transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="font-mono text-sm font-semibold">{order.order_number}</span>
+                                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                        order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                    }`}>{order.status}</span>
+                                </div>
+                                <p className="text-xs text-ink/60">{new Date(order.created_at).toLocaleDateString("en-IN")}</p>
+                                <p className="text-sm font-semibold mt-1">₹{order.total}</p>
+                            </Link>
+                        ))}
+                        {orders.length === 0 && <p className="text-sm text-ink/50">No orders yet.</p>}
+                    </div>
+                </div>
             </div>
         </div>
     );

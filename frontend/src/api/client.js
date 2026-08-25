@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const api = axios.create({
-  // Next.js uses process.env.NEXT_PUBLIC_ instead of import.meta.env.VITE_
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
 });
 
@@ -19,7 +18,7 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-    
+
     if (
       typeof window !== "undefined" &&
       err.response?.status === 401 &&
@@ -51,4 +50,24 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+// API methods wrapper
+const apiClient = {
+  // User profile
+  getProfile: () => api.get("/auth/me/"),
+  updateProfile: (data) => api.patch("/auth/me/", data),
+
+  // Addresses
+  getAddresses: () => api.get("/addresses/"),
+  createAddress: (data) => api.post("/addresses/", data),
+  updateAddress: (id, data) => api.patch(`/addresses/${id}/`, data),
+  deleteAddress: (id) => api.delete(`/addresses/${id}/`),
+  setDefaultAddress: (id) => api.post(`/addresses/${id}/set_default/`),
+
+  // Orders
+  getOrders: () => api.get("/orders/"),
+  getOrder: (id) => api.get(`/orders/${id}/`),
+
+  // Add your other API methods here
+};
+
+export default apiClient;
