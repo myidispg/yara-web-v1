@@ -109,32 +109,49 @@ export default function CheckoutPage() {
         setError(msg);
     };
 
+    /**
+     * Places the order on the backend.
+     * @param itemsPayload - cart items
+     * @param hadMtoInPreview - true if the user already confirmed MTO items in Dialog 1
+     */
     const submitOrder = async (itemsPayload, expectedMtoItems = []) => {
-        const addressPayload = {
-            label: "home",
-            full_name: `${form.first_name} ${form.last_name}`.trim(),
-            phone: form.phone,
-            line1: form.address,
-            line2: form.landmark ?? "",
-            city: form.city,
-            state: form.state,
-            pincode: form.pincode,
-            is_default: true,
-        };
-        const { data: addressData } = await api.post("/addresses/", addressPayload);
-        const addressId = addressData.id;
+        let addressId = selectedAddressId;
+
+        if (useNewAddress) {
+            const addressPayload = {
+                label: newAddress.label,
+                line1: newAddress.line1,
+                line2: newAddress.line2 || "",
+                city: newAddress.city,
+                state: newAddress.state,
+                pincode: newAddress.pincode,
+            };
+            const { data: addressData } = await api.post("/addresses/", addressPayload);
+            addressId = addressData.id;
+        }
 
         const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
         const { data } = await api.post("/orders/", orderPayload);
         clear();
 
-        // Only show Dialog 2 if there are UNEXPECTED MTO items (stock changed after preview)
-        const unexpectedMto = (data.mto_items || []).filter(item => !expectedMtoItems.includes(item));
+        const orderNumber = data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}`;
+
+        // Normalize labels by stripping the trailing " (X Made to Order)", " (In Stock)", etc.
+        // This leaves just the base "Design · Variant" string for reliable comparison
+        const normalize = (str) => str.replace(/\s*\([^\)]+\)\s*$/, '').trim();
+        const normalizedExpected = expectedMtoItems.map(normalize);
+
+        // Filter response items: keep only those NOT found in the expected list
+        const unexpectedMto = (data.mto_items || []).filter(item => {
+            return !normalizedExpected.includes(normalize(item));
+        });
 
         if (unexpectedMto.length > 0) {
-            setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: unexpectedMto, preOrder: false });
+            // Surprise! An in-stock item went out of stock during checkout
+            setMtoDialog({ orderNumber, items: unexpectedMto, preOrder: false });
         } else {
-            setPlaced({ number: data.order_number ?? `#YARA-${data.id ?? Math.floor(100000 + Math.random() * 900000)}` });
+            // All MTO items were expected (or there were none) - go to success
+            setPlaced({ number: orderNumber });
         }
     };
 
@@ -153,13 +170,19 @@ export default function CheckoutPage() {
         setError("");
         try {
             const itemsPayload = buildItemsPayload();
+
+            // Pre-check: which items will need Made-to-Order fabrication?
             const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
+
             if (preview?.mto_items?.length) {
+                // Show Dialog 1: items are MTO, ask for confirmation
                 setMtoDialog({ items: preview.mto_items, preOrder: true, itemsPayload });
                 setPlacing(false);
-                return;
+                return; // Wait for user decision
             }
-            await submitOrder(itemsPayload);
+
+            // No MTO items — place order directly
+            await submitOrder(itemsPayload, false);
         } catch (err) {
             handleOrderError(err);
             setPlacing(false);
@@ -191,8 +214,9 @@ export default function CheckoutPage() {
                     <p className="text-sm text-ink/60 mb-6 leading-relaxed">
                         {mtoDialog.preOrder
                             ? <>One or more items in your bag are currently out of physical stock. If you proceed, we will handcraft them for you in our <span className="font-semibold text-gold-dark">Made-to-Order</span> queue.</>
-                            : <>One or more items in your order were out of physical stock at the time of checkout. We have automatically placed them in our <span className="font-semibold text-gold-dark">Made-to-Order</span> fabrication queue.</>}
+                            : <>One or more items in your order went out of stock just as you were checking out. We have automatically placed them in our <span className="font-semibold text-gold-dark">Made-to-Order</span> fabrication queue. Your order is confirmed.</>}
                     </p>
+
                     <div className="bg-cream rounded-xl p-4 text-left mb-6 max-h-48 overflow-y-auto border border-line">
                         <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/50 mb-2">Items Being Crafted:</p>
                         <ul className="space-y-1.5">
@@ -204,16 +228,20 @@ export default function CheckoutPage() {
                             ))}
                         </ul>
                     </div>
+
                     <p className="text-xs text-ink/50 mb-8">
                         These pieces will be handcrafted and shipped within <span className="font-semibold text-ink">10–12 days</span>. Any in-stock items will ship immediately.
                     </p>
+
                     {mtoDialog.preOrder ? (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="btn-outline flex-1">Edit My Bag</button>
+                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="btn-outline flex-1">
+                                Edit My Bag
+                            </button>
                             <button
                                 onClick={async () => {
                                     const payload = mtoDialog.itemsPayload;
-                                    const expected = mtoDialog.items; // These were already confirmed
+                                    const expected = mtoDialog.items; // Pass the actual preview list
                                     setMtoDialog(null);
                                     setPlacing(true);
                                     setError("");
@@ -230,7 +258,10 @@ export default function CheckoutPage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }} className="btn-solid w-full">
+                        <button
+                            onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }}
+                            className="btn-solid w-full"
+                        >
                             Continue to Order Confirmation
                         </button>
                     )}
@@ -238,13 +269,15 @@ export default function CheckoutPage() {
             </div>
         );
 
+    /* ── Order Placed ── */
     if (placed)
         return (
             <div className="max-w-3xl mx-auto px-6 py-24 text-center">
                 <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Order Confirmed</p>
                 <h1 className="text-5xl font-serif mb-4">Thank You For Your Order!</h1>
                 <p className="text-sm text-charcoal/70 mb-10 leading-relaxed">
-                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been confirmed and is fully insured.
+                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been
+                    confirmed and is fully insured.
                 </p>
                 <div className="flex justify-center gap-4">
                     <Link href="/account" className="btn-solid">Track Order</Link>
@@ -304,8 +337,8 @@ export default function CheckoutPage() {
                                     <label
                                         key={addr.id}
                                         className={`block border rounded-xl p-5 cursor-pointer transition-colors ${!useNewAddress && selectedAddressId === addr.id
-                                            ? "border-gold bg-cream shadow-card"
-                                            : "border-charcoal/15 hover:border-gold/50"
+                                                ? "border-gold bg-cream shadow-card"
+                                                : "border-charcoal/15 hover:border-gold/50"
                                             }`}
                                     >
                                         <div className="flex items-start gap-4">
@@ -349,7 +382,7 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        {/* New address form (shown when no saved addresses OR user selects "new") */}
+                        {/* New address form */}
                         {(useNewAddress || savedAddresses.length === 0) && (
                             <div className="grid sm:grid-cols-2 gap-6 border border-line rounded-xl p-6 bg-white">
                                 <label className="block sm:col-span-2">
@@ -416,8 +449,8 @@ export default function CheckoutPage() {
                                         value={newAddress.pincode}
                                         onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
                                         className={`w-full bg-transparent border-b py-2 text-sm focus:outline-none ${newAddress.pincode && newAddress.pincode.length !== 6
-                                            ? "border-red-500 focus:border-red-500"
-                                            : "border-charcoal/25 focus:border-gold"
+                                                ? "border-red-500 focus:border-red-500"
+                                                : "border-charcoal/25 focus:border-gold"
                                             }`}
                                     />
                                     {newAddress.pincode && newAddress.pincode.length !== 6 && (

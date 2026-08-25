@@ -18,7 +18,6 @@ class AddressViewSet(viewsets.ModelViewSet):
     def set_default(self, request, pk=None):
         """Set this address as the user's default."""
         address = self.get_object()
-        # Unset all other defaults
         Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
         address.is_default = True
         address.save()
@@ -40,7 +39,6 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="preview")
     def preview(self, request):
         """Pre-check which lines will need Made-to-Order fabrication."""
-        # Get the child serializer class (not instance)
         child_class = type(OrderCreateSerializer._declared_fields["items"].child)
         serializer = child_class(data=request.data.get("items", []), many=True)
         serializer.is_valid(raise_exception=True)
@@ -48,21 +46,27 @@ class OrderViewSet(viewsets.ModelViewSet):
         mto_items, in_stock_items = [], []
         for item in serializer.validated_data:
             design = item["design"]
+            karat = item["karat"]
+            gold_color = item["gold_color"]
             ring_size = (item.get("ring_size") or "").strip() or None
+            quantity = item["quantity"]
+            
             available = Product.objects.filter(
-                design=design, karat=item["karat"], gold_color=item["gold_color"],
+                design=design, karat=karat, gold_color=gold_color,
                 ring_size=ring_size, status="in_stock").count()
 
-            label = f"{design.name} · {item['karat']} {item['gold_color']}"
+            # Match the exact format used in OrderCreateSerializer.create
+            variant_label = f"{karat} {gold_color} Gold"
             if ring_size:
-                label += f" | Size {ring_size}"
+                variant_label += f" | Size {ring_size}"
+            
+            label = f"{design.name} · {variant_label}"
 
-            qty = item["quantity"]
-            if available >= qty:
+            if available >= quantity:
                 in_stock_items.append(f"{label} (In Stock)")
             elif available > 0:
                 in_stock_items.append(f"{label} ({available} In Stock)")
-                mto_items.append(f"{label} ({qty - available} Made to Order)")
+                mto_items.append(f"{label} ({quantity - available} Made to Order)")
             else:
                 mto_items.append(f"{label} (Made to Order)")
 
@@ -72,15 +76,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         """Override create to return the order serialized with OrderSerializer."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        # This calls OrderCreateSerializer.create() which handles everything:
-        # - Stock allocation
-        # - MTO fabrication and pricing
-        # - Order item creation
-        # - Product status updates
         order = serializer.save()
         
-        # Return the order serialized with OrderSerializer (not OrderCreateSerializer)
         response_serializer = OrderSerializer(order)
         headers = self.get_success_headers(response_serializer.data)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
