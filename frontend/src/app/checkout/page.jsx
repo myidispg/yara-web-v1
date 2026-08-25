@@ -20,33 +20,20 @@ const INDIAN_STATES = [
     "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
-const Field = ({ label, ...props }) => (
-    <label className="block">
-        <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">{label}</span>
-        <input
-            {...props}
-            className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
-        />
-    </label>
-);
-
 export default function CheckoutPage() {
     const { items, subtotal, clear } = useCart();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
 
-    const [form, setForm] = useState({
-        first_name: user?.first_name ?? "",
-        last_name: user?.last_name ?? "",
-        email: user?.email ?? "",
-        phone: user?.phone ?? "",
-        address: "",
-        landmark: "",
-        country: "India",
-        state: "",
-        city: "",
-        pincode: "",
+    // Address state
+    const [savedAddresses, setSavedAddresses] = useState([]);
+    const [selectedAddressId, setSelectedAddressId] = useState(null);
+    const [useNewAddress, setUseNewAddress] = useState(false);
+    const [newAddress, setNewAddress] = useState({
+        label: "home", line1: "", line2: "", city: "", state: "", pincode: "",
     });
+
+    // Payment state
     const [method, setMethod] = useState("upi");
     const [upiId, setUpiId] = useState("");
     const [placing, setPlacing] = useState(false);
@@ -58,33 +45,37 @@ export default function CheckoutPage() {
     useEffect(() => {
         document.title = "Secure Checkout | YA-RA Jewels";
         setMounted(true);
-
-        // Restore saved form data if returning from login
-        try {
-            const savedForm = sessionStorage.getItem('checkout_form');
-            const savedMethod = sessionStorage.getItem('checkout_method');
-            const savedUpi = sessionStorage.getItem('checkout_upiId');
-            if (savedForm) {
-                setForm(JSON.parse(savedForm));
-                sessionStorage.removeItem('checkout_form');
-            }
-            if (savedMethod) {
-                setMethod(savedMethod);
-                sessionStorage.removeItem('checkout_method');
-            }
-            if (savedUpi) {
-                setUpiId(savedUpi);
-                sessionStorage.removeItem('checkout_upiId');
-            }
-        } catch (e) { /* ignore storage errors */ }
     }, []);
 
-    // Guests can't checkout — send them to login first (cart stays intact)
+    // Redirect guests to login
     useEffect(() => {
-        if (mounted && !user) {
+        if (mounted && !authLoading && !user) {
             router.push("/auth?next=/checkout");
         }
-    }, [mounted, user, router]);
+    }, [mounted, authLoading, user, router]);
+
+    // Load saved addresses once user is available
+    useEffect(() => {
+        if (!user) return;
+        (async () => {
+            try {
+                const { data } = await api.get("/addresses/");
+                const addresses = data.results || data;
+                setSavedAddresses(addresses);
+                // Pre-select default address (or first one)
+                const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
+                if (defaultAddr) {
+                    setSelectedAddressId(defaultAddr.id);
+                    setUseNewAddress(false);
+                } else {
+                    setUseNewAddress(true);
+                }
+            } catch (err) {
+                console.error("Failed to load addresses:", err);
+                setUseNewAddress(true);
+            }
+        })();
+    }, [user]);
 
     const buildItemsPayload = () =>
         items.map((i) => ({
@@ -100,11 +91,6 @@ export default function CheckoutPage() {
         const d = err.response?.data ?? {};
         let msg;
         if (status === 401 || status === 403) {
-            try {
-                sessionStorage.setItem('checkout_form', JSON.stringify(form));
-                sessionStorage.setItem('checkout_method', method);
-                sessionStorage.setItem('checkout_upiId', upiId);
-            } catch (e) { /* ignore */ }
             msg = "Please log in or create an account to place an order. Redirecting…";
             setError(msg);
             setTimeout(() => router.push("/auth?next=/checkout"), 1500);
@@ -124,25 +110,26 @@ export default function CheckoutPage() {
     };
 
     const submitOrder = async (itemsPayload) => {
-        const addressPayload = {
-            label: "home",
-            full_name: `${form.first_name} ${form.last_name}`.trim(),
-            phone: form.phone,
-            line1: form.address,
-            line2: form.landmark ?? "",
-            city: form.city,
-            state: form.state,
-            pincode: form.pincode,
-            is_default: true,
-        };
-        const { data: addressData } = await api.post("/addresses/", addressPayload);
-        const addressId = addressData.id;
+        let addressId = selectedAddressId;
+
+        // If using a new address, create it first
+        if (useNewAddress) {
+            const addressPayload = {
+                label: newAddress.label,
+                line1: newAddress.line1,
+                line2: newAddress.line2 || "",
+                city: newAddress.city,
+                state: newAddress.state,
+                pincode: newAddress.pincode,
+            };
+            const { data: addressData } = await api.post("/addresses/", addressPayload);
+            addressId = addressData.id;
+        }
 
         const orderPayload = { address: addressId, payment_method: method, items: itemsPayload };
         const { data } = await api.post("/orders/", orderPayload);
         clear();
 
-        // Fallback: stock changed between preview and placement
         if (data.mto_items && data.mto_items.length > 0) {
             setMtoDialog({ orderNumber: data.order_number ?? `#YARA-${data.id}`, items: data.mto_items, preOrder: false });
         } else {
@@ -150,25 +137,27 @@ export default function CheckoutPage() {
         }
     };
 
+    const isAddressValid = () => {
+        if (!useNewAddress) return !!selectedAddressId;
+        return !!(newAddress.line1 && newAddress.city && newAddress.state && newAddress.pincode && newAddress.pincode.length === 6);
+    };
+
     const placeOrder = async (e) => {
         e.preventDefault();
-        if (!isFormValid()) {
-            setError("Please ensure all required fields are filled correctly.");
+        if (!isAddressValid()) {
+            setError("Please select or enter a delivery address.");
             return;
         }
         setPlacing(true);
         setError("");
         try {
             const itemsPayload = buildItemsPayload();
-
-            // Pre-check: which items will need Made-to-Order fabrication?
             const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
             if (preview?.mto_items?.length) {
                 setMtoDialog({ items: preview.mto_items, preOrder: true, itemsPayload });
                 setPlacing(false);
-                return; // wait for the user's decision
+                return;
             }
-
             await submitOrder(itemsPayload);
         } catch (err) {
             handleOrderError(err);
@@ -176,23 +165,14 @@ export default function CheckoutPage() {
         }
     };
 
-    if (!mounted) return (
+    if (!mounted || authLoading) return (
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
             <h1 className="text-4xl font-serif mb-2">Secure Checkout</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-charcoal/50 mb-10">Loading…</p>
         </div>
     );
 
-    const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
     const emiPerMonth = Math.ceil(subtotal / 6);
-
-    const isFormValid = () => {
-        if (!form.first_name || !form.last_name || !form.email || !form.phone || !form.address || !form.state || !form.city || !form.pincode) return false;
-        if (form.pincode.length !== 6) return false;
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return false;
-        if (!/^[6-9]\d{9}$/.test(form.phone)) return false;
-        return true;
-    };
 
     /* ── MTO Dialog ── */
     if (mtoDialog)
@@ -212,7 +192,6 @@ export default function CheckoutPage() {
                             ? <>One or more items in your bag are currently out of physical stock. If you proceed, we will handcraft them for you in our <span className="font-semibold text-gold-dark">Made-to-Order</span> queue.</>
                             : <>One or more items in your order were out of physical stock at the time of checkout. We have automatically placed them in our <span className="font-semibold text-gold-dark">Made-to-Order</span> fabrication queue.</>}
                     </p>
-
                     <div className="bg-cream rounded-xl p-4 text-left mb-6 max-h-48 overflow-y-auto border border-line">
                         <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/50 mb-2">Items Being Crafted:</p>
                         <ul className="space-y-1.5">
@@ -224,28 +203,20 @@ export default function CheckoutPage() {
                             ))}
                         </ul>
                     </div>
-
                     <p className="text-xs text-ink/50 mb-8">
                         These pieces will be handcrafted and shipped within <span className="font-semibold text-ink">10–12 days</span>. Any in-stock items will ship immediately.
                     </p>
-
                     {mtoDialog.preOrder ? (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="btn-outline flex-1">
-                                Edit My Bag
-                            </button>
+                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="btn-outline flex-1">Edit My Bag</button>
                             <button
                                 onClick={async () => {
                                     const payload = mtoDialog.itemsPayload;
                                     setMtoDialog(null);
                                     setPlacing(true);
                                     setError("");
-                                    try {
-                                        await submitOrder(payload);
-                                    } catch (err) {
-                                        handleOrderError(err);
-                                        setPlacing(false);
-                                    }
+                                    try { await submitOrder(payload); }
+                                    catch (err) { handleOrderError(err); setPlacing(false); }
                                 }}
                                 className="btn-solid flex-1"
                             >
@@ -253,10 +224,7 @@ export default function CheckoutPage() {
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }}
-                            className="btn-solid w-full"
-                        >
+                        <button onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }} className="btn-solid w-full">
                             Continue to Order Confirmation
                         </button>
                     )}
@@ -270,8 +238,7 @@ export default function CheckoutPage() {
                 <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Order Confirmed</p>
                 <h1 className="text-5xl font-serif mb-4">Thank You For Your Order!</h1>
                 <p className="text-sm text-charcoal/70 mb-10 leading-relaxed">
-                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been
-                    confirmed and is fully insured.
+                    Your order <span className="font-medium text-charcoal">{placed.number}</span> has been confirmed and is fully insured.
                 </p>
                 <div className="flex justify-center gap-4">
                     <Link href="/account" className="btn-solid">Track Order</Link>
@@ -297,90 +264,178 @@ export default function CheckoutPage() {
 
             <form onSubmit={placeOrder} className="flex flex-col lg:flex-row gap-12 items-start">
                 <div className="flex-1 w-full space-y-12">
-                    <section className="grid sm:grid-cols-2 gap-6">
-                        <Field label="First Name" required value={form.first_name} onChange={set("first_name")} />
-                        <Field label="Last Name" required value={form.last_name} onChange={set("last_name")} />
-                        <Field label="Email Address" type="email" required value={form.email} onChange={set("email")} />
 
-                        <label className="block">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Phone (+91)</span>
-                            <input
-                                type="tel"
-                                required
-                                value={form.phone}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                                    setForm({ ...form, phone: val });
-                                }}
-                                className={`w-full bg-transparent border-b py-2 text-sm focus:outline-none ${form.phone && form.phone.length !== 10 ? 'border-red-500 focus:border-red-500' : 'border-charcoal/25 focus:border-gold'
-                                    }`}
-                            />
-                            {form.phone && form.phone.length !== 10 && (
-                                <span className="text-[10px] uppercase tracking-[0.2em] text-red-500 mt-1 block">Valid 10-digit number required</span>
-                            )}
-                        </label>
-
-                        <div className="sm:col-span-2">
-                            <Field label="Address" required value={form.address} onChange={set("address")} />
+                    {/* ── Contact Info (read-only from profile) ── */}
+                    <section>
+                        <h2 className="font-serif text-xl mb-4">Contact Details</h2>
+                        <div className="grid sm:grid-cols-2 gap-4 bg-cream rounded-xl p-6 border border-line">
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/50">Name</p>
+                                <p className="text-sm font-medium mt-1">{user?.first_name} {user?.last_name}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/50">Email</p>
+                                <p className="text-sm font-medium mt-1">{user?.email}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/50">Phone</p>
+                                <p className="text-sm font-medium mt-1">{user?.phone || "—"}</p>
+                            </div>
+                            <div className="flex items-end">
+                                <Link href="/account" className="text-xs text-gold-dark font-semibold hover:text-ink">Edit in My Account →</Link>
+                            </div>
                         </div>
-
-                        <div className="sm:col-span-2">
-                            <Field label="Landmark (Optional)" value={form.landmark} onChange={set("landmark")} />
-                        </div>
-
-                        <label className="block">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Country</span>
-                            <input
-                                type="text"
-                                value="India"
-                                disabled
-                                className="w-full bg-transparent border-b border-charcoal/10 py-2 text-sm text-charcoal/50 cursor-not-allowed"
-                            />
-                        </label>
-
-                        <label className="block">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">State</span>
-                            <select
-                                value={form.state}
-                                onChange={set("state")}
-                                className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
-                            >
-                                <option value="">Select State</option>
-                                {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </label>
-
-                        <Field label="City / Town" required value={form.city} onChange={set("city")} />
-
-                        <label className="block">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Pincode</span>
-                            <input
-                                type="text"
-                                required
-                                value={form.pincode}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                    setForm({ ...form, pincode: val });
-                                }}
-                                className={`w-full bg-transparent border-b py-2 text-sm focus:outline-none ${form.pincode && form.pincode.length !== 6 ? 'border-red-500 focus:border-red-500' : 'border-charcoal/25 focus:border-gold'
-                                    }`}
-                            />
-                            {form.pincode && form.pincode.length !== 6 && (
-                                <span className="text-[10px] uppercase tracking-[0.2em] text-red-500 mt-1 block">Valid 6-digit pincode required</span>
-                            )}
-                        </label>
                     </section>
 
+                    {/* ── Delivery Address ── */}
+                    <section>
+                        <h2 className="font-serif text-xl mb-4">Delivery Address</h2>
+
+                        {/* Saved addresses */}
+                        {savedAddresses.length > 0 && (
+                            <div className="space-y-3 mb-4">
+                                {savedAddresses.map((addr) => (
+                                    <label
+                                        key={addr.id}
+                                        className={`block border rounded-xl p-5 cursor-pointer transition-colors ${
+                                            !useNewAddress && selectedAddressId === addr.id
+                                                ? "border-gold bg-cream shadow-card"
+                                                : "border-charcoal/15 hover:border-gold/50"
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            <input
+                                                type="radio"
+                                                name="address"
+                                                checked={!useNewAddress && selectedAddressId === addr.id}
+                                                onChange={() => { setSelectedAddressId(addr.id); setUseNewAddress(false); }}
+                                                className="mt-1 accent-[#B08D3E]"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-sm font-semibold capitalize">{addr.label || "Home"}</span>
+                                                    {addr.is_default && (
+                                                        <span className="text-[9px] bg-gold-dark text-white px-2 py-0.5 rounded-full uppercase tracking-wide">Default</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-charcoal/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
+                                                <p className="text-sm text-charcoal/70">{addr.city}, {addr.state} — {addr.pincode}</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                ))}
+
+                                {/* Option: Use a new address */}
+                                <label
+                                    className={`block border rounded-xl p-5 cursor-pointer transition-colors ${
+                                        useNewAddress ? "border-gold bg-cream shadow-card" : "border-charcoal/15 hover:border-gold/50"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="radio"
+                                            name="address"
+                                            checked={useNewAddress}
+                                            onChange={() => setUseNewAddress(true)}
+                                            className="accent-[#B08D3E]"
+                                        />
+                                        <span className="text-sm font-semibold">+ Deliver to a new address</span>
+                                    </div>
+                                </label>
+                            </div>
+                        )}
+
+                        {/* New address form (shown when no saved addresses OR user selects "new") */}
+                        {(useNewAddress || savedAddresses.length === 0) && (
+                            <div className="grid sm:grid-cols-2 gap-6 border border-line rounded-xl p-6 bg-white">
+                                <label className="block sm:col-span-2">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Address Label</span>
+                                    <select
+                                        value={newAddress.label}
+                                        onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                                        className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                    >
+                                        <option value="home">Home</option>
+                                        <option value="office">Office</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </label>
+
+                                <label className="block sm:col-span-2">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Address Line 1 *</span>
+                                    <input
+                                        required
+                                        value={newAddress.line1}
+                                        onChange={(e) => setNewAddress({ ...newAddress, line1: e.target.value })}
+                                        placeholder="House no., Street, Area"
+                                        className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                    />
+                                </label>
+
+                                <label className="block sm:col-span-2">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Landmark (Optional)</span>
+                                    <input
+                                        value={newAddress.line2}
+                                        onChange={(e) => setNewAddress({ ...newAddress, line2: e.target.value })}
+                                        placeholder="Near metro station, opposite mall…"
+                                        className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                    />
+                                </label>
+
+                                <label className="block">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">State *</span>
+                                    <select
+                                        required
+                                        value={newAddress.state}
+                                        onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                                        className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                    >
+                                        <option value="">Select State</option>
+                                        {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </label>
+
+                                <label className="block">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">City / Town *</span>
+                                    <input
+                                        required
+                                        value={newAddress.city}
+                                        onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                                        className="w-full bg-transparent border-b border-charcoal/25 py-2 text-sm focus:outline-none focus:border-gold"
+                                    />
+                                </label>
+
+                                <label className="block">
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-charcoal/60">Pincode *</span>
+                                    <input
+                                        required
+                                        value={newAddress.pincode}
+                                        onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                                        className={`w-full bg-transparent border-b py-2 text-sm focus:outline-none ${
+                                            newAddress.pincode && newAddress.pincode.length !== 6
+                                                ? "border-red-500 focus:border-red-500"
+                                                : "border-charcoal/25 focus:border-gold"
+                                        }`}
+                                    />
+                                    {newAddress.pincode && newAddress.pincode.length !== 6 && (
+                                        <span className="text-[10px] text-red-500 mt-1 block">Valid 6-digit pincode required</span>
+                                    )}
+                                </label>
+                            </div>
+                        )}
+                    </section>
+
+                    {/* ── Payment Method ── */}
                     <section className="space-y-4">
+                        <h2 className="font-serif text-xl mb-2">Payment Method</h2>
                         {[
                             { id: "upi", title: "UPI / QR Code", sub: "Google Pay, PhonePe, Paytm" },
                             { id: "card", title: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay" },
-                            { id: "emi", title: `No Cost EMI`, sub: `Starting ${inr(emiPerMonth)}/mo` },
+                            { id: "emi", title: "No Cost EMI", sub: `Starting ${inr(emiPerMonth)}/mo` },
                         ].map((m) => (
                             <label
                                 key={m.id}
-                                className={`block border p-5 cursor-pointer transition-colors ${method === m.id ? "border-gold bg-cream" : "border-charcoal/20 hover:border-gold"
-                                    }`}
+                                className={`block border p-5 cursor-pointer transition-colors ${method === m.id ? "border-gold bg-cream" : "border-charcoal/20 hover:border-gold"}`}
                             >
                                 <div className="flex items-center gap-4">
                                     <input type="radio" name="pay" checked={method === m.id} onChange={() => setMethod(m.id)} className="accent-[#B08D3E]" />
@@ -389,7 +444,6 @@ export default function CheckoutPage() {
                                         <p className="text-xs text-charcoal/60">{m.sub}</p>
                                     </div>
                                 </div>
-
                                 {method === "upi" && m.id === "upi" && (
                                     <input
                                         value={upiId}
@@ -399,16 +453,15 @@ export default function CheckoutPage() {
                                     />
                                 )}
                                 {method === "emi" && m.id === "emi" && (
-                                    <p className="mt-3 text-xs text-charcoal/60">
-                                        6 monthly instalments of {inr(emiPerMonth)} · 0% interest
-                                    </p>
+                                    <p className="mt-3 text-xs text-charcoal/60">6 monthly instalments of {inr(emiPerMonth)} · 0% interest</p>
                                 )}
                             </label>
                         ))}
                     </section>
                 </div>
 
-                <aside className="bg-cream border border-gold/40 p-8 w-full lg:w-96 shrink-0">
+                {/* ── Order Summary ── */}
+                <aside className="bg-cream border border-gold/40 p-8 w-full lg:w-96 shrink-0 sticky top-24">
                     <h2 className="font-serif text-2xl mb-6">Summary</h2>
                     <div className="space-y-2 text-sm mb-6">
                         {items.map((i) => {
@@ -431,7 +484,7 @@ export default function CheckoutPage() {
 
                     {error && <p className="text-xs text-red-700 mt-4">{error}</p>}
 
-                    <button type="submit" disabled={placing || !isFormValid()} className="btn-solid w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button type="submit" disabled={placing || !isAddressValid()} className="btn-solid w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed">
                         {placing ? "Placing…" : `Place Order (${inr(subtotal)})`}
                     </button>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-charcoal/50 text-center mt-4">

@@ -1,11 +1,13 @@
-from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from catalog.models import Product
 from .models import Address, Order
 from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer
 
+from decimal import Decimal
+from django.utils import timezone
 
 class AddressViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -40,8 +42,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="preview")
     def preview(self, request):
         """Pre-check which lines will need Made-to-Order fabrication."""
-        serializer = OrderCreateSerializer._declared_fields["items"].child(
-            data=request.data.get("items", []), many=True)
+        # Get the child serializer class (not instance)
+        child_class = type(OrderCreateSerializer._declared_fields["items"].child)
+        serializer = child_class(data=request.data.get("items", []), many=True)
         serializer.is_valid(raise_exception=True)
 
         mto_items, in_stock_items = [], []
@@ -67,22 +70,89 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response({"mto_items": mto_items, "in_stock_items": in_stock_items})
 
+    def create(self, request, *args, **kwargs):
+        """Override create to return the order serialized with OrderSerializer."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = self.perform_create(serializer)
+        
+        # Return the order serialized with OrderSerializer (not OrderCreateSerializer)
+        response_serializer = OrderSerializer(order)
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
-        """Create order and auto-save address to user profile if it's their first order."""
+        """Create the order and return it."""
         user = self.request.user
         address = serializer.validated_data['address']
+        payment_method = serializer.validated_data['payment_method']
+        items_data = serializer.validated_data['items']
         
-        # Create the order
-        order = serializer.save(user=user)
+        # Calculate subtotal
+        subtotal = Decimal('0')
+        for item in items_data:
+            design = item['design']
+            karat = item['karat']
+            gold_color = item['gold_color']
+            ring_size = (item.get('ring_size') or '').strip() or None
+            quantity = item['quantity']
+            
+            # Find matching product
+            product = Product.objects.filter(
+                design=design, karat=karat, gold_color=gold_color,
+                ring_size=ring_size, status='in_stock'
+            ).first()
+            
+            if not product:
+                # Mark as MTO if not available
+                pass
+            
+            if product:
+                subtotal += product.price * quantity
         
-        # If user has no default address yet, make this one default
-        if not user.addresses.filter(is_default=True).exists():
-            address.is_default = True
-            address.save()
+        # Create order
+        order = Order.objects.create(
+            user=user,
+            address=address,
+            payment_method=payment_method,
+            subtotal=subtotal,
+            shipping_fee=Decimal('0'),
+            total=subtotal,
+        )
         
-        # Auto-update user's phone if missing and address has one
-        if not user.phone and address.phone:
-            user.phone = address.phone
-            user.save(update_fields=['phone'])
+        # Create order items
+        for item in items_data:
+            design = item['design']
+            karat = item['karat']
+            gold_color = item['gold_color']
+            ring_size = (item.get('ring_size') or '').strip() or None
+            quantity = item['quantity']
+            
+            # Find matching product
+            product = Product.objects.filter(
+                design=design, karat=karat, gold_color=gold_color,
+                ring_size=ring_size, status='in_stock'
+            ).first()
+            
+            if product:
+                variant_label = f"{karat} {gold_color}"
+                if ring_size:
+                    variant_label += f" · Size {ring_size}"
+                
+                OrderItem.objects.create(
+                    order=order,
+                    instance=product,
+                    product_name=design.name,
+                    variant_label=variant_label,
+                    quantity=quantity,
+                    unit_price=product.price,
+                    line_total=product.price * quantity,
+                )
+                # Mark product as sold
+                product.status = 'sold'
+                product.sold_at = timezone.now()
+                product.sold_in_order = order
+                product.sold_to_user = user
+                product.save()
         
         return order
