@@ -578,15 +578,34 @@ class CategoryListView(APIView):
 class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffUserSerializer
-    queryset = User.objects.filter(is_staff=False).order_by('-date_joined')
+    
+    def get_queryset(self):
+        qs = User.objects.filter(is_staff=False)
+        
+        # Add search functionality
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(phone__icontains=search)
+            )
+        
+        return qs.order_by('-date_joined')
 
     def get_queryset(self):
         # Allow fetching any user (staff or not) for detail actions like 'full'
-        # Keep list/export filtered to non-staff only
         if self.action in ('retrieve', 'full'):
             return User.objects.all().order_by('-date_joined')
+        
+        # For list action, check if staff should be included
+        include_staff = self.request.query_params.get('include_staff') == 'true'
+        if include_staff:
+            return User.objects.all().order_by('-date_joined')
         return User.objects.filter(is_staff=False).order_by('-date_joined')
-    
+        
     # Import/Export customers
     @action(detail=False, methods=['get'], url_path='export-customers')
     def export_customers(self, request):
@@ -863,7 +882,7 @@ class GlobalSearchView(APIView):
             Q(order_number__icontains=q)
         ).select_related('user')[:10]
 
-        customers = User.objects.filter(is_staff=False).filter(
+        customers = User.objects.filter(
             Q(email__icontains=q) |
             Q(first_name__icontains=q) |
             Q(last_name__icontains=q) |
