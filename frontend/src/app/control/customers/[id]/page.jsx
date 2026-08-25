@@ -49,7 +49,14 @@ export default function CustomerDetailPage() {
         <div>
             <button onClick={() => window.history.back()} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back</button>
 
-            <h1 className="font-serif text-3xl mb-2">{name}</h1>
+            <div className="flex items-center gap-3 mb-2">
+                <h1 className="font-serif text-3xl">{name}</h1>
+                {c.is_staff && (
+                    <span className="px-3 py-1 bg-ink text-white text-xs font-semibold rounded-full uppercase tracking-wider">
+                        Staff Account
+                    </span>
+                )}
+            </div>
             <p className="text-sm text-ink/60 mb-8">Customer since {new Date(c.date_joined).toLocaleDateString("en-IN")}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
