@@ -89,7 +89,7 @@ export default function OrderDetailPage() {
                                 <div key={item.id} className="flex items-center justify-between p-6">
                                     <div>
                                         {item.design_slug ? (
-                                            <Link href={`/design/${item.design_slug}`} className="font-semibold text-gold-dark hover:text-ink">
+                                            <Link href={`/products/${item.design_slug}`} className="font-semibold text-gold-dark hover:text-ink">
                                                 {item.product_name}
                                             </Link>
                                         ) : (
@@ -119,9 +119,8 @@ export default function OrderDetailPage() {
                                 const stInfo = STATUS_STYLES[event.status] || { label: event.status };
                                 return (
                                     <div key={idx} className="relative mb-6 last:mb-0">
-                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                            isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
-                                        }`}>
+                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
+                                            }`}>
                                             {isLast ? "✓" : "•"}
                                         </div>
                                         <div>
