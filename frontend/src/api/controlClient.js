@@ -28,7 +28,7 @@ const controlApi = {
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
   // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
-    updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
 
   // Products (physical pieces)
   getInstances: () => api.get("/control/instances/"),
@@ -36,7 +36,7 @@ const controlApi = {
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
   getProductDetail: (id) => api.get(`/control/instances/${id}/`),
   globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
-    previewPrice: (data) => api.post("/control/price-preview/", data),
+  previewPrice: (data) => api.post("/control/price-preview/", data),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),
@@ -60,7 +60,10 @@ const controlApi = {
   deleteCategory: (id) => api.delete(`/control/categories/${id}/`),
 
   // Customers
-  getCustomers: () => api.get("/control/customers/"),
+  getCustomers: (includeStaff = false) => {
+    const params = includeStaff ? { include_staff: 'true' } : {};
+    return api.get("/control/customers/", { params });
+  },
   getCustomerFull: (id) => api.get(`/control/customers/${id}/full/`),
 
   // Import/Export
