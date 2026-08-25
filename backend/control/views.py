@@ -580,6 +580,13 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = StaffUserSerializer
     queryset = User.objects.filter(is_staff=False).order_by('-date_joined')
 
+    def get_queryset(self):
+        # Allow fetching any user (staff or not) for detail actions like 'full'
+        # Keep list/export filtered to non-staff only
+        if self.action in ('retrieve', 'full'):
+            return User.objects.all().order_by('-date_joined')
+        return User.objects.filter(is_staff=False).order_by('-date_joined')
+    
     # Import/Export customers
     @action(detail=False, methods=['get'], url_path='export-customers')
     def export_customers(self, request):
