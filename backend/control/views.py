@@ -82,6 +82,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
+        from django.utils import timezone
+        import logging
+        logger = logging.getLogger(__name__)
+        
         order = self.get_object()
         new_status = request.data.get('status')
         valid = {'placed': ['confirmed', 'cancelled'], 'confirmed': ['shipped', 'cancelled'],
@@ -91,10 +95,28 @@ class OrderViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         old = order.status
         order.status = new_status
+        
+        # Set timestamps
+        now = timezone.now()
+        if new_status == 'confirmed' and not order.confirmed_at:
+            order.confirmed_at = now
+            logger.info(f"Setting confirmed_at for order {order.id}")
+        elif new_status == 'shipped' and not order.shipped_at:
+            order.shipped_at = now
+            logger.info(f"Setting shipped_at for order {order.id}")
+        elif new_status == 'delivered' and not order.delivered_at:
+            order.delivered_at = now
+            logger.info(f"Setting delivered_at for order {order.id}")
+        elif new_status == 'cancelled' and not order.cancelled_at:
+            order.cancelled_at = now
+            logger.info(f"Setting cancelled_at for order {order.id}")
+        
         order.save()
         if new_status == 'cancelled' and old != 'cancelled':
             self._restock(order)
-        return Response({'status': 'success', 'new_status': new_status})
+        
+        # Return full order object (not just status)
+        return Response(self.get_serializer(order).data)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

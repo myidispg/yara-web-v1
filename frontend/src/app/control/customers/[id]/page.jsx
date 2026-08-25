@@ -30,6 +30,10 @@ export default function CustomerDetailPage() {
                 setData(data);
             } catch (err) {
                 console.error("Failed to load customer:", err);
+                if (err.response?.status === 404) {
+                    alert("Customer not found");
+                    router.push("/control/orders");
+                }
             } finally {
                 setLoading(false);
             }
