@@ -89,7 +89,7 @@ export default function OrderDetailPage() {
                                 <div key={item.id} className="flex items-center justify-between p-6">
                                     <div>
                                         {item.design_slug ? (
-                                            <Link href={`/products/${item.design_slug}`} className="font-semibold text-gold-dark hover:text-ink">
+                                            <Link href={`/product/${item.design_slug}`} className="font-semibold text-gold-dark hover:text-ink">
                                                 {item.product_name}
                                             </Link>
                                         ) : (

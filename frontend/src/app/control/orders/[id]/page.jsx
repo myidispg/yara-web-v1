@@ -58,7 +58,14 @@ export default function OrderDetailPage() {
         if (!confirm(labels[newStatus])) return;
         try {
             const { data } = await controlApi.updateOrderStatus(id, newStatus);
-            setOrder(data);
+            // If backend returns full order, use it. Otherwise reload.
+            if (data && data.order_number) {
+                setOrder(data);
+            } else {
+                // Reload the order
+                const { data: freshOrder } = await controlApi.getOrder(id);
+                setOrder(freshOrder);
+            }
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
         }
@@ -115,7 +122,17 @@ export default function OrderDetailPage() {
                             </div>
                         </div>
                         {order.customer_id && (
-                            <Link href={`/control/customers/${order.customer_id}`} className="btn-outline w-full mt-4 text-sm">
+                            <Link
+                                href={`/control/customers/${order.customer_id}`}
+                                className="btn-outline w-full mt-4 text-sm"
+                                onClick={(e) => {
+                                    // Prevent navigation if customer_id is invalid
+                                    if (!order.customer_id || order.customer_id <= 0) {
+                                        e.preventDefault();
+                                        alert("Customer profile not available");
+                                    }
+                                }}
+                            >
                                 View Customer Profile
                             </Link>
                         )}
