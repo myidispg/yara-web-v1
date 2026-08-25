@@ -40,9 +40,12 @@ class AddressSerializer(serializers.ModelSerializer):
         return Address.objects.create(user=user, **validated_data)
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    design_slug = serializers.CharField(source='instance.design.slug', read_only=True)
+    design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
+
     class Meta:
         model = OrderItem
-        fields = ["id", "product_name", "variant_label", "quantity", "unit_price", "line_total"]
+        fields = ["id", "product_name", "variant_label", "quantity", "unit_price", "line_total", "design_slug", "design_id", "instance"]
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -53,10 +56,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "order_number", "status", "payment_method", "subtotal",
-                  "shipping_fee", "total", "created_at", "address", "items", "mto_items",
-                  "timeline", "placed_at", "confirmed_at", "shipped_at", "delivered_at", 
-                  "cancelled_at"]
+        fields = ["id", "order_number", "status", "payment_method", "transaction_id",
+                  "subtotal", "shipping_fee", "total", "created_at", "address", 
+                  "items", "mto_items", "timeline", "placed_at", "confirmed_at", 
+                  "shipped_at", "delivered_at", "cancelled_at"]
 
     def get_mto_items(self, obj):
         mto = []
@@ -65,7 +68,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 label = f"{item.product_name} · {item.variant_label}" if item.variant_label else item.product_name
                 mto.append(label)
         return mto
-
+    
     def get_timeline(self, obj):
         return obj.get_timeline()
 
