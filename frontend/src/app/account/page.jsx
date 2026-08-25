@@ -8,8 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function AccountPage() {
     const router = useRouter();
-    const { logout } = useAuth();
-    const [user, setUser] = useState(null);
+    const { user, loading: authLoading, logout } = useAuth();
+    const [profile, setProfile] = useState(null);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
@@ -17,6 +17,20 @@ export default function AccountPage() {
     const [saving, setSaving] = useState(false);
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressForm, setAddressForm] = useState({});
+
+    useEffect(() => {
+        // Wait for auth to finish loading
+        if (authLoading) return;
+
+        // Redirect if not authenticated
+        if (!user) {
+            router.push("/auth");
+            return;
+        }
+
+        // Load profile and orders
+        load();
+    }, [user, authLoading]);
 
     const handleLogout = () => {
         if (confirm("Log out of your account?")) {
@@ -28,10 +42,10 @@ export default function AccountPage() {
     const load = async () => {
         try {
             const [profileRes, ordersRes] = await Promise.all([
-                api.getProfile(),   // Changed from api.get("/api/auth/me/")
-                api.getOrders(),    // Changed from api.get("/api/orders/")
+                api.getProfile(),
+                api.getOrders(),
             ]);
-            setUser(profileRes.data);
+            setProfile(profileRes.data);
             setOrders(ordersRes.data.results || ordersRes.data);
             setForm({
                 first_name: profileRes.data.first_name || "",
@@ -49,8 +63,8 @@ export default function AccountPage() {
     const saveProfile = async () => {
         setSaving(true);
         try {
-            const { data } = await api.updateProfile(form); // Changed from api.patch
-            setUser(data);
+            const { data } = await api.updateProfile(form);
+            setProfile(data);
             setEditing(false);
             alert("Profile updated!");
         } catch (err) {
@@ -62,7 +76,7 @@ export default function AccountPage() {
 
     const saveAddress = async () => {
         try {
-            await api.createAddress(addressForm); // Changed from api.post
+            await api.createAddress(addressForm);
             setShowAddressForm(false);
             setAddressForm({});
             await load();
@@ -73,18 +87,24 @@ export default function AccountPage() {
     };
 
     const setDefault = async (id) => {
-        await api.setDefaultAddress(id); // Changed from api.post
+        await api.setDefaultAddress(id);
         await load();
     };
 
     const deleteAddress = async (id) => {
         if (!confirm("Delete this address?")) return;
-        await api.deleteAddress(id); // Changed from api.delete
+        await api.deleteAddress(id);
         await load();
     };
 
+    // Show loading while auth is checking
+    if (authLoading) return <div className="text-center py-12">Loading...</div>;
+
+    // Show loading while profile data is loading
     if (loading) return <div className="text-center py-12">Loading...</div>;
-    if (!user) return <div className="text-center py-12">Please log in.</div>;
+
+    // This should never happen, but just in case
+    if (!profile) return <div className="text-center py-12">Unable to load profile.</div>;
 
     return (
         <div className="max-w-7xl mx-auto px-8 py-12">
@@ -105,16 +125,24 @@ export default function AccountPage() {
                     {!editing ? (
                         <>
                             <div className="space-y-3 text-sm">
-                                <div><span className="text-ink/60">Email:</span> <span className="font-semibold">{user.email}</span></div>
-                                <div><span className="text-ink/60">Phone:</span> <span className="font-semibold">{user.phone || "—"}</span></div>
-                                <div><span className="text-ink/60">Name:</span> <span className="font-semibold">{user.first_name} {user.last_name}</span></div>
-                                <div><span className="text-ink/60">Gender:</span> <span className="font-semibold">{user.gender || "—"}</span></div>
-                                <div><span className="text-ink/60">Date of Birth:</span> <span className="font-semibold">{user.date_of_birth || "—"}</span></div>
+                                <div><span className="text-ink/60">Email:</span> <span className="font-semibold">{profile.email}</span></div>
+                                <div><span className="text-ink/60">Phone:</span> <span className="font-semibold">{profile.phone || "—"}</span></div>
+                                <div><span className="text-ink/60">Name:</span> <span className="font-semibold">{profile.first_name} {profile.last_name}</span></div>
+                                <div><span className="text-ink/60">Gender:</span> <span className="font-semibold">{profile.gender || "—"}</span></div>
+                                <div><span className="text-ink/60">Date of Birth:</span> <span className="font-semibold">{profile.date_of_birth || "—"}</span></div>
                             </div>
                             <button onClick={() => setEditing(true)} className="btn-outline w-full mt-6">Edit Profile</button>
                         </>
-                    ) : (
+                                        ) : (
                         <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Email</label>
+                                <input value={profile.email} disabled className="w-full border border-line rounded px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Phone</label>
+                                <input value={profile.phone || ""} disabled className="w-full border border-line rounded px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed" />
+                            </div>
                             <div>
                                 <label className="text-xs font-semibold text-ink/60 block mb-1">First Name</label>
                                 <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
@@ -151,11 +179,17 @@ export default function AccountPage() {
                         <h2 className="font-serif text-2xl">Addresses</h2>
                         <button onClick={() => setShowAddressForm(!showAddressForm)} className="text-sm text-gold-dark font-semibold">+ Add</button>
                     </div>
-                    {showAddressForm && (
+                                        {showAddressForm && (
                         <div className="mb-6 space-y-3 border border-line rounded-lg p-4 bg-cream">
-                            <input placeholder="Full Name" value={addressForm.full_name || ""} onChange={(e) => setAddressForm({ ...addressForm, full_name: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
-                            <input placeholder="Phone" value={addressForm.phone || ""} onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
-                            <input placeholder="Address Line 1" value={addressForm.line1 || ""} onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
+                            <div>
+                                <label className="text-xs font-semibold text-ink/60 block mb-1">Label</label>
+                                <select value={addressForm.label || "home"} onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })} className="w-full border border-line rounded px-3 py-2">
+                                    <option value="home">Home</option>
+                                    <option value="office">Office</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <input placeholder="Address Line 1" value={addressForm.line1 || ""} onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })} className="w-full border border-line rounded px-3 py-2" required />
                             <input placeholder="Address Line 2 (optional)" value={addressForm.line2 || ""} onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
                             <div className="grid grid-cols-2 gap-2">
                                 <input placeholder="City" value={addressForm.city || ""} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="w-full border border-line rounded px-3 py-2" />
@@ -166,7 +200,7 @@ export default function AccountPage() {
                         </div>
                     )}
                     <div className="space-y-4">
-                        {(user.addresses || []).map((addr) => (
+                        {(profile.addresses || []).map((addr) => (
                             <div key={addr.id} className="border border-line rounded-lg p-4 relative">
                                 {addr.is_default && <span className="absolute top-2 right-2 text-[9px] bg-gold-dark text-white px-2 py-0.5 rounded-full">DEFAULT</span>}
                                 <p className="font-semibold text-sm">{addr.full_name}</p>
@@ -179,7 +213,7 @@ export default function AccountPage() {
                                 </div>
                             </div>
                         ))}
-                        {(!user.addresses || user.addresses.length === 0) && <p className="text-sm text-ink/50">No addresses saved yet.</p>}
+                        {(!profile.addresses || profile.addresses.length === 0) && <p className="text-sm text-ink/50">No addresses saved yet.</p>}
                     </div>
                 </div>
 
@@ -192,8 +226,8 @@ export default function AccountPage() {
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-mono text-sm font-semibold">{order.order_number}</span>
                                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                'bg-yellow-100 text-yellow-800'
+                                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                            'bg-yellow-100 text-yellow-800'
                                         }`}>{order.status}</span>
                                 </div>
                                 <p className="text-xs text-ink/60">{new Date(order.created_at).toLocaleDateString("en-IN")}</p>

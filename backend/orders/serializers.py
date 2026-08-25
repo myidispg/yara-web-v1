@@ -19,10 +19,16 @@ class AddressSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
+        # Auto-populate name and phone from user profile if not provided
+        if not validated_data.get("full_name"):
+            full_name = f"{user.first_name} {user.last_name}".strip()
+            validated_data["full_name"] = full_name or user.email
+        if not validated_data.get("phone"):
+            validated_data["phone"] = user.phone or ""
+        
         if validated_data.get("is_default"):
             Address.objects.filter(user=user, is_default=True).update(is_default=False)
         return Address.objects.create(user=user, **validated_data)
-
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
