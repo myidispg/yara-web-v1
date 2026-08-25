@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/api/client";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AccountPage() {
+    const router = useRouter();
+    const { logout } = useAuth();
     const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -14,9 +18,12 @@ export default function AccountPage() {
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressForm, setAddressForm] = useState({});
 
-    useEffect(() => {
-        load();
-    }, []);
+    const handleLogout = () => {
+        if (confirm("Log out of your account?")) {
+            logout();
+            router.push("/");
+        }
+    };
 
     const load = async () => {
         try {
@@ -81,7 +88,15 @@ export default function AccountPage() {
 
     return (
         <div className="max-w-7xl mx-auto px-8 py-12">
-            <h1 className="font-serif text-4xl mb-8">My Account</h1>
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="font-serif text-4xl">My Account</h1>
+                <button
+                    onClick={handleLogout}
+                    className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50"
+                >
+                    Logout
+                </button>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Profile Card */}
@@ -176,11 +191,10 @@ export default function AccountPage() {
                             <Link key={order.id} href={`/account/orders/${order.id}`} className="block border border-line rounded-lg p-4 hover:bg-cream transition-colors">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-mono text-sm font-semibold">{order.order_number}</span>
-                                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                                        order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                        'bg-yellow-100 text-yellow-800'
-                                    }`}>{order.status}</span>
+                                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                        }`}>{order.status}</span>
                                 </div>
                                 <p className="text-xs text-ink/60">{new Date(order.created_at).toLocaleDateString("en-IN")}</p>
                                 <p className="text-sm font-semibold mt-1">₹{order.total}</p>

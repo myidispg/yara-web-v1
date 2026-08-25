@@ -4,7 +4,7 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
 });
 
-// Attach JWT token to every request (only on the client side)
+// Attach JWT token to every request (client side only)
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("access");
@@ -13,12 +13,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token refresh and 401 redirects (only on the client side)
+// Handle token refresh and 401 redirects (client side only)
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-
     if (
       typeof window !== "undefined" &&
       err.response?.status === 401 &&
@@ -50,24 +49,20 @@ api.interceptors.response.use(
   }
 );
 
-// API methods wrapper
-const apiClient = {
-  // User profile
-  getProfile: () => api.get("/auth/me/"),
-  updateProfile: (data) => api.patch("/auth/me/", data),
+// ── Named convenience methods (attached to the axios instance) ──
+// User profile
+api.getProfile = () => api.get("/auth/me/");
+api.updateProfile = (data) => api.patch("/auth/me/", data);
 
-  // Addresses
-  getAddresses: () => api.get("/addresses/"),
-  createAddress: (data) => api.post("/addresses/", data),
-  updateAddress: (id, data) => api.patch(`/addresses/${id}/`, data),
-  deleteAddress: (id) => api.delete(`/addresses/${id}/`),
-  setDefaultAddress: (id) => api.post(`/addresses/${id}/set_default/`),
+// Addresses
+api.getAddresses = () => api.get("/addresses/");
+api.createAddress = (data) => api.post("/addresses/", data);
+api.updateAddress = (id, data) => api.patch(`/addresses/${id}/`, data);
+api.deleteAddress = (id) => api.delete(`/addresses/${id}/`);
+api.setDefaultAddress = (id) => api.post(`/addresses/${id}/set_default/`);
 
-  // Orders
-  getOrders: () => api.get("/orders/"),
-  getOrder: (id) => api.get(`/orders/${id}/`),
+// Orders
+api.getOrders = () => api.get("/orders/");
+api.getOrder = (id) => api.get(`/orders/${id}/`);
 
-  // Add your other API methods here
-};
-
-export default apiClient;
+export default api;
