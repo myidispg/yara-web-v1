@@ -156,10 +156,15 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class StaffOrderItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
+    design_slug = serializers.CharField(source='instance.design.slug', read_only=True)
+    design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
+    design_code = serializers.CharField(source='instance.design.design_code', read_only=True)
+    design_name = serializers.CharField(source='instance.design.name', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 'total_price', 'instance']
+        fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
+                  'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name']
 
     def get_total_price(self, obj):
         return float(obj.line_total) if obj.line_total else float(obj.unit_price) * int(obj.quantity)
@@ -172,12 +177,14 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     address = serializers.SerializerMethodField()
+    timeline = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_number', 'customer_email', 'customer_name', 'customer_phone',
-                  'customer_id', 'status', 'payment_method', 'subtotal', 'shipping_fee', 
-                  'total', 'created_at', 'items', 'address']
+                  'customer_id', 'status', 'payment_method', 'transaction_id', 'subtotal', 
+                  'shipping_fee', 'total', 'created_at', 'items', 'address', 'timeline',
+                  'placed_at', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at']
 
     def get_customer_name(self, obj):
         full = f"{obj.user.first_name} {obj.user.last_name}".strip()
@@ -196,6 +203,9 @@ class StaffOrderSerializer(serializers.ModelSerializer):
             return None
         return {"full_name": a.full_name, "phone": a.phone, "line1": a.line1,
                 "line2": a.line2 or "", "city": a.city, "state": a.state, "pincode": a.pincode}
+    
+    def get_timeline(self, obj):
+        return obj.get_timeline()
 
 
 # ── Creation (wizard / add product) ───────────────────────────────────

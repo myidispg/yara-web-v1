@@ -40,6 +40,7 @@ class Order(models.Model):
     order_number = models.CharField(max_length=20, unique=True, blank=True)
     status = models.CharField(max_length=12, choices=STATUS, default="placed")
     payment_method = models.CharField(max_length=12, choices=PAYMENT, default="upi")
+    transaction_id = models.CharField(max_length=64, blank=True)  # Add this line
     address = models.ForeignKey(Address, null=True, blank=True, related_name="+", on_delete=models.SET_NULL)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     shipping_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
@@ -64,6 +65,8 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.order_number:
             self.order_number = f"VR-{timezone.now():%y%m%d}-{secrets.token_hex(2).upper()}"
+        if not self.transaction_id:
+            self.transaction_id = f"TXN-{secrets.token_hex(12).upper()}"
         super().save(*args, **kwargs)
 
     def get_timeline(self):

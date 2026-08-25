@@ -78,7 +78,7 @@ export default function OrderDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Items */}
+                {/* Left: Items + Timeline */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
                         <div className="px-6 py-4 border-b border-line bg-cream">
@@ -88,7 +88,13 @@ export default function OrderDetailPage() {
                             {order.items.map((item) => (
                                 <div key={item.id} className="flex items-center justify-between p-6">
                                     <div>
-                                        <p className="font-semibold">{item.product_name}</p>
+                                        {item.design_slug ? (
+                                            <Link href={`/design/${item.design_slug}`} className="font-semibold text-gold-dark hover:text-ink">
+                                                {item.product_name}
+                                            </Link>
+                                        ) : (
+                                            <p className="font-semibold">{item.product_name}</p>
+                                        )}
                                         <p className="text-sm text-ink/60">{item.variant_label || "—"}</p>
                                         <p className="text-xs text-ink/50 mt-1">Qty: {item.quantity}</p>
                                     </div>
@@ -107,17 +113,15 @@ export default function OrderDetailPage() {
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                         <h3 className="font-serif text-xl mb-4">Order Timeline</h3>
                         <div className="relative pl-8">
-                            {/* Vertical line */}
                             <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-line" />
-
-                            {order.timeline.map((event, idx) => {
+                            {(order.timeline || []).map((event, idx) => {
                                 const isLast = idx === order.timeline.length - 1;
                                 const stInfo = STATUS_STYLES[event.status] || { label: event.status };
                                 return (
                                     <div key={idx} className="relative mb-6 last:mb-0">
-                                        {/* Dot */}
-                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center ${isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
-                                            }`}>
+                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                            isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
+                                        }`}>
                                             {isLast ? "✓" : "•"}
                                         </div>
                                         <div>
@@ -133,7 +137,7 @@ export default function OrderDetailPage() {
                     </div>
                 </div>
 
-                {/* Right: Shipping & Payment */}
+                {/* Right: Shipping, Payment, Invoice */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                         <h3 className="font-serif text-xl mb-4">Shipping Address</h3>
@@ -150,7 +154,24 @@ export default function OrderDetailPage() {
                     </div>
 
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Payment Summary</h3>
+                        <h3 className="font-serif text-xl mb-4">Payment Details</h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">Payment Method</span>
+                                <span className="font-semibold uppercase">{order.payment_method}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">Transaction ID</span>
+                                <span className="font-mono text-xs">{order.transaction_id || "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">Payment Status</span>
+                                <span className={`font-semibold ${order.status === 'cancelled' ? 'text-red-600' : 'text-green-600'}`}>
+                                    {order.status === 'cancelled' ? 'Refunded' : 'Paid'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="border-t border-line my-4" />
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between"><span className="text-ink/60">Subtotal</span><span>{inr(order.subtotal)}</span></div>
                             <div className="flex justify-between"><span className="text-ink/60">Shipping</span><span>{inr(order.shipping_fee)}</span></div>

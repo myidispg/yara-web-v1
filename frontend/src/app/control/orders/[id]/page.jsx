@@ -16,6 +16,14 @@ const STATUS = {
     cancelled: { label: "Cancelled", cls: "bg-red-100 text-red-800" },
 };
 
+const PAYMENT_LABELS = {
+    upi: "UPI",
+    card: "Credit / Debit Card",
+    netbanking: "Net Banking",
+    emi: "EMI",
+    cod: "Cash on Delivery",
+};
+
 export default function OrderDetailPage() {
     const { id } = useParams();
     const [order, setOrder] = useState(null);
@@ -40,6 +48,22 @@ export default function OrderDetailPage() {
 
     const st = STATUS[order.status] || { label: order.status, cls: "bg-gray-100 text-gray-800" };
 
+    const updateStatus = async (newStatus) => {
+        const labels = {
+            confirmed: "Confirm this order?",
+            shipped: "Mark as shipped?",
+            delivered: "Mark as delivered? This will generate an invoice.",
+            cancelled: "Cancel this order?",
+        };
+        if (!confirm(labels[newStatus])) return;
+        try {
+            const { data } = await controlApi.updateOrderStatus(id, newStatus);
+            setOrder(data);
+        } catch (err) {
+            alert("Failed: " + (err.response?.data?.error || err.message));
+        }
+    };
+
     return (
         <div>
             <button onClick={() => window.history.back()} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back</button>
@@ -51,24 +75,76 @@ export default function OrderDetailPage() {
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
                     </div>
                     <p className="text-sm text-ink/60 mt-1">
-                        Placed {new Date(order.created_at).toLocaleString("en-IN")} · {order.payment_method}
+                        Placed {new Date(order.placed_at || order.created_at).toLocaleString("en-IN")} · {PAYMENT_LABELS[order.payment_method] || order.payment_method}
                     </p>
                 </div>
-                <Link href="/control/orders" className="btn-outline text-sm">All Orders</Link>
+                <div className="flex gap-2">
+                    {order.status === "placed" && (
+                        <button onClick={() => updateStatus("confirmed")} className="btn-outline text-sm">Confirm</button>
+                    )}
+                    {order.status === "confirmed" && (
+                        <button onClick={() => updateStatus("shipped")} className="btn-outline text-sm">Mark Shipped</button>
+                    )}
+                    {order.status === "shipped" && (
+                        <button onClick={() => updateStatus("delivered")} className="btn-outline text-sm">Mark Delivered</button>
+                    )}
+                    {(order.status === "placed" || order.status === "confirmed") && (
+                        <button onClick={() => updateStatus("cancelled")} className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50">Cancel</button>
+                    )}
+                    <Link href="/control/orders" className="btn-outline text-sm">All Orders</Link>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left column: Customer, Payment, Address, Timeline */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                         <h3 className="font-serif text-xl mb-4">Customer</h3>
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between gap-2"><span className="text-ink/60">Name</span><span className="font-semibold text-right">{order.customer_name}</span></div>
-                            <div className="flex justify-between gap-2"><span className="text-ink/60">Email</span><span className="font-semibold text-right">{order.customer_email}</span></div>
-                            <div className="flex justify-between gap-2"><span className="text-ink/60">Phone</span><span className="font-semibold text-right">{order.customer_phone}</span></div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Name</span>
+                                <span className="font-semibold text-right">{order.customer_name}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Email</span>
+                                <span className="font-semibold text-right">{order.customer_email}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Phone</span>
+                                <span className="font-semibold text-right">{order.customer_phone}</span>
+                            </div>
                         </div>
                         {order.customer_id && (
-                            <Link href={`/control/customers/${order.customer_id}`} className="btn-outline w-full mt-4 text-sm">View Customer Profile</Link>
+                            <Link href={`/control/customers/${order.customer_id}`} className="btn-outline w-full mt-4 text-sm">
+                                View Customer Profile
+                            </Link>
                         )}
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
+                        <h3 className="font-serif text-xl mb-4">Payment</h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Method</span>
+                                <span className="font-semibold uppercase">{order.payment_method}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Transaction ID</span>
+                                <span className="font-mono text-xs">{order.transaction_id || "—"}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Subtotal</span>
+                                <span>{inr(order.subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">Shipping</span>
+                                <span>{inr(order.shipping_fee)}</span>
+                            </div>
+                            <div className="border-t border-line pt-2 mt-2 flex justify-between gap-2 font-semibold">
+                                <span>Total</span>
+                                <span className="text-lg">{inr(order.total)}</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card">
@@ -84,11 +160,58 @@ export default function OrderDetailPage() {
                             <p className="text-sm text-ink/50">No address recorded.</p>
                         )}
                     </div>
+
+                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
+                        <h3 className="font-serif text-xl mb-4">Timeline</h3>
+                        <div className="relative pl-8">
+                            <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-line" />
+                            {(order.timeline || []).map((event, idx) => {
+                                const isLast = idx === order.timeline.length - 1;
+                                const labels = {
+                                    placed: "Order Placed",
+                                    confirmed: "Order Confirmed",
+                                    shipped: "Shipped",
+                                    delivered: "Delivered",
+                                    cancelled: "Cancelled"
+                                };
+                                return (
+                                    <div key={idx} className="relative mb-6 last:mb-0">
+                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
+                                            }`}>
+                                            {isLast ? "✓" : "•"}
+                                        </div>
+                                        <div>
+                                            <p className={`font-semibold text-sm ${isLast ? "text-ink" : "text-ink/70"}`}>
+                                                {labels[event.status] || event.status}
+                                            </p>
+                                            <p className="text-xs text-ink/50">
+                                                {event.timestamp ? new Date(event.timestamp).toLocaleString("en-IN") : "—"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Invoice placeholder */}
+                    {order.status === "delivered" && (
+                        <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
+                            <h3 className="font-serif text-xl mb-3">Invoice</h3>
+                            <p className="text-sm text-ink/60 mb-4">
+                                Invoice generated on delivery.
+                            </p>
+                            <button className="btn-outline w-full text-sm" disabled>
+                                View Invoice (Coming Soon)
+                            </button>
+                        </div>
+                    )}
                 </div>
 
+                {/* Right column: Items table */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
-                        <div className="px-6 py-4 border-b border-line bg-cream">
+                        <div className="px-6 py-4 border-b border-line bg-cream flex items-center justify-between">
                             <h3 className="font-semibold">Items ({order.items.length})</h3>
                         </div>
                         <table className="w-full">
@@ -104,12 +227,15 @@ export default function OrderDetailPage() {
                                 {order.items.map((it) => (
                                     <tr key={it.id} className="border-b border-line last:border-0">
                                         <td className="px-6 py-4 text-sm">
-                                            {it.instance ? (
-                                                <Link href={`/control/inventory/products/${it.instance}`} className="font-mono text-gold-dark hover:text-ink font-semibold">
+                                            {it.design_id ? (
+                                                <Link href={`/control/inventory?design=${it.design_id}`} className="text-gold-dark hover:text-ink font-semibold">
                                                     {it.product_name}
                                                 </Link>
                                             ) : (
                                                 <span className="font-medium">{it.product_name}</span>
+                                            )}
+                                            {it.design_code && (
+                                                <p className="text-xs text-ink/50 font-mono mt-0.5">{it.design_code}</p>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-ink/70">{it.variant_label || "—"}</td>
@@ -121,6 +247,7 @@ export default function OrderDetailPage() {
                         </table>
                     </div>
 
+                    {/* Totals summary */}
                     <div className="bg-white rounded-xl border border-line p-6 shadow-card max-w-sm ml-auto">
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between"><span className="text-ink/60">Subtotal</span><span>{inr(order.subtotal)}</span></div>
