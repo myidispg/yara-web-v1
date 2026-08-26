@@ -181,16 +181,46 @@ export default function OrderDetailPage() {
                         </div>
                     </div>
 
-                    {/* Invoice placeholder - will be implemented in Phase 3 */}
-                    {order.status === "delivered" && (
+                                        {/* Invoice */}
+                    {order.status === "delivered" && order.invoice_number && (
                         <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
                             <h3 className="font-serif text-xl mb-3">Invoice</h3>
-                            <p className="text-sm text-ink/60 mb-4">
-                                Your invoice is available for download.
-                            </p>
-                            <button className="btn-outline w-full text-sm" disabled>
-                                Download Invoice (Coming Soon)
+                            <div className="space-y-2 text-sm mb-4">
+                                <div className="flex justify-between">
+                                    <span className="text-ink/60">Invoice No.</span>
+                                    <span className="font-mono font-semibold">{order.invoice_number}</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const response = await api.downloadInvoice(order.id);
+                                        const url = URL.createObjectURL(response.data);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${order.invoice_number}.pdf`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(url);
+                                    } catch (err) {
+                                        alert("Failed to download invoice. Please try again.");
+                                    }
+                                }}
+                                className="btn-solid w-full text-sm"
+                            >
+                                Download Invoice (PDF)
                             </button>
+                        </div>
+                    )}
+
+                    {/* No invoice yet but delivered */}
+                    {order.status === "delivered" && !order.invoice_number && (
+                        <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
+                            <h3 className="font-serif text-xl mb-3">Invoice</h3>
+                            <p className="text-sm text-ink/60">
+                                Your invoice is being generated. Please check back shortly.
+                            </p>
                         </div>
                     )}
                 </div>

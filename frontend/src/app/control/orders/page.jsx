@@ -87,8 +87,8 @@ export default function OrdersPage() {
                             <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Order #</th>
                             <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Customer</th>
                             <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Payment</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Transaction ID</th>
                             <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
+                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Invoice</th>
                             <th className="text-right px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Total</th>
                             <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Date</th>
                         </tr>
@@ -117,7 +117,11 @@ export default function OrdersPage() {
                                         <span className="font-semibold uppercase">{PAYMENT_LABELS[o.payment_method] || o.payment_method}</span>
                                     </td>
                                     <td className="px-6 py-4 text-sm">
-                                        <span className="font-mono text-xs">{o.transaction_id || "—"}</span>
+                                        {o.invoice_number ? (
+                                            <span className="font-mono text-xs text-green-700 font-semibold">{o.invoice_number}</span>
+                                        ) : (
+                                            <span className="text-ink/40">—</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>

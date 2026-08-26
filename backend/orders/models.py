@@ -94,3 +94,40 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} × {self.product_name}"
+
+class Invoice(models.Model):
+    """Invoice generated when order is delivered. Snapshots all data at generation time."""
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="invoice")
+    invoice_number = models.CharField(max_length=20, unique=True)
+    pdf_file = models.FileField(upload_to="invoices/%Y/%m/")
+    generated_at = models.DateTimeField(auto_now_add=True)
+    
+    # Snapshot financials at invoice time
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Snapshot customer data at invoice time
+    customer_name = models.CharField(max_length=200)
+    customer_email = models.EmailField()
+    customer_phone = models.CharField(max_length=15, blank=True)
+    billing_address = models.TextField()
+    
+    class Meta:
+        ordering = ["-generated_at"]
+    
+    def __str__(self):
+        return self.invoice_number
+    
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            # Generate unique invoice number: INV-YYYY-NNNNN
+            from datetime import datetime
+            year = datetime.now().year
+            # Count invoices from this year
+            year_count = Invoice.objects.filter(
+                generated_at__year=year
+            ).count() + 1
+            self.invoice_number = f"INV-{year}-{year_count:05d}"
+        super().save(*args, **kwargs)

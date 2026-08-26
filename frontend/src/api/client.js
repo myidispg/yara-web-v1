@@ -65,4 +65,8 @@ api.setDefaultAddress = (id) => api.post(`/addresses/${id}/set_default/`);
 api.getOrders = () => api.get("/orders/");
 api.getOrder = (id) => api.get(`/orders/${id}/`);
 
+// Invoices
+api.getInvoice = (orderId) => api.get(`/orders/${orderId}/invoice/`);
+api.downloadInvoice = (orderId) => api.get(`/orders/${orderId}/invoice/pdf/`, {responseType: 'blob'});
+
 export default api;
