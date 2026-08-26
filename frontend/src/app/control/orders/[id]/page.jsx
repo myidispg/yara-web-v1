@@ -150,8 +150,12 @@ export default function OrderDetailPage() {
                                 <span className="font-mono text-xs">{order.transaction_id || "—"}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Subtotal</span>
-                                <span>{inr(order.subtotal)}</span>
+                                <span className="text-ink/60">Subtotal (excl. tax)</span>
+                                <span>{inr(order.subtotal_excl_tax)}</span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                                <span className="text-ink/60">GST (3%)</span>
+                                <span>{inr(order.gst_amount)}</span>
                             </div>
                             <div className="flex justify-between gap-2">
                                 <span className="text-ink/60">Shipping</span>
@@ -211,16 +215,65 @@ export default function OrderDetailPage() {
                         </div>
                     </div>
 
-                    {/* Invoice placeholder */}
-                    {order.status === "delivered" && (
+                    {/* Invoice */}
+                    {order.status === "delivered" && order.invoice_number && (
                         <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
                             <h3 className="font-serif text-xl mb-3">Invoice</h3>
-                            <p className="text-sm text-ink/60 mb-4">
-                                Invoice generated on delivery.
-                            </p>
-                            <button className="btn-outline w-full text-sm" disabled>
-                                View Invoice (Coming Soon)
-                            </button>
+                            <div className="space-y-2 text-sm mb-4">
+                                <div className="flex justify-between">
+                                    <span className="text-ink/60">Invoice No.</span>
+                                    <span className="font-mono font-semibold">{order.invoice_number}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-ink/60">Total</span>
+                                    <span className="font-semibold">{inr(order.total)}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const response = await controlApi.downloadInvoice(order.invoice_id);
+                                            const url = URL.createObjectURL(response.data);
+                                            window.open(url, '_blank');
+                                        } catch (err) {
+                                            console.error("Failed to open invoice:", err);
+                                            alert("Failed to open invoice PDF.");
+                                        }
+                                    }}
+                                    className="btn-outline flex-1 text-sm"
+                                >
+                                    View PDF
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const response = await controlApi.downloadInvoice(order.invoice_id);
+                                            const url = URL.createObjectURL(response.data);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${order.invoice_number}.pdf`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                        } catch (err) {
+                                            console.error("Failed to download invoice:", err);
+                                            alert("Failed to download invoice PDF.");
+                                        }
+                                    }}
+                                    className="btn-solid flex-1 text-sm"
+                                >
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {order.status === "delivered" && !order.invoice_number && (
+                        <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
+                            <h3 className="font-serif text-xl mb-3">Invoice</h3>
+                            <p className="text-sm text-ink/60">Invoice not yet generated.</p>
                         </div>
                     )}
                 </div>

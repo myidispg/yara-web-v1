@@ -152,7 +152,7 @@ export default function OrderDetailPage() {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
+                                        <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                         <h3 className="font-serif text-xl mb-4">Payment Details</h3>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
@@ -172,8 +172,18 @@ export default function OrderDetailPage() {
                         </div>
                         <div className="border-t border-line my-4" />
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-ink/60">Subtotal</span><span>{inr(order.subtotal)}</span></div>
-                            <div className="flex justify-between"><span className="text-ink/60">Shipping</span><span>{inr(order.shipping_fee)}</span></div>
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">Subtotal (excl. tax)</span>
+                                <span>{inr(order.subtotal_excl_tax)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">GST (3%)</span>
+                                <span>{inr(order.gst_amount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-ink/60">Shipping</span>
+                                <span>{inr(order.shipping_fee)}</span>
+                            </div>
                             <div className="border-t border-line pt-2 mt-2 flex justify-between font-semibold">
                                 <span>Total</span>
                                 <span>{inr(order.total)}</span>

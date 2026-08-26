@@ -180,14 +180,16 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     timeline = serializers.SerializerMethodField()
     invoice_number = serializers.SerializerMethodField()
     invoice_id = serializers.SerializerMethodField()
+    subtotal_excl_tax = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_number', 'customer_email', 'customer_name', 'customer_phone',
                   'customer_id', 'status', 'payment_method', 'transaction_id', 'subtotal', 
-                  'shipping_fee', 'total', 'created_at', 'items', 'address', 'timeline',
-                  'placed_at', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at',
-                  'invoice_number', 'invoice_id']
+                  'subtotal_excl_tax', 'gst_amount', 'shipping_fee', 'total', 'created_at', 
+                  'items', 'address', 'timeline', 'placed_at', 'confirmed_at', 'shipped_at', 
+                  'delivered_at', 'cancelled_at', 'invoice_number', 'invoice_id']
 
     def get_customer_name(self, obj):
         full = f"{obj.user.first_name} {obj.user.last_name}".strip()
@@ -209,16 +211,27 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     
     def get_timeline(self, obj):
         return obj.get_timeline()
-
+    
     def get_invoice_number(self, obj):
         if hasattr(obj, 'invoice') and obj.invoice:
             return obj.invoice.invoice_number
         return None
-
+    
     def get_invoice_id(self, obj):
         if hasattr(obj, 'invoice') and obj.invoice:
             return obj.invoice.id
         return None
+    
+    def get_subtotal_excl_tax(self, obj):
+        """Calculate base amount (excluding 3% GST)."""
+        from decimal import Decimal
+        return round(obj.subtotal / Decimal('1.03'), 2)
+
+    def get_gst_amount(self, obj):
+        """Calculate GST amount (3% inclusive)."""
+        from decimal import Decimal
+        base = obj.subtotal / Decimal('1.03')
+        return round(obj.subtotal - base, 2)
 
 
 # ── Creation (wizard / add product) ───────────────────────────────────
