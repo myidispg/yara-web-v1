@@ -1,45 +1,70 @@
+import io
 import os
-from io import BytesIO
 from decimal import Decimal
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.utils import timezone
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
-from django.utils import timezone
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 from .models import Invoice
 
 
-def generate_invoice_pdf(order):
-    """Generate a PDF invoice for the given order and save it."""
+def get_next_invoice_number():
+    """Generate the next unique invoice number."""
+    year = timezone.now().year
+    year_count = Invoice.objects.filter(generated_at__year=year).count() + 1
+    return f"INV-{year}-{year_count:05d}"
+
+
+def generate_invoice_pdf(order, invoice_number):
+    """Generate a PDF invoice for the given order."""
     
-    # Prepare data
+    # Customer info
     customer_name = f"{order.user.first_name} {order.user.last_name}".strip() or order.user.email
     customer_email = order.user.email
     customer_phone = getattr(order.user, 'phone', '') or ''
     
-    # Build billing address
+    billing_address = ""
     if order.address:
         addr = order.address
         billing_address = f"{addr.full_name}\n{addr.line1}"
         if addr.line2:
             billing_address += f"\n{addr.line2}"
         billing_address += f"\n{addr.city}, {addr.state} - {addr.pincode}"
-        billing_address += f"\nPhone: {addr.phone}"
-    else:
-        billing_address = "No address recorded"
+        if addr.phone:
+            billing_address += f"\nPhone: {addr.phone}"
     
-    # Calculate GST
-    gst_percentage = Decimal('3.00')  # Default, can be pulled from RateCard
-    gst_amount = order.subtotal * (gst_percentage / Decimal('100'))
-    total = order.subtotal + gst_amount + order.shipping_fee
+    # Calculate GST breakdown (total is GST-inclusive)
+    order_total = order.total
+    gst_rate = Decimal('0.03')
+    base_amount = order_total / (Decimal('1') + gst_rate)
+    gst_amount = order_total - base_amount
     
-    # Generate PDF
-    buffer = BytesIO()
+    # Prepare items with base prices (excl. GST)
+    items_data = []
+    for item in order.items.all():
+        product = item.instance
+        unit_price_incl_gst = item.unit_price
+        unit_price_base = unit_price_incl_gst / (Decimal('1') + gst_rate)
+        line_total_base = unit_price_base * item.quantity
+        
+        items_data.append({
+            'name': item.product_name,
+            'variant': item.variant_label or '-',
+            'quantity': item.quantity,
+            'unit_price': unit_price_base,
+            'line_total': line_total_base,
+            'hallmark': product.hallmark_number if product else '-',
+            'report': product.report_number if product else '-',
+        })
+    
+    # Build PDF
+    buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
@@ -52,7 +77,6 @@ def generate_invoice_pdf(order):
     elements = []
     styles = getSampleStyleSheet()
     
-    # Custom styles
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
@@ -78,11 +102,11 @@ def generate_invoice_pdf(order):
     
     # Invoice details
     invoice_data = [
-        ['Invoice Number:', f"INV-{timezone.now().year}-{'00001'}", 'Date:', timezone.now().strftime('%d %B %Y')],
-        ['Order Number:', order.order_number, 'Payment Method:', order.get_payment_method_display()],
+        ['Invoice No:', invoice_number, 'Date:', timezone.now().strftime('%d %B %Y')],
+        ['Order No:', order.order_number, 'Payment:', order.get_payment_method_display()],
     ]
     
-    invoice_table = Table(invoice_data, colWidths=[40*mm, 50*mm, 40*mm, 50*mm])
+    invoice_table = Table(invoice_data, colWidths=[30*mm, 50*mm, 30*mm, 50*mm])
     invoice_table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
@@ -95,7 +119,7 @@ def generate_invoice_pdf(order):
     
     # Billing address
     elements.append(Paragraph("BILL TO:", heading_style))
-    elements.append(Paragraph(billing_address.replace('\n', '<br/>'), styles['Normal']))
+    elements.append(Paragraph(billing_address.replace('\n', '<br/>') if billing_address else 'N/A', styles['Normal']))
     elements.append(Paragraph(f"Email: {customer_email}", styles['Normal']))
     if customer_phone:
         elements.append(Paragraph(f"Phone: {customer_phone}", styles['Normal']))
@@ -104,46 +128,43 @@ def generate_invoice_pdf(order):
     # Items table
     elements.append(Paragraph("ORDER DETAILS:", heading_style))
     
-    item_data = [['Item', 'Variant', 'Hallmark', 'Certificate', 'Qty', 'Unit Price', 'Total']]
+    table_data = [
+        ['Item', 'Variant', 'Hallmark', 'Diamond Report', 'Qty', 'Unit Price', 'Total']
+    ]
     
-    for item in order.items.all():
-        product = item.instance
-        hallmark = product.hallmark_number if product and product.hallmark_number else '—'
-        certificate = product.report_number if product and product.report_number else '—'
-        
-        item_data.append([
-            Paragraph(item.product_name, styles['Normal']),
-            Paragraph(item.variant_label or '—', styles['Normal']),
-            hallmark,
-            certificate,
-            str(item.quantity),
-            f"₹{item.unit_price:,.2f}",
-            f"₹{item.line_total:,.2f}"
+    for item in items_data:
+        table_data.append([
+            Paragraph(item['name'], styles['Normal']),
+            Paragraph(item['variant'], styles['Normal']),
+            item['hallmark'] or '-',
+            item['report'] or '-',
+            str(item['quantity']),
+            f"Rs.{item['unit_price']:,.2f}",
+            f"Rs.{item['line_total']:,.2f}",
         ])
     
-    item_table = Table(item_data, colWidths=[45*mm, 35*mm, 20*mm, 25*mm, 15*mm, 25*mm, 25*mm])
-    item_table.setStyle(TableStyle([
+    items_table = Table(table_data, colWidths=[45*mm, 35*mm, 20*mm, 25*mm, 15*mm, 25*mm, 25*mm])
+    items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f5f5f0')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a1a1a')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (4, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (4, 1), (4, -1), 'CENTER'),
+        ('ALIGN', (5, 1), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
-    elements.append(item_table)
+    elements.append(items_table)
     elements.append(Spacer(1, 8*mm))
     
     # Totals
     totals_data = [
-        ['Subtotal:', f"₹{order.subtotal:,.2f}"],
-        ['GST (3%):', f"₹{gst_amount:,.2f}"],
-        ['Shipping:', f"₹{order.shipping_fee:,.2f}"],
-        ['TOTAL:', f"₹{total:,.2f}"],
+        ['Subtotal (excl. tax):', f"Rs.{base_amount:,.2f}"],
+        ['GST (3%):', f"Rs.{gst_amount:,.2f}"],
+        ['Shipping:', f"Rs.{order.shipping_fee:,.2f}"],
+        ['TOTAL:', f"Rs.{order_total:,.2f}"],
     ]
     
     totals_table = Table(totals_data, colWidths=[130*mm, 40*mm])
@@ -169,29 +190,35 @@ def generate_invoice_pdf(order):
     elements.append(Paragraph("Thank you for your purchase!", footer_style))
     elements.append(Paragraph("This is a computer-generated invoice and does not require a signature.", footer_style))
     
-    # Build PDF
+    # Build
     doc.build(elements)
-    
-    # Save to file
     pdf_content = buffer.getvalue()
     buffer.close()
     
-    return ContentFile(pdf_content, name=f"invoice_{order.order_number}.pdf")
+    return ContentFile(pdf_content, name=f"invoice_{invoice_number}.pdf")
 
 
 def generate_invoice_for_order(order):
     """Generate and save invoice for an order."""
     
     # Check if invoice already exists
-    if hasattr(order, 'invoice') and order.invoice:
-        return order.invoice
+    if hasattr(order, 'invoice'):
+        try:
+            existing = order.invoice
+            return existing
+        except Invoice.DoesNotExist:
+            pass
     
-    # Generate PDF
-    pdf_file = generate_invoice_pdf(order)
+    # Generate invoice number FIRST (before creating PDF)
+    invoice_number = get_next_invoice_number()
     
-    # Calculate GST
-    gst_percentage = Decimal('3.00')
-    gst_amount = order.subtotal * (gst_percentage / Decimal('100'))
+    # Generate PDF (passes invoice_number as parameter)
+    pdf_file = generate_invoice_pdf(order, invoice_number)
+    
+    # Calculate GST breakdown
+    gst_rate = Decimal('0.03')
+    base_amount = order.total / (Decimal('1') + gst_rate)
+    gst_amount = order.total - base_amount
     
     # Build billing address
     if order.address:
@@ -203,13 +230,14 @@ def generate_invoice_for_order(order):
     else:
         billing_address = "No address recorded"
     
-    # Create invoice
+    # Create invoice record
     invoice = Invoice.objects.create(
         order=order,
+        invoice_number=invoice_number,
         pdf_file=pdf_file,
-        subtotal=order.subtotal,
+        subtotal=base_amount,
         gst_amount=gst_amount,
-        gst_percentage=gst_percentage,
+        gst_percentage=Decimal('3.00'),
         total=order.total,
         customer_name=f"{order.user.first_name} {order.user.last_name}".strip() or order.user.email,
         customer_email=order.user.email,

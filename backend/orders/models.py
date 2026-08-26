@@ -120,14 +120,14 @@ class Invoice(models.Model):
     def __str__(self):
         return self.invoice_number
     
-    def save(self, *args, **kwargs):
-        if not self.invoice_number:
-            # Generate unique invoice number: INV-YYYY-NNNNN
-            from datetime import datetime
-            year = datetime.now().year
-            # Count invoices from this year
-            year_count = Invoice.objects.filter(
-                generated_at__year=year
-            ).count() + 1
-            self.invoice_number = f"INV-{year}-{year_count:05d}"
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if not self.invoice_number:
+    #         # Generate unique invoice number: INV-YYYY-NNNNN
+    #         from datetime import datetime
+    #         year = datetime.now().year
+    #         # Count invoices from this year
+    #         year_count = Invoice.objects.filter(
+    #             generated_at__year=year
+    #         ).count() + 1
+    #         self.invoice_number = f"INV-{year}-{year_count:05d}"
+    #     super().save(*args, **kwargs)

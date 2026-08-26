@@ -54,13 +54,16 @@ class OrderSerializer(serializers.ModelSerializer):
     mto_items = serializers.SerializerMethodField()
     timeline = serializers.SerializerMethodField()
     invoice_number = serializers.SerializerMethodField()
+    subtotal_excl_tax = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ["id", "order_number", "status", "payment_method", "transaction_id",
-                  "subtotal", "shipping_fee", "total", "created_at", "address", 
-                  "items", "mto_items", "timeline", "placed_at", "confirmed_at", 
-                  "shipped_at", "delivered_at", "cancelled_at", "invoice_number"]
+                  "subtotal", "subtotal_excl_tax", "gst_amount", "shipping_fee", "total", 
+                  "created_at", "address", "items", "mto_items", "timeline", 
+                  "placed_at", "confirmed_at", "shipped_at", "delivered_at", "cancelled_at",
+                  "invoice_number"]
 
     def get_mto_items(self, obj):
         mto = []
@@ -72,11 +75,22 @@ class OrderSerializer(serializers.ModelSerializer):
     
     def get_timeline(self, obj):
         return obj.get_timeline()
-
+    
     def get_invoice_number(self, obj):
         if hasattr(obj, 'invoice') and obj.invoice:
             return obj.invoice.invoice_number
         return None
+    
+    def get_subtotal_excl_tax(self, obj):
+        """Calculate base amount (excluding 3% GST)."""
+        from decimal import Decimal
+        return round(obj.subtotal / Decimal('1.03'), 2)
+
+    def get_gst_amount(self, obj):
+        """Calculate GST amount (3% inclusive)."""
+        from decimal import Decimal
+        base = obj.subtotal / Decimal('1.03')
+        return round(obj.subtotal - base, 2)
 
 
 class _ItemInput(serializers.Serializer):
@@ -159,6 +173,8 @@ class OrderCreateSerializer(serializers.Serializer):
 
                     unit_price = instance.price or instance.calculated_price
                     subtotal += unit_price
+                    # product.price is GST-inclusive, store it as-is
+                    # Tax breakdown happens at invoice level
                     OrderItem.objects.create(
                         order=order, instance=instance, product_name=design.name,
                         variant_label=f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else ""),
@@ -182,6 +198,8 @@ class OrderCreateSerializer(serializers.Serializer):
                     new_instance.price = unit_price
                     new_instance.save(update_fields=["price"])
                     subtotal += unit_price
+                    # product.price is GST-inclusive, store it as-is
+                    # Tax breakdown happens at invoice level
                     OrderItem.objects.create(
                         order=order, instance=new_instance, product_name=design.name,
                         variant_label=(f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else "") + " (Made to Order)"),
