@@ -1,13 +1,11 @@
 import io
-import os
 from decimal import Decimal
-from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
@@ -119,7 +117,8 @@ def generate_invoice_pdf(order, invoice_number):
     
     # Billing address
     elements.append(Paragraph("BILL TO:", heading_style))
-    elements.append(Paragraph(billing_address.replace('\n', '<br/>') if billing_address else 'N/A', styles['Normal']))
+    if billing_address:
+        elements.append(Paragraph(billing_address.replace('\n', '<br/>'), styles['Normal']))
     elements.append(Paragraph(f"Email: {customer_email}", styles['Normal']))
     if customer_phone:
         elements.append(Paragraph(f"Phone: {customer_phone}", styles['Normal']))
@@ -202,12 +201,11 @@ def generate_invoice_for_order(order):
     """Generate and save invoice for an order."""
     
     # Check if invoice already exists
-    if hasattr(order, 'invoice'):
-        try:
-            existing = order.invoice
-            return existing
-        except Invoice.DoesNotExist:
-            pass
+    try:
+        existing = order.invoice
+        return existing
+    except Invoice.DoesNotExist:
+        pass
     
     # Generate invoice number FIRST (before creating PDF)
     invoice_number = get_next_invoice_number()
