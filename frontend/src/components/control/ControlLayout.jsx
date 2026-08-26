@@ -102,7 +102,7 @@ export default function ControlLayout({ children }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="border border-line rounded-lg px-4 py-2 text-sm w-80 bg-white focus:outline-none focus:border-gold-dark"
             />
-            {searchResults && (searchResults.designs.length > 0 || searchResults.products.length > 0 || searchResults.orders.length > 0 || searchResults.customers.length > 0) && (
+            {searchResults && (searchResults.designs.length > 0 || searchResults.products.length > 0 || searchResults.orders.length > 0 || searchResults.customers.length > 0 || searchResults.invoices.length > 0) && (
               <div className="absolute top-full mt-2 right-0 w-96 bg-white border border-line rounded-lg shadow-hero z-50 max-h-96 overflow-y-auto">
                 {searchResults.products.length > 0 && (
                   <>
@@ -144,6 +144,17 @@ export default function ControlLayout({ children }) {
                       <Link key={`c-${c.id}`} href={`/control/customers/${c.id}`} onClick={clearSearch} className="block px-4 py-2 hover:bg-cream text-sm">
                         <p className="font-medium">{`${c.first_name} ${c.last_name}`.trim() || c.email}</p>
                         <p className="text-xs text-ink/50">{c.email}{c.phone ? ` · ${c.phone}` : ""}</p>
+                      </Link>
+                    ))}
+                  </>
+                )}
+                {searchResults.invoices && searchResults.invoices.length > 0 && (
+                  <>
+                    <p className="px-4 py-2 text-xs uppercase font-semibold bg-cream">Invoices</p>
+                    {searchResults.invoices.map((inv) => (
+                      <Link key={`inv-${inv.id}`} href={`/control/orders/${inv.order}`} onClick={clearSearch} className="block px-4 py-2 hover:bg-cream text-sm">
+                        <p className="font-medium font-mono">{inv.invoice_number}</p>
+                        <p className="text-xs text-ink/50">{inv.customer_name} · ₹{inv.total}</p>
                       </Link>
                     ))}
                   </>
