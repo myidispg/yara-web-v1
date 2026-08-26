@@ -178,7 +178,7 @@ class OrderCreateSerializer(serializers.Serializer):
                     OrderItem.objects.create(
                         order=order, instance=instance, product_name=design.name,
                         variant_label=f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else ""),
-                        quantity=1, unit_price=unit_price, line_total=unit_price)
+                        quantity=1, unit_price=unit_price, line_total=unit_price, is_mto_pending = True)
 
                 for _ in range(to_fabricate):
                     net_weight = design.calculate_net_weight(karat, ring_size)
@@ -203,7 +203,7 @@ class OrderCreateSerializer(serializers.Serializer):
                     OrderItem.objects.create(
                         order=order, instance=new_instance, product_name=design.name,
                         variant_label=(f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else "") + " (Made to Order)"),
-                        quantity=1, unit_price=unit_price, line_total=unit_price)
+                        quantity=1, unit_price=unit_price, line_total=unit_price, is_mto_pending = True)
 
             order.subtotal = subtotal
             order.shipping_fee = Decimal("0.00")

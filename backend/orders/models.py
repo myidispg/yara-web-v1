@@ -92,6 +92,8 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
 
+    is_mto_pending = models.BooleanField(default=False, help_text="MTO item awaiting product fulfillment")
+
     def __str__(self):
         return f"{self.quantity} × {self.product_name}"
 

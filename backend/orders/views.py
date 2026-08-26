@@ -139,3 +139,72 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         response_serializer = OrderSerializer(order)
         return Response(response_serializer.data)
+
+@action(detail=True, methods=['post'], url_path='map_product/(?P<item_id>[0-9]+)')
+def map_product(self, request, pk=None, item_id=None):
+    """Map a real product to an MTO OrderItem."""
+    from .models import OrderItem, Invoice
+    from orders.utils import generate_invoice_for_order
+    
+    order = self.get_object()
+    product_id = request.data.get('product_id')
+    
+    if not product_id:
+        return Response({'error': 'product_id is required'}, status=400)
+    
+    try:
+        # Get the OrderItem
+        item = OrderItem.objects.get(id=item_id, order=order)
+        
+        if not item.is_mto_pending:
+            return Response({'error': 'This item is not pending MTO fulfillment'}, status=400)
+        
+        # Get the real product
+        product = Product.objects.get(id=product_id)
+        
+        # Verify it matches the order requirements
+        original_product = item.instance
+        if (product.design != original_product.design or 
+            product.karat != original_product.karat or 
+            product.gold_color != original_product.gold_color):
+            return Response({'error': 'Product does not match order specifications'}, status=400)
+        
+        # Mark the old MTO placeholder as no longer needed
+        original_product.status = 'cancelled'  # or delete it
+        original_product.save()
+        
+        # Update the OrderItem to point to the real product
+        item.instance = product
+        item.is_mto_pending = False
+        item.save()
+        
+        # Mark the real product as sold
+        product.status = 'sold'
+        product.sold_to_user = order.user
+        product.sold_in_order = order
+        product.sold_at = timezone.now()
+        product.save()
+        
+        # If order has an invoice, regenerate it with the new product details
+        try:
+            old_invoice = order.invoice
+            old_invoice.pdf_file.delete()  # Delete old PDF
+            old_invoice.delete()  # Delete old invoice record
+        except:
+            pass  # No invoice yet
+        
+        # Generate new invoice
+        new_invoice = generate_invoice_for_order(order)
+        
+        return Response({
+            'success': True,
+            'message': f'Product {product.item_code} mapped to order',
+            'invoice_number': new_invoice.invoice_number
+        })
+        
+    except OrderItem.DoesNotExist:
+        return Response({'error': 'Order item not found'}, status=404)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
