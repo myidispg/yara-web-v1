@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from catalog.models import Product
 from .models import Address, Order, OrderItem
-from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer
+from .serializers import AddressSerializer, OrderCreateSerializer, OrderSerializer, InvoiceSerializer
 
 
 class AddressViewSet(viewsets.ModelViewSet):
@@ -73,6 +73,33 @@ class OrderViewSet(viewsets.ModelViewSet):
                 mto_items.append(f"{label} (Made to Order)")
 
         return Response({"mto_items": mto_items, "in_stock_items": in_stock_items})
+
+    @action(detail=True, methods=['get'])
+    def invoice(self, request, pk=None):
+        """Get invoice metadata for this order."""
+        order = self.get_object()
+        if not hasattr(order, 'invoice') or not order.invoice:
+            return Response({'error': 'No invoice for this order'}, status=404)
+        serializer = InvoiceSerializer(order.invoice)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='invoice/pdf')
+    def invoice_pdf(self, request, pk=None):
+        """Serve the invoice PDF for this order."""
+        from django.http import FileResponse
+        order = self.get_object()
+        if not hasattr(order, 'invoice') or not order.invoice.pdf_file:
+            return Response({'error': 'No invoice PDF available'}, status=404)
+        
+        try:
+            return FileResponse(
+                order.invoice.pdf_file.open('rb'),
+                content_type='application/pdf',
+                as_attachment=True,
+                filename=f"{order.invoice.invoice_number}.pdf"
+            )
+        except Exception as e:
+            return Response({'error': f'Failed to serve PDF: {str(e)}'}, status=500)
 
     def create(self, request, *args, **kwargs):
         """Override create to return the order serialized with OrderSerializer."""

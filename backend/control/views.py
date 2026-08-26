@@ -22,7 +22,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from accounts.models import User
 from accounts.permissions import IsStaff
 from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
-from orders.models import Order
+from orders.models import Order, Invoice
 
 from .models import AuditLog
 from .serializers import AuditLogSerializer
@@ -37,7 +37,8 @@ from .serializers import (
     DesignCreateSerializer, ProductInputSerializer, RateCardSerializer,
     StaffCategorySerializer, StaffDesignSerializer, StaffOrderSerializer,
     StaffProductSerializer, StaffUserSerializer, create_product_for_design, 
-    GoldRateHistorySerializer, NotificationSerializer, DesignUpdateSerializer
+    GoldRateHistorySerializer, NotificationSerializer, DesignUpdateSerializer,
+    StaffInvoiceSerializer
 )
 
 OPEN_STATUSES = ['placed', 'confirmed']
@@ -83,6 +84,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
         from django.utils import timezone
+        from orders.utils import generate_invoice_for_order
         import logging
         logger = logging.getLogger(__name__)
         
@@ -107,6 +109,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif new_status == 'delivered' and not order.delivered_at:
             order.delivered_at = now
             logger.info(f"Setting delivered_at for order {order.id}")
+            # Auto-generate invoice on delivery
+            try:
+                invoice = generate_invoice_for_order(order)
+                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
+            except Exception as e:
+                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
         elif new_status == 'cancelled' and not order.cancelled_at:
             order.cancelled_at = now
             logger.info(f"Setting cancelled_at for order {order.id}")
@@ -866,7 +874,7 @@ class GlobalSearchView(APIView):
     def get(self, request):
         q = (request.query_params.get('q') or '').strip()
         if len(q) < 2:
-            return Response({'designs': [], 'products': [], 'orders': [], 'customers': []})
+            return Response({'designs': [], 'products': [], 'orders': [], 'customers': [], 'invoices': []})
 
         designs = Design.objects.filter(
             Q(design_code__icontains=q) | Q(name__icontains=q)
@@ -889,11 +897,17 @@ class GlobalSearchView(APIView):
             Q(phone__icontains=q)
         )[:10]
 
+        invoices = Invoice.objects.filter(
+            Q(invoice_number__icontains=q) |
+            Q(order__order_number__icontains=q)
+        ).select_related('order', 'order__user')[:10]
+
         return Response({
             'designs': StaffDesignSerializer(designs, many=True).data,
             'products': StaffProductSerializer(products, many=True).data,
             'orders': StaffOrderSerializer(orders, many=True).data,
             'customers': StaffUserSerializer(customers, many=True).data,
+            'invoices': StaffInvoiceSerializer(invoices, many=True).data,
         })
 
 class PricePreviewView(APIView):
@@ -917,3 +931,27 @@ class PricePreviewView(APIView):
             diamond_grade=grade,
         )
         return Response({'price': price})
+
+class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only viewset for invoices (staff only)."""
+    permission_classes = [IsStaff]
+    serializer_class = StaffInvoiceSerializer
+    queryset = Invoice.objects.all().select_related('order', 'order__user').order_by('-generated_at')
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Serve the invoice PDF."""
+        from django.http import FileResponse
+        invoice = self.get_object()
+        if not invoice.pdf_file:
+            return Response({'error': 'No PDF available'}, status=404)
+        
+        try:
+            return FileResponse(
+                invoice.pdf_file.open('rb'),
+                content_type='application/pdf',
+                as_attachment=True,
+                filename=f"{invoice.invoice_number}.pdf"
+            )
+        except Exception as e:
+            return Response({'error': f'Failed to serve PDF: {str(e)}'}, status=500)

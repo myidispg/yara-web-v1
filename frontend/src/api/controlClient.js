@@ -88,6 +88,11 @@ const controlApi = {
 
   // Search analytics
   getSearchAnalytics: (days = 30) => api.get("/control/search-analytics/", { params: { days } }),
+
+  // Invoices
+  getInvoices: () => api.get("/control/invoices/"),
+  getInvoice: (id) => api.get(`/control/invoices/${id}/`),
+  downloadInvoice: (id) => api.get(`/control/invoices/${id}/pdf/`, { responseType: 'blob' }),
 };
 
 export default controlApi;

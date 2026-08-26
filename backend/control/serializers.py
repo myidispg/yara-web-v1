@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from accounts.models import User
 from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, Invoice
 from catalog.serializers import ProductMediaSerializer
 
 from .models import AuditLog
@@ -178,13 +178,16 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     customer_phone = serializers.SerializerMethodField()
     address = serializers.SerializerMethodField()
     timeline = serializers.SerializerMethodField()
+    invoice_number = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_number', 'customer_email', 'customer_name', 'customer_phone',
                   'customer_id', 'status', 'payment_method', 'transaction_id', 'subtotal', 
                   'shipping_fee', 'total', 'created_at', 'items', 'address', 'timeline',
-                  'placed_at', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at']
+                  'placed_at', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at',
+                  'invoice_number', 'invoice_id']
 
     def get_customer_name(self, obj):
         full = f"{obj.user.first_name} {obj.user.last_name}".strip()
@@ -206,6 +209,16 @@ class StaffOrderSerializer(serializers.ModelSerializer):
     
     def get_timeline(self, obj):
         return obj.get_timeline()
+
+    def get_invoice_number(self, obj):
+        if hasattr(obj, 'invoice') and obj.invoice:
+            return obj.invoice.invoice_number
+        return None
+
+    def get_invoice_id(self, obj):
+        if hasattr(obj, 'invoice') and obj.invoice:
+            return obj.invoice.id
+        return None
 
 
 # ── Creation (wizard / add product) ───────────────────────────────────
@@ -405,3 +418,21 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'deleted': 'deleted',
         }.get(obj.action, obj.action)
         return f"{actor} {verb} {obj.model_name} '{obj.object_repr}'"
+
+class StaffInvoiceSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    order_status = serializers.CharField(source='order.status', read_only=True)
+    customer_email = serializers.EmailField()
+    pdf_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_number', 'order_number', 'order_status', 
+                  'customer_name', 'customer_email', 'customer_phone',
+                  'subtotal', 'gst_amount', 'gst_percentage', 'total', 
+                  'generated_at', 'pdf_url']
+    
+    def get_pdf_url(self, obj):
+        if obj.pdf_file:
+            return obj.pdf_file.url
+        return None

@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from accounts.models import User
 from catalog.models import Design, Product, RateCard
-from .models import Address, Order, OrderItem
+from .models import Address, Order, OrderItem, Invoice
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -53,13 +53,14 @@ class OrderSerializer(serializers.ModelSerializer):
     address = AddressSerializer(read_only=True)
     mto_items = serializers.SerializerMethodField()
     timeline = serializers.SerializerMethodField()
+    invoice_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ["id", "order_number", "status", "payment_method", "transaction_id",
                   "subtotal", "shipping_fee", "total", "created_at", "address", 
                   "items", "mto_items", "timeline", "placed_at", "confirmed_at", 
-                  "shipped_at", "delivered_at", "cancelled_at"]
+                  "shipped_at", "delivered_at", "cancelled_at", "invoice_number"]
 
     def get_mto_items(self, obj):
         mto = []
@@ -71,6 +72,11 @@ class OrderSerializer(serializers.ModelSerializer):
     
     def get_timeline(self, obj):
         return obj.get_timeline()
+
+    def get_invoice_number(self, obj):
+        if hasattr(obj, 'invoice') and obj.invoice:
+            return obj.invoice.invoice_number
+        return None
 
 
 class _ItemInput(serializers.Serializer):
@@ -91,6 +97,19 @@ def mto_price(design, karat, ring_size, grade):
     gst = (gold_value + dia_value + making) * (float(rc.gst_percentage) / 100)
     return round(gold_value + dia_value + making + gst)
 
+class InvoiceSerializer(serializers.ModelSerializer):
+    pdf_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_number', 'generated_at', 'subtotal', 'gst_amount', 
+                  'gst_percentage', 'total', 'customer_name', 'customer_email', 
+                  'customer_phone', 'billing_address', 'pdf_url']
+    
+    def get_pdf_url(self, obj):
+        if obj.pdf_file:
+            return obj.pdf_file.url
+        return None
 
 class OrderCreateSerializer(serializers.Serializer):
     address = serializers.PrimaryKeyRelatedField(queryset=Address.objects.all())
