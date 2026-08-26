@@ -422,12 +422,13 @@ class AuditLogSerializer(serializers.ModelSerializer):
 class StaffInvoiceSerializer(serializers.ModelSerializer):
     order_number = serializers.CharField(source='order.order_number', read_only=True)
     order_status = serializers.CharField(source='order.status', read_only=True)
+    order = serializers.IntegerField(source='order.id', read_only=True)
     customer_email = serializers.EmailField()
     pdf_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Invoice
-        fields = ['id', 'invoice_number', 'order_number', 'order_status', 
+        fields = ['id', 'invoice_number', 'order', 'order_number', 'order_status', 
                   'customer_name', 'customer_email', 'customer_phone',
                   'subtotal', 'gst_amount', 'gst_percentage', 'total', 
                   'generated_at', 'pdf_url']
