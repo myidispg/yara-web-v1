@@ -29,6 +29,9 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const [mtoModal, setMtoModal] = useState(null);
+    const [availableProducts, setAvailableProducts] = useState([]);
+
     useEffect(() => { document.title = "Order | Control Panel"; }, []);
 
     useEffect(() => {
@@ -68,6 +71,38 @@ export default function OrderDetailPage() {
             }
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const openMtoModal = async (item) => {
+        setMtoModal(item);
+        // Fetch available products for this design
+        try {
+            const { data } = await controlApi.getInstances();
+            const matching = data.filter(p =>
+                p.design_id === item.design_id &&
+                p.karat === item.karat &&
+                p.gold_color === item.gold_color &&
+                p.status === 'in_stock'
+            );
+            setAvailableProducts(matching);
+        } catch (err) {
+            console.error("Failed to load products:", err);
+        }
+    };
+
+    const mapProduct = async (productId) => {
+        try {
+            await controlApi.post(`/control/orders/${order.id}/map_product/${mtoModal.id}/`, {
+                product_id: productId
+            });
+            // Reload the order
+            const { data: freshOrder } = await controlApi.getOrder(order.id);
+            setOrder(freshOrder);
+            setMtoModal(null);
+            alert("Product mapped successfully!");
+        } catch (err) {
+            alert("Failed to map product: " + (err.response?.data?.error || err.message));
         }
     };
 
@@ -311,6 +346,18 @@ export default function OrderDetailPage() {
                                         <td className="px-6 py-4 text-sm text-ink/70">{it.variant_label || "—"}</td>
                                         <td className="px-6 py-4 text-sm text-right">{it.quantity}</td>
                                         <td className="px-6 py-4 text-sm text-right font-semibold">{inr(it.total_price)}</td>
+                                        <td className="px-6 py-4 text-sm">
+                                            {it.is_mto_pending ? (
+                                                <button
+                                                    onClick={() => openMtoModal(it)}
+                                                    className="btn-outline text-xs"
+                                                >
+                                                    Map Product
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-green-600">✓ Mapped</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -330,6 +377,57 @@ export default function OrderDetailPage() {
                     </div>
                 </div>
             </div>
+            {mtoModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                        <h2 className="font-serif text-2xl mb-4">Map Product to MTO Order</h2>
+                        <p className="text-sm text-ink/70 mb-4">
+                            Select a fabricated product to map to this order:
+                        </p>
+                        <div className="space-y-3 mb-6">
+                            {availableProducts.length === 0 ? (
+                                <p className="text-center text-ink/60 py-8">
+                                    No matching products available. Add a new product first.
+                                </p>
+                            ) : (
+                                availableProducts.map((product) => (
+                                    <div key={product.id} className="border border-line rounded-lg p-4 hover:border-gold">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-mono font-semibold">{product.item_code}</p>
+                                                <p className="text-sm text-ink/70">
+                                                    {product.karat} {product.gold_color} Gold
+                                                    {product.ring_size && ` · Size ${product.ring_size}`}
+                                                </p>
+                                                <p className="text-xs text-ink/50 mt-1">
+                                                    Hallmark: {product.hallmark_number || "—"} ·
+                                                    Report: {product.report_number || "—"}
+                                                </p>
+                                                <p className="text-xs text-ink/50">
+                                                    Weight: {product.actual_net_weight}g ·
+                                                    Diamond: {product.actual_diamond_weight}ct
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => mapProduct(product.id)}
+                                                className="btn-solid text-sm"
+                                            >
+                                                Map to Order
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <button
+                            onClick={() => setMtoModal(null)}
+                            className="btn-outline w-full"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

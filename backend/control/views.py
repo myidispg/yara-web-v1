@@ -165,6 +165,52 @@ class OrderViewSet(viewsets.ModelViewSet):
                 item.instance.sold_in_order = None
                 item.instance.save()
 
+    @action(detail=False, methods=['get'], url_path='mto_pending')
+    def mto_pending(self, request):
+        """Get all orders with MTO items pending fulfillment."""
+        from orders.models import OrderItem
+        
+        # Find orders with MTO items
+        mto_items = OrderItem.objects.filter(
+            is_mto_pending=True
+        ).select_related('order', 'order__user', 'instance').order_by('-order__created_at')
+        
+        # Group by order
+        orders_dict = {}
+        for item in mto_items:
+            order = item.order
+            if order.id not in orders_dict:
+                orders_dict[order.id] = {
+                    'order': order,
+                    'mto_items': []
+                }
+            orders_dict[order.id]['mto_items'].append(item)
+        
+        # Serialize
+        result = []
+        for order_id, data in orders_dict.items():
+            order = data['order']
+            result.append({
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'customer_name': f"{order.user.first_name} {order.user.last_name}".strip() or order.user.email,
+                'customer_email': order.user.email,
+                'created_at': order.created_at.isoformat(),
+                'status': order.status,
+                'mto_items': [
+                    {
+                        'item_id': item.id,
+                        'product_name': item.product_name,
+                        'variant_label': item.variant_label,
+                        'design_id': item.instance.design.id if item.instance else None,
+                        'design_code': item.instance.design.design_code if item.instance else None,
+                    }
+                    for item in data['mto_items']
+                ]
+            })
+        
+        return Response(result)
+
 
 class DesignViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
