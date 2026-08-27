@@ -211,6 +211,75 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         return Response(result)
 
+    @action(detail=True, methods=['post'], url_path='map_product/(?P<item_id>[0-9]+)')
+    def map_product(self, request, pk=None, item_id=None):
+        """Map a real product to an MTO OrderItem."""
+        from orders.models import OrderItem, Invoice
+        from orders.utils import generate_invoice_for_order
+        from catalog.models import Product
+        from django.utils import timezone
+        
+        order = self.get_object()
+        product_id = request.data.get('product_id')
+        
+        if not product_id:
+            return Response({'error': 'product_id is required'}, status=400)
+        
+        try:
+            item = OrderItem.objects.get(id=item_id, order=order)
+            
+            if not item.is_mto_pending:
+                return Response({'error': 'This item is not pending MTO fulfillment'}, status=400)
+            
+            product = Product.objects.get(id=product_id)
+            original_product = item.instance
+            
+            # Verify it matches the order requirements
+            if (product.design != original_product.design or 
+                product.karat != original_product.karat or 
+                product.gold_color != original_product.gold_color):
+                return Response({'error': 'Product does not match order specifications'}, status=400)
+            
+            # Mark the old MTO placeholder as cancelled
+            original_product.status = 'cancelled'
+            original_product.save()
+            
+            # Update the OrderItem to point to the real product
+            item.instance = product
+            item.is_mto_pending = False
+            item.save()
+            
+            # Mark the real product as sold
+            product.status = 'sold'
+            product.sold_to_user = order.user
+            product.sold_in_order = order
+            product.sold_at = timezone.now()
+            product.save()
+            
+            # If order has an invoice, regenerate it with the new product details
+            try:
+                old_invoice = order.invoice
+                if old_invoice.pdf_file:
+                    old_invoice.pdf_file.delete()
+                old_invoice.delete()
+            except Invoice.DoesNotExist:
+                pass
+            
+            # Generate new invoice if order is already delivered
+            if order.status == 'delivered':
+                generate_invoice_for_order(order)
+            
+            # Return updated order
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
+            
+        except OrderItem.DoesNotExist:
+            return Response({'error': 'Order item not found'}, status=404)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
 
 class DesignViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]

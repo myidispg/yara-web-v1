@@ -28,7 +28,6 @@ export default function OrderDetailPage() {
     const { id } = useParams();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-
     const [mtoModal, setMtoModal] = useState(null);
     const [availableProducts, setAvailableProducts] = useState([]);
 
@@ -51,6 +50,62 @@ export default function OrderDetailPage() {
 
     const st = STATUS[order.status] || { label: order.status, cls: "bg-gray-100 text-gray-800" };
 
+    const openMtoModal = async (item) => {
+        setMtoModal(item);
+        try {
+            const { data } = await controlApi.getInstances();
+            const products = data.results || data;
+
+            console.log("--- MTO DEBUG ---");
+            console.log("MTO Item:", item);
+            console.log("Total fetched:", products.length);
+
+            // STEP 1: Find ALL products for this specific design
+            const sameDesign = products.filter(p => p.design_id == item.design_id);
+            console.log(`Products found for design ${item.design_code}:`, sameDesign.length, sameDesign);
+
+            // STEP 2: If we found products for this design, log their exact field values
+            if (sameDesign.length > 0) {
+                console.log("First product exact fields:", {
+                    id: sameDesign[0].id,
+                    design_id: sameDesign[0].design_id,
+                    karat: sameDesign[0].karat,
+                    gold_color: sameDesign[0].gold_color,
+                    diamond_grade: sameDesign[0].diamond_grade,
+                    status: sameDesign[0].status
+                });
+            } else {
+                console.warn("⚠️ NO products found for this design in the fetched list! (Likely a pagination issue if you have >24 total products)");
+            }
+
+            // STEP 3: Run the actual filter
+            const matching = products.filter(p => 
+                p.design_id == item.design_id && 
+                p.karat === item.karat && 
+                p.gold_color === item.gold_color && 
+                p.status === 'in_stock' && 
+                p.diamond_grade === item.diamond_grade
+            );
+            
+            console.log("Final matching products:", matching.length);
+            setAvailableProducts(matching);
+        } catch (err) {
+            console.error("Failed to load products:", err);
+            setAvailableProducts([]);
+        }
+    };
+
+    const mapProduct = async (productId) => {
+        try {
+            const { data } = await controlApi.mapProductToOrder(order.id, mtoModal.id, productId);
+            setOrder(data);
+            setMtoModal(null);
+            alert("Product mapped successfully!");
+        } catch (err) {
+            alert("Failed to map product: " + (err.response?.data?.error || err.message));
+        }
+    };
+
     const updateStatus = async (newStatus) => {
         const labels = {
             confirmed: "Confirm this order?",
@@ -71,38 +126,6 @@ export default function OrderDetailPage() {
             }
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
-        }
-    };
-
-    const openMtoModal = async (item) => {
-        setMtoModal(item);
-        // Fetch available products for this design
-        try {
-            const { data } = await controlApi.getInstances();
-            const matching = data.filter(p =>
-                p.design_id === item.design_id &&
-                p.karat === item.karat &&
-                p.gold_color === item.gold_color &&
-                p.status === 'in_stock'
-            );
-            setAvailableProducts(matching);
-        } catch (err) {
-            console.error("Failed to load products:", err);
-        }
-    };
-
-    const mapProduct = async (productId) => {
-        try {
-            await controlApi.post(`/control/orders/${order.id}/map_product/${mtoModal.id}/`, {
-                product_id: productId
-            });
-            // Reload the order
-            const { data: freshOrder } = await controlApi.getOrder(order.id);
-            setOrder(freshOrder);
-            setMtoModal(null);
-            alert("Product mapped successfully!");
-        } catch (err) {
-            alert("Failed to map product: " + (err.response?.data?.error || err.message));
         }
     };
 
@@ -326,6 +349,7 @@ export default function OrderDetailPage() {
                                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
                                     <th className="text-right px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Qty</th>
                                     <th className="text-right px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Total</th>
+                                    <th className="text-center px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Fulfillment</th>
                                 </tr>
                             </thead>
                             <tbody>

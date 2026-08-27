@@ -160,11 +160,19 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
     design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
     design_code = serializers.CharField(source='instance.design.design_code', read_only=True)
     design_name = serializers.CharField(source='instance.design.name', read_only=True)
+    is_mto_pending = serializers.BooleanField(read_only=True)
+    item_code = serializers.CharField(source='instance.item_code', read_only=True)
+    hallmark_number = serializers.CharField(source='instance.hallmark_number', read_only=True)
+    report_number = serializers.CharField(source='instance.report_number', read_only=True)
+    karat = serializers.CharField(source='instance.karat', read_only=True)
+    gold_color = serializers.CharField(source='instance.gold_color', read_only=True)
+    diamond_grade = serializers.CharField(source='instance.diamond_grade', read_only=True)
 
     class Meta:
         model = OrderItem
         fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
-                  'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name']
+                  'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name',
+                  'is_mto_pending', 'item_code', 'hallmark_number', 'report_number', 'karat', 'gold_color', 'diamond_grade']
 
     def get_total_price(self, obj):
         return float(obj.line_total) if obj.line_total else float(obj.unit_price) * int(obj.quantity)
