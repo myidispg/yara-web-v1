@@ -384,7 +384,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['design_code', 'design_name', 'item_code', 'karat', 'gold_color', 'ring_size',
                     'diamond_grade', 'actual_net_weight', 'actual_melle', 'actual_pointer',
-                    'actual_fancy', 'actual_color_stone', 'cert_lab', 'cert_number', 'hallmark_number'])
+                    'actual_fancy', 'actual_color_stone', 'report_lab', 'report_number', 'hallmark_number'])
         w.writerow(['RG-001', 'Aura Diamond Ring', 'YRA-RG001-001', '18Kt', 'Yellow', '12', 'IJ/SI',
                     '3.500', '0.10', '0.50', '0.00', '0.00', 'IGI', '12345', 'HMK-001'])
         return response
@@ -456,10 +456,10 @@ class DesignViewSet(viewsets.ModelViewSet):
             if melle + pointer + fancy > 50:
                 errs.append('Total diamond weight must be <= 50 Ct')
 
-            cl = (row.get('cert_lab') or '').strip()
-            cn = (row.get('cert_number') or '').strip()
+            cl = (row.get('report_lab') or '').strip()
+            cn = (row.get('report_number') or '').strip()
             if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
-                errs.append(f'Cert {cl} #{cn} already exists')
+                errs.append(f'Report {cl} #{cn} already exists')
             hm = (row.get('hallmark_number') or '').strip()
             if hm and Product.objects.filter(hallmark_number=hm).exists():
                 errs.append(f'Hallmark "{hm}" already exists')
@@ -507,7 +507,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
                     'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
-                    'cert_lab', 'cert_number', 'hallmark_number', 'price', 'status'])
+                    'report_lab', 'report_number', 'hallmark_number', 'price', 'status'])
         qs = Product.objects.select_related('design', 'design__category').all()
         ids = request.query_params.get('ids')
         if ids:
@@ -524,8 +524,19 @@ class DesignViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffProductSerializer
-    queryset = Product.objects.all()
 
+    def get_queryset(self):
+        qs = Product.objects.all()
+        # Optional filter: only return products for a specific design
+        design_id = self.request.query_params.get('design_id')
+        if design_id:
+            qs = qs.filter(design_id=design_id)
+        # Optional filter: only return in-stock products
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
+    
     def perform_update(self, serializer):
         """Recalculate price based on current karat + grade + weights."""
         instance = serializer.instance
