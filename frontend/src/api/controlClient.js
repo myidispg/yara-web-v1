@@ -8,6 +8,7 @@ const controlApi = {
   getOrders: () => api.get("/control/orders/"),
   getOrder: (id) => api.get(`/control/orders/${id}/`),
   updateOrderStatus: (id, status) => api.post(`/control/orders/${id}/update_status/`, { status }),
+  mapProductToOrder: (orderId, itemId, productId) => api.post(`/control/orders/${orderId}/map_product/${itemId}/`, { product_id: productId }),
   cancelOrder: (id) => api.post(`/control/orders/${id}/cancel/`),
 
   // Designs (blueprints)
@@ -31,7 +32,7 @@ const controlApi = {
   updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
 
   // Products (physical pieces)
-  getInstances: () => api.get("/control/instances/"),
+  getInstances: (params = {}) => api.get("/control/instances/", { params }),
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
   getProductDetail: (id) => api.get(`/control/instances/${id}/`),

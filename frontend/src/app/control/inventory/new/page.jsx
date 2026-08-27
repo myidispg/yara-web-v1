@@ -355,19 +355,19 @@ export default function NewPage() {
                     </div>
                     <div>
                         <label className={labelCls}>Actual Melle (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_melle} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_melle ?? ""} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Pointer (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_pointer} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_pointer ?? ""} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Fancy (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_fancy} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_fancy ?? ""} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Actual Color Stone (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_cstone} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
+                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_cstone ?? ""} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
                         <label className={labelCls}>Cert Lab</label>
