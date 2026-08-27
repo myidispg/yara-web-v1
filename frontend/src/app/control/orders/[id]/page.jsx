@@ -52,42 +52,22 @@ export default function OrderDetailPage() {
 
     const openMtoModal = async (item) => {
         setMtoModal(item);
+        setAvailableProducts([]);
         try {
-            const { data } = await controlApi.getInstances();
+            // Only fetch products for this specific design that are in stock
+            const { data } = await controlApi.getInstances({
+                design_id: item.design_id,
+                status: 'in_stock'
+            });
             const products = data.results || data;
 
-            console.log("--- MTO DEBUG ---");
-            console.log("MTO Item:", item);
-            console.log("Total fetched:", products.length);
-
-            // STEP 1: Find ALL products for this specific design
-            const sameDesign = products.filter(p => p.design_id == item.design_id);
-            console.log(`Products found for design ${item.design_code}:`, sameDesign.length, sameDesign);
-
-            // STEP 2: If we found products for this design, log their exact field values
-            if (sameDesign.length > 0) {
-                console.log("First product exact fields:", {
-                    id: sameDesign[0].id,
-                    design_id: sameDesign[0].design_id,
-                    karat: sameDesign[0].karat,
-                    gold_color: sameDesign[0].gold_color,
-                    diamond_grade: sameDesign[0].diamond_grade,
-                    status: sameDesign[0].status
-                });
-            } else {
-                console.warn("⚠️ NO products found for this design in the fetched list! (Likely a pagination issue if you have >24 total products)");
-            }
-
-            // STEP 3: Run the actual filter
-            const matching = products.filter(p => 
-                p.design_id == item.design_id && 
-                p.karat === item.karat && 
-                p.gold_color === item.gold_color && 
-                p.status === 'in_stock' && 
+            const matching = products.filter(p =>
+                p.design_id == item.design_id &&
+                p.karat === item.karat &&
+                p.gold_color === item.gold_color &&
                 p.diamond_grade === item.diamond_grade
             );
-            
-            console.log("Final matching products:", matching.length);
+
             setAvailableProducts(matching);
         } catch (err) {
             console.error("Failed to load products:", err);

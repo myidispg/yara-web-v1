@@ -174,7 +174,7 @@ export default function ControlProductPage() {
                     <Row label="Ring Size" value={p.ring_size || "—"} />
                     <Row label="Diamond Grade" value={p.diamond_grade} />
                     <Row label="Hallmark (HUID)" value={p.hallmark_number || "—"} />
-                    <Row label="Certificate" value={p.report_number ? `${p.report_lab} #${p.report_number}` : "—"} />
+                    <Row label="Diamond Report" value={p.report_number ? `${p.report_lab} #${p.report_number}` : "—"} />
                 </div>
 
                 {/* Weights & Pricing */}
@@ -272,11 +272,11 @@ export default function ControlProductPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Certificate Lab</label>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Lab</label>
                                     <input value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IGI, GIA" />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Certificate Number</label>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Number</label>
                                     <input value={editForm.report_number} onChange={(e) => setEditForm({ ...editForm, report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
                                 </div>
                             </div>

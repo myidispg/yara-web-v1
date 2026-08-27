@@ -370,13 +370,13 @@ export default function NewPage() {
                         <input type="number" step="0.01" min="0" max={50} value={productForm.a_cstone ?? ""} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
                     </div>
                     <div>
-                        <label className={labelCls}>Cert Lab</label>
+                        <label className={labelCls}>Diamond Report Lab</label>
                         <select value={productForm.report_lab} onChange={(e) => setProductForm({ ...productForm, report_lab: e.target.value })} className={inputCls}>
                             <option>IGI</option><option>GIA</option><option>SGL</option>
                         </select>
                     </div>
                     <div>
-                        <label className={labelCls}>Cert Number</label>
+                        <label className={labelCls}>Diamond Report Number</label>
                         <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} maxLength={100} className={inputCls} />
                     </div>
                     <div>
