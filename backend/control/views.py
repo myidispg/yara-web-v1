@@ -1062,7 +1062,30 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only viewset for invoices (staff only)."""
     permission_classes = [IsStaff]
     serializer_class = StaffInvoiceSerializer
-    queryset = Invoice.objects.all().select_related('order', 'order__user').order_by('-generated_at')
+
+    def get_queryset(self):
+        qs = Invoice.objects.all().select_related('order', 'order__user').order_by('-generated_at')
+        
+        # Filter by year
+        year = self.request.query_params.get('year')
+        if year:
+            qs = qs.filter(generated_at__year=int(year))
+        
+        # Filter by month
+        month = self.request.query_params.get('month')
+        if month:
+            qs = qs.filter(generated_at__month=int(month))
+        
+        # Search by invoice number or order number
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(invoice_number__icontains=search) |
+                Q(order__order_number__icontains=search) |
+                Q(customer_name__icontains=search)
+            )
+        
+        return qs
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
@@ -1081,3 +1104,85 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             )
         except Exception as e:
             return Response({'error': f'Failed to serve PDF: {str(e)}'}, status=500)
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_invoices(self, request):
+        """Export invoices as CSV with optional year/month filters."""
+        import csv
+        from django.http import HttpResponse
+        
+        qs = self.get_queryset()
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        w = csv.writer(response)
+        
+        # Headers
+        w.writerow([
+            'invoice_number', 'order_number', 'customer_name', 'customer_email',
+            'subtotal_excl_tax', 'gst_amount', 'gst_percentage', 'total',
+            'generated_at', 'order_status'
+        ])
+        
+        for inv in qs:
+            w.writerow([
+                inv.invoice_number,
+                inv.order.order_number,
+                inv.customer_name,
+                inv.customer_email,
+                float(inv.subtotal),
+                float(inv.gst_amount),
+                float(inv.gst_percentage),
+                float(inv.total),
+                inv.generated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                inv.order.status
+            ])
+        
+        return response
+
+    @action(detail=False, methods=['get'], url_path='export_pdfs')
+    def export_pdfs(self, request):
+        """Export all filtered invoices as PDF files in a ZIP archive, organized by year/month."""
+        import zipfile
+        import io
+        from django.http import HttpResponse
+        import calendar
+        
+        qs = self.get_queryset()
+        invoices_with_pdfs = [inv for inv in qs if inv.pdf_file]
+        
+        if not invoices_with_pdfs:
+            return Response({'error': 'No invoices found for the selected filters. Nothing to export.'}, status=400)
+        
+        # Create ZIP in memory with folder structure
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for inv in invoices_with_pdfs:
+                try:
+                    # Build folder path: Year/MonthName/
+                    invoice_date = inv.generated_at
+                    year_str = str(invoice_date.year)
+                    month_str = calendar.month_name[invoice_date.month]  # e.g., "August"
+                    folder_path = f"{year_str}/{month_str}/"
+                    
+                    # Read PDF and add to ZIP with folder path
+                    pdf_content = inv.pdf_file.read()
+                    zip_file.writestr(f"{folder_path}{inv.invoice_number}.pdf", pdf_content)
+                    inv.pdf_file.close()
+                except Exception as e:
+                    continue
+        
+        buffer.seek(0)
+        
+        # Build filename based on filters
+        year = request.query_params.get('year', '')
+        month = request.query_params.get('month', '')
+        filename = "invoices"
+        if year:
+            filename += f"_{year}"
+        if month:
+            filename += f"_month{month}"
+        
+        response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{filename}.zip"'
+        return response

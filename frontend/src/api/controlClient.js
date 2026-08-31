@@ -91,9 +91,11 @@ const controlApi = {
   getSearchAnalytics: (days = 30) => api.get("/control/search-analytics/", { params: { days } }),
 
   // Invoices
-  getInvoices: () => api.get("/control/invoices/"),
+  getInvoices: (params = {}) => api.get("/control/invoices/", { params }),
   getInvoice: (id) => api.get(`/control/invoices/${id}/`),
   downloadInvoice: (id) => api.get(`/control/invoices/${id}/pdf/`, { responseType: 'blob' }),
+  exportInvoices: (params = {}) => api.get("/control/invoices/export/", { params, responseType: 'blob' }),
+  exportInvoicePdfs: (params = {}) => api.get("/control/invoices/export_pdfs/", { params, responseType: 'blob' }),
 };
 
 export default controlApi;
