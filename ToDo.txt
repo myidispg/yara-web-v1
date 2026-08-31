@@ -4,27 +4,8 @@
 
 3. Add Google Validation for sign up and login, OTP validation.
 
-4. Check whether stock is shown correctly when the admin panel is made. Like in stock items and made to order 
-combinations are correctly shown, made on order and buy now logic is correct etc. 
 
 5. Better zoom functionality is needed for the product media. 
-
-7. Save the name, address etc of the person when they make an order. Basically, complete user profile is needed. We can also ask age, gender.
-
-8. Clicking on an order should show me the order details, placed on etc from the user's profile.
-
-9. Create a Control Panel to set rates, upload products, manage stock, manage users, their orders, current orders, past orders etc.
-This also allows category management, products move from one category to other categories and subcategories
-
-10. Making Charges can be in per gram basis instead of percentage. 
-
-11. MTO process, it automatic creates a product instance and sets status to sold. What I need is that it creates an order to fulfill. when we get the item made, we will enter into a control panel. So, that's how this will go. That item get's assigned to the order, and get's sold to the user in that order number
-
-12. In the control panel and on the rate_card page, it shows that updating rates changes rate for made on order items and in stock items' prices are static. Make them all dynamic.
-
-13. Implement search functionality in the website. (Done)
-
-14. Search functionality on the control panel and inventory (search for customer, design, product, certificates, hallmark, invoice) (Done)
 
 15. Create invoicing system and more importantly, a list of past all invoices.
 
