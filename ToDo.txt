@@ -30,6 +30,9 @@
 
 25. In the analytics, how many items we have in stock, how many grams of gold (14kt, 18kt) and how many carats of diamonds.
 
+26. Suppose that in category page with 500 items, I scrolled down to page 15 of pagination. And I clicked on a product and 
+    then from that product, i came back. It should remember my position and scroll down to that automatically.
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
