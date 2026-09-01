@@ -299,7 +299,7 @@ export default function CategoryPage() {
                             <p className="text-sm text-gray-500">Loading designs…</p>
                         ) : items.length ? (
                             <>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">{cells}</div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">{cells}</div>
                                 {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
                                 {loadingMore && <p className="text-center text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-6 font-bold">Loading more designs…</p>}
                                 {!hasMore && total > PAGE && <p className="text-center text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-8 font-bold">You've viewed all {total} designs.</p>}
