@@ -17,14 +17,25 @@
 
   body {
     @apply antialiased leading-relaxed;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
     background-color: var(--bg-cream);
     color: var(--navy-deep);
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'Cormorant Garamond', serif;
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
     color: var(--navy-deep);
+  }
+
+  .font-serif-luxury {
+    font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  }
+
+  .font-cursive {
+    font-family: var(--font-alex), 'Alex Brush', cursive;
   }
 }
 
@@ -34,27 +45,27 @@
     background: linear-gradient(135deg, #E5BDB0 0%, #D88C7D 100%);
     color: var(--navy-deep);
   }
-  
+
   .btn-solid:hover {
     opacity: 0.95;
   }
-  
+
   .btn-outline {
     @apply inline-flex items-center justify-center border-2 bg-transparent uppercase tracking-[0.18em] text-[11px] font-bold px-8 py-4 rounded-full transition-all;
     border-color: var(--rose-gold);
     color: var(--navy-deep);
   }
-  
+
   .btn-outline:hover {
     border-color: var(--rose-accent);
     color: var(--rose-accent);
   }
-  
+
   .btn-navy {
     @apply inline-flex items-center justify-center gap-2 text-white uppercase tracking-widest text-xs font-bold px-8 py-4 rounded-full transition-all shadow-xl;
     background: linear-gradient(135deg, #1A2536 0%, #111A29 100%);
   }
-  
+
   .btn-navy:hover {
     background: var(--navy-darker);
   }
@@ -124,7 +135,7 @@
   .micro-label {
     @apply uppercase tracking-[0.16em] text-[10px] font-semibold;
   }
-  
+
   .eyebrow {
     @apply uppercase tracking-[0.22em] text-[11px] font-bold;
     color: var(--rose-accent);
@@ -153,7 +164,7 @@
   .card-hover {
     @apply transition-all duration-300;
   }
-  
+
   .card-hover:hover {
     box-shadow: 0 25px 50px -12px rgba(26, 37, 54, 0.15);
     border-color: var(--rose-accent);
@@ -168,23 +179,52 @@
 }
 
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #F5EFE6; }
-::-webkit-scrollbar-thumb { background: #D88C7D; border-radius: 10px; }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5EFE6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D88C7D;
+  border-radius: 10px;
+}
 
 @layer base {
-  ::selection { background: rgba(229, 189, 176, 0.4); color: #1A2536; }
-  :focus-visible { outline: 2px solid #D4AF37; outline-offset: 2px; }
+  ::selection {
+    background: rgba(229, 189, 176, 0.4);
+    color: #1A2536;
+  }
+
+  :focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 2px;
+  }
 }
 
 @keyframes slide-up {
-  from { transform: translateY(100%); opacity: 0.5; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .animate-slide-up {
