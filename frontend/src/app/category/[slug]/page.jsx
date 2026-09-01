@@ -255,38 +255,11 @@ export default function CategoryPage() {
                 <div className="absolute left-[-40px] bottom-[-40px] w-72 h-72 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none"></div>
             </div> */}
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 space-y-8">
+            <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 pt-8 pb-12 space-y-8">
                 {/* Breadcrumb */}
                 <p className="text-xs text-gray-500">
                     <Link href="/" className="hover:text-[#D88C7D]">Home</Link> / Jewellery / {title}
                 </p>
-
-                {/* Subcategories */}
-                {/* {subcategories.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-8 pb-6 border-b border-[#E5BDB0]/40">
-                        <button
-                            onClick={() => setSelectedSub("")}
-                            className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${!selectedSub
-                                ? "bg-[#1A2536] text-white shadow-md"
-                                : "bg-white text-[#1A2536] border border-[#E5BDB0] hover:border-[#D88C7D]"
-                                }`}
-                        >
-                            All
-                        </button>
-                        {subcategories.map((sub) => (
-                            <button
-                                key={sub.id}
-                                onClick={() => setSelectedSub(sub.slug)}
-                                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${selectedSub === sub.slug
-                                    ? "bg-[#1A2536] text-white shadow-md"
-                                    : "bg-white text-[#1A2536] border border-[#E5BDB0] hover:border-[#D88C7D]"
-                                    }`}
-                            >
-                                {sub.name}
-                            </button>
-                        ))}
-                    </div>
-                )} */}
 
                 {/* Toolbar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 glass-card-vibrant p-3 rounded-2xl border border-[#E5BDB0]">
@@ -311,7 +284,7 @@ export default function CategoryPage() {
                 </div>
 
                 {/* Main Grid */}
-                <div className="flex gap-6 lg:grid lg:grid-cols-[280px_1fr]">
+                <div className="flex gap-4 lg:grid lg:grid-cols-[240px_1fr]">
                     {/* Desktop Filters */}
                     <aside className="hidden lg:block space-y-6">
                         <div className="glass-card-vibrant p-6 rounded-3xl border border-[#E5BDB0] space-y-6">
@@ -326,7 +299,7 @@ export default function CategoryPage() {
                             <p className="text-sm text-gray-500">Loading designs…</p>
                         ) : items.length ? (
                             <>
-                                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">{cells}</div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">{cells}</div>
                                 {hasMore && <div ref={sentinelRef} className="h-10" aria-hidden="true" />}
                                 {loadingMore && <p className="text-center text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-6 font-bold">Loading more designs…</p>}
                                 {!hasMore && total > PAGE && <p className="text-center text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-8 font-bold">You've viewed all {total} designs.</p>}
