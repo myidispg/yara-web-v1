@@ -1,8 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -16,80 +16,190 @@ export default function CartPage() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        document.title = "Shopping Bag | YA-RA Jewels";
         setMounted(true);
+        document.title = "Shopping Bag | YA-RA Jewels";
     }, []);
 
-    // Server & initial client render: match exactly by showing the empty state.
-    if (!mounted) return (
+    const emptyState = (
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-            <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Shopping Bag</p>
-            <h1 className="text-4xl font-serif mb-4">Your bag is empty</h1>
-            <p className="text-sm text-ink/60 mb-8">Discover certified natural diamonds, handcrafted in 14Kt &amp; 18Kt solid gold.</p>
-            <Link href="/" className="btn-solid inline-block">Explore The Collection</Link>
+            <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">your selected favourites</span>
+            <h1 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536] mb-4">Your Bag is Empty</h1>
+            <p className="text-sm text-[#1A2536]/60 mb-8 max-w-md mx-auto leading-relaxed">
+                Discover certified natural diamonds, handcrafted in BIS hallmarked gold.
+            </p>
+            <Link 
+                href="/" 
+                className="inline-block px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl"
+            >
+                Explore The Collection
+            </Link>
         </div>
     );
 
-    if (!items.length)
-        return (
-            <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark mb-3">Shopping Bag</p>
-                <h1 className="text-4xl font-serif mb-4">Your bag is empty</h1>
-                <p className="text-sm text-ink/60 mb-8">Discover certified natural diamonds, handcrafted in 14Kt &amp; 18Kt solid gold.</p>
-                <Link href="/" className="btn-solid inline-block">Explore The Collection</Link>
-            </div>
-        );
+    if (!mounted) return emptyState;
+    if (!items.length) return emptyState;
 
     return (
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-            <h1 className="text-4xl font-serif mb-10">
-                Shopping Bag <span className="italic text-ink/50 text-2xl">({count} {count === 1 ? "Piece" : "Pieces"})</span>
-            </h1>
-
-            <div className="flex flex-col lg:flex-row gap-12 items-start">
-                {/* Items */}
-                <div className="flex-1 w-full space-y-6">
-                    {items.map((i) => (
-                        <div key={i.key} className="bg-white rounded-xl border border-line shadow-card p-5 flex gap-5">
-                            <Link href={`/product/${i.slug}`} className="bg-cream w-24 h-24 shrink-0 rounded-lg overflow-hidden">
-                                <img src={i.image} alt={i.name} className="w-full h-full object-cover" />
-                            </Link>
-                            <div className="flex-1 min-w-0">
-                                <Link href={`/product/${i.slug}`} className="font-serif text-lg text-ink hover:text-gold-dark">{i.name}</Link>
-                                <p className="text-xs text-ink/60 mt-1">{i.label}</p>
-                                <p className="text-[10px] uppercase tracking-[0.12em] text-ink/40 mt-1">Design {i.design_code}</p>
-                            </div>
-                            <div className="flex flex-col items-end justify-between shrink-0">
-                                <p className="font-semibold text-ink">{inr(i.unit_price * i.qty)}</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center border border-line rounded-md overflow-hidden">
-                                        <button onClick={() => setQty(i.key, i.qty - 1)} disabled={i.qty <= 1}
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-cream disabled:opacity-30">−</button>
-                                        <span className="w-8 h-8 flex items-center justify-center text-xs font-medium border-x border-line">{i.qty}</span>
-                                        <button onClick={() => setQty(i.key, i.qty + 1)}
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-cream">+</button>
-                                    </div>
-                                    <button onClick={() => removeItem(i.key)} className="text-[10px] uppercase tracking-[0.14em] text-ink/50 underline underline-offset-4 hover:text-blush">Remove</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    <p className="text-[11px] text-ink/50">In-stock pieces ship in 3–7 days; made-to-order combinations ship in 10–12 days.</p>
+        <div className="bg-[#FDFBF7] min-h-screen pb-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                {/* Header */}
+                <div className="mb-10">
+                    <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">your selected favourites</span>
+                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
+                        Shopping Bag <span className="font-sans italic text-[#1A2536]/50 text-2xl font-light">({count} {count === 1 ? "Piece" : "Pieces"})</span>
+                    </h1>
                 </div>
 
-                {/* Summary */}
-                <aside className="bg-cream border border-gold/40 p-8 w-full lg:w-96 shrink-0">
-                    <h2 className="font-serif text-2xl mb-6">Order Summary</h2>
-                    <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span>Subtotal</span><span>{inr(subtotal)}</span></div>
-                        <div className="flex justify-between"><span>Insured Shipping</span><span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-gold-dark">FREE</span></div>
-                        <div className="border-t border-charcoal/15 pt-3 flex justify-between font-serif text-xl">
-                            <span>Total Payable</span><span>{inr(subtotal)}</span>
-                        </div>
+                <div className="flex flex-col lg:flex-row gap-12 items-start">
+                    {/* Items List */}
+                    <div className="flex-1 w-full space-y-4">
+                        {items.map((i) => (
+                            <div key={i.key} className="glass-card-vibrant p-5 rounded-3xl border border-[#E5BDB0]">
+                                {/* Mobile Layout: Stacked */}
+                                <div className="sm:hidden space-y-4">
+                                    <Link href={`/product/${i.slug}`} className="block">
+                                        <img src={i.image} alt={i.name} className="w-full h-64 object-cover rounded-2xl border border-[#E5BDB0]/40" />
+                                    </Link>
+                                    <div className="space-y-2">
+                                        <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
+                                            {i.name}
+                                        </Link>
+                                        <p className="text-xs text-[#D88C7D] font-bold">{i.label}</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
+                                        <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            100% Certified Natural Diamonds
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-[#E5BDB0]/40">
+                                        <p className="font-extrabold text-xl text-[#1A2536]">{inr(i.unit_price * i.qty)}</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
+                                                <button 
+                                                    onClick={() => setQty(i.key, i.qty - 1)} 
+                                                    disabled={i.qty <= 1}
+                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
+                                                    {i.qty}
+                                                </span>
+                                                <button 
+                                                    onClick={() => setQty(i.key, i.qty + 1)}
+                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] transition-colors font-bold"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <button 
+                                                onClick={() => removeItem(i.key)} 
+                                                className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#D88C7D] font-bold transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Desktop Layout: Horizontal */}
+                                <div className="hidden sm:flex gap-5 items-center">
+                                    <Link href={`/product/${i.slug}`} className="shrink-0">
+                                        <img src={i.image} alt={i.name} className="w-28 h-28 object-cover rounded-2xl border border-[#E5BDB0]/40" />
+                                    </Link>
+                                    
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                        <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
+                                            {i.name}
+                                        </Link>
+                                        <p className="text-xs text-[#D88C7D] font-bold">{i.label}</p>
+                                        <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
+                                        <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 pt-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            100% Certified Natural Diamonds
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col items-end gap-3 shrink-0">
+                                        <p className="font-extrabold text-lg text-[#1A2536]">{inr(i.unit_price * i.qty)}</p>
+                                        <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
+                                            <button 
+                                                onClick={() => setQty(i.key, i.qty - 1)} 
+                                                disabled={i.qty <= 1}
+                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                            >
+                                                −
+                                            </button>
+                                            <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
+                                                {i.qty}
+                                            </span>
+                                            <button 
+                                                onClick={() => setQty(i.key, i.qty + 1)}
+                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] transition-colors font-bold"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeItem(i.key)} 
+                                            className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#D88C7D] font-bold transition-colors"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <button onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")} className="btn-solid w-full mt-8">Proceed To Checkout →</button>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-charcoal/50 text-center mt-4">Secure SSL · Certified Conflict-Free Diamonds</p>
-                </aside>
+
+                    {/* Order Summary */}
+                    <aside className="glass-card-vibrant p-6 sm:p-8 rounded-3xl border border-[#E5BDB0] w-full lg:w-[380px] shrink-0 lg:sticky lg:top-24 space-y-6">
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Order Summary</h2>
+                        
+                        <div className="space-y-3 text-sm border-b border-[#E5BDB0]/40 pb-6">
+                            <div className="flex justify-between">
+                                <span className="text-[#1A2536]/70">Subtotal</span>
+                                <span className="font-bold text-[#1A2536]">{inr(subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[#1A2536]/70">Safe and Secure Delivery</span>
+                                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">FREE</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[#1A2536]/70">GST (3%)</span>
+                                <span className="text-[#1A2536]/50 text-xs font-semibold">Included</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-baseline">
+                            <span className="font-serif-luxury text-xl text-[#1A2536]">Total Payable</span>
+                            <span className="font-extrabold text-2xl text-[#1A2536]">{inr(subtotal)}</span>
+                        </div>
+
+                        <button 
+                            onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")} 
+                            className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2"
+                        >
+                            <span>Proceed To Secure Checkout</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                        </button>
+                        
+                        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#E5BDB0]/40">
+                            <div className="text-center">
+                                <p className="text-[9px] font-bold text-[#1A2536] uppercase tracking-wider">Hallmarked</p>
+                                <p className="text-[8px] text-[#1A2536]/50 mt-0.5">BIS Hallmarked Gold</p>
+                            </div>
+                            <div className="text-center border-x border-[#E5BDB0]/40">
+                                <p className="text-[9px] font-bold text-[#1A2536] uppercase tracking-wider">Certified</p>
+                                <p className="text-[8px] text-[#1A2536]/50 mt-0.5">IGI / SGL / GIA</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-[9px] font-bold text-[#1A2536] uppercase tracking-wider">Fine Luxury</p>
+                                <p className="text-[8px] text-[#1A2536]/50 mt-0.5">At Affordable Prices</p>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
             </div>
         </div>
     );
