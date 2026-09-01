@@ -240,14 +240,14 @@ class OrderViewSet(viewsets.ModelViewSet):
                 product.gold_color != original_product.gold_color):
                 return Response({'error': 'Product does not match order specifications'}, status=400)
             
-            # Mark the old MTO placeholder as cancelled
-            original_product.status = 'cancelled'
-            original_product.save()
-            
-            # Update the OrderItem to point to the real product
+            # Update the OrderItem to point to the real product FIRST
             item.instance = product
             item.is_mto_pending = False
             item.save()
+            
+            # Now that the OrderItem is safely linked to the real product, 
+            # delete the dummy MTO placeholder from the database completely
+            original_product.delete()
             
             # Mark the real product as sold
             product.status = 'sold'
