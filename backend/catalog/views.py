@@ -10,9 +10,32 @@ from .serializers import CategorySerializer, DesignDetailSerializer, DesignListS
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.filter(is_active=True)
+    permission_classes = [AllowAny]
     serializer_class = CategorySerializer
+    queryset = Category.objects.filter(is_active=True).order_by('name')
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        # Filter by parent_slug to show only subcategories of a specific parent
+        parent_slug = self.request.query_params.get('parent_slug')
+        if parent_slug:
+            try:
+                parent = Category.objects.get(slug=parent_slug)
+                qs = qs.filter(parent=parent)
+            except Category.DoesNotExist:
+                qs = qs.none()
+        
+        # Filter by parent ID
+        parent_id = self.request.query_params.get('parent')
+        if parent_id:
+            qs = qs.filter(parent_id=parent_id)
+        
+        # If no parent filter, return only top-level categories
+        if not parent_slug and not parent_id:
+            qs = qs.filter(parent__isnull=True)
+        
+        return qs
 
 class DesignPagination(LimitOffsetPagination):
     default_limit = 18
