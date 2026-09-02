@@ -41,7 +41,7 @@ export default async function Home() {
     const products = await getProducts();
 
     return (
-        <div className="bg-[#FDFBF7]">
+        <div className="bg-white">
             {/* HERO SECTION */}
             <section className="relative pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                 {/* Ambient Background Spheres */}
@@ -73,7 +73,7 @@ export default async function Home() {
                         <div className="flex flex-wrap items-center gap-4 pt-2">
                             <Link 
                                 href="/category/rings"
-                                className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#D88C7D] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center gap-2 group"
+                                className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#B86B5A] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center gap-2 group"
                             >
                                 <span>Explore Collection</span>
                                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@ export default async function Home() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                     {[
-                        { icon: "💎", title: "100% Natural Diamonds", sub: "IGI & SGL Certified", color: "#D88C7D" },
+                        { icon: "💎", title: "100% Natural Diamonds", sub: "IGI & SGL Certified", color: "#B86B5A" },
                         { icon: "🛡️", title: "BIS Hallmarked Gold", sub: "14KT & 18KT Pure Gold", color: "#D4AF37" },
                         { icon: "🔄", title: "Lifetime Buyback", sub: "80%-90% Guaranteed Value", color: "#10B981" },
                         { icon: "🚚", title: "Insured Delivery", sub: "100% Transit Protection", color: "#1A2536" },
@@ -111,12 +111,12 @@ export default async function Home() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
                     <div>
-                        <span className="font-cursive text-3xl text-[#D88C7D] block -mb-2">curated for you</span>
+                        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-2">curated for you</span>
                         <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
                             Shop by Category
                         </h2>
                     </div>
-                    <p className="text-xs font-bold text-[#D88C7D] tracking-widest uppercase">
+                    <p className="text-xs font-bold text-[#B86B5A] tracking-widest uppercase">
                         100% NATURAL DIAMONDS • 14KT & 18KT GOLD
                     </p>
                 </div>
@@ -145,14 +145,14 @@ export default async function Home() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
                     <div>
-                        <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">bestselling pieces</span>
+                        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">bestselling pieces</span>
                         <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
                             Signature Designs
                         </h2>
                     </div>
                     <Link
                         href="/category/rings"
-                        className="text-xs font-bold uppercase tracking-widest text-[#1A2536] border-b-2 border-[#D88C7D] pb-1.5 hover:text-[#D88C7D] transition-colors"
+                        className="text-xs font-bold uppercase tracking-widest text-[#1A2536] border-b-2 border-[#B86B5A] pb-1.5 hover:text-[#B86B5A] transition-colors"
                     >
                         View All Products →
                     </Link>
@@ -188,7 +188,7 @@ export default async function Home() {
                             <div className="flex flex-wrap items-center gap-4 pt-2">
                                 <Link 
                                     href="/category/color-stone"
-                                    className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#D88C7D] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl"
+                                    className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#B86B5A] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl"
                                 >
                                     Explore Color Stone Edit
                                 </Link>

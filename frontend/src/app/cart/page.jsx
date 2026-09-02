@@ -22,7 +22,7 @@ export default function CartPage() {
 
     const emptyState = (
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-            <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">your selected favourites</span>
+            <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">your selected favourites</span>
             <h1 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536] mb-4">Your Bag is Empty</h1>
             <p className="text-sm text-[#1A2536]/60 mb-8 max-w-md mx-auto leading-relaxed">
                 Discover certified natural diamonds, handcrafted in BIS hallmarked gold.
@@ -40,11 +40,11 @@ export default function CartPage() {
     if (!items.length) return emptyState;
 
     return (
-        <div className="bg-[#FDFBF7] min-h-screen pb-20">
+        <div className="bg-white min-h-screen pb-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Header */}
                 <div className="mb-10">
-                    <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">your selected favourites</span>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">your selected favourites</span>
                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
                         Shopping Bag <span className="font-sans italic text-[#1A2536]/50 text-2xl font-light">({count} {count === 1 ? "Piece" : "Pieces"})</span>
                     </h1>
@@ -64,7 +64,7 @@ export default function CartPage() {
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
                                             {i.name}
                                         </Link>
-                                        <p className="text-xs text-[#D88C7D] font-bold">{i.label}</p>
+                                        <p className="text-xs text-[#B86B5A] font-bold">{i.label}</p>
                                         <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
                                         <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -78,7 +78,7 @@ export default function CartPage() {
                                                 <button 
                                                     onClick={() => setQty(i.key, i.qty - 1)} 
                                                     disabled={i.qty <= 1}
-                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                                                 >
                                                     −
                                                 </button>
@@ -87,14 +87,14 @@ export default function CartPage() {
                                                 </span>
                                                 <button 
                                                     onClick={() => setQty(i.key, i.qty + 1)}
-                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] transition-colors font-bold"
+                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white transition-colors font-bold"
                                                 >
                                                     +
                                                 </button>
                                             </div>
                                             <button 
                                                 onClick={() => removeItem(i.key)} 
-                                                className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#D88C7D] font-bold transition-colors"
+                                                className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#B86B5A] font-bold transition-colors"
                                             >
                                                 Remove
                                             </button>
@@ -112,7 +112,7 @@ export default function CartPage() {
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
                                             {i.name}
                                         </Link>
-                                        <p className="text-xs text-[#D88C7D] font-bold">{i.label}</p>
+                                        <p className="text-xs text-[#B86B5A] font-bold">{i.label}</p>
                                         <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
                                         <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 pt-1">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -126,7 +126,7 @@ export default function CartPage() {
                                             <button 
                                                 onClick={() => setQty(i.key, i.qty - 1)} 
                                                 disabled={i.qty <= 1}
-                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                                             >
                                                 −
                                             </button>
@@ -135,14 +135,14 @@ export default function CartPage() {
                                             </span>
                                             <button 
                                                 onClick={() => setQty(i.key, i.qty + 1)}
-                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-[#FDFBF7] transition-colors font-bold"
+                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white transition-colors font-bold"
                                             >
                                                 +
                                             </button>
                                         </div>
                                         <button 
                                             onClick={() => removeItem(i.key)} 
-                                            className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#D88C7D] font-bold transition-colors"
+                                            className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#B86B5A] font-bold transition-colors"
                                         >
                                             Remove
                                         </button>

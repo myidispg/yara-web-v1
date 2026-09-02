@@ -9,16 +9,16 @@
     --navy-deep: #1A2536;
     --navy-darker: #111A29;
     --rose-gold: #E5BDB0;
-    --rose-accent: #D88C7D;
+    --rose-accent: #B86B5A;
     --champagne-gold: #D4AF37;
     --gold-warm: #C5A059;
-    --bg-cream: #FDFBF7;
+    --bg-white: #FFFFFF;
   }
 
   body {
     @apply antialiased leading-relaxed;
     font-family: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg-cream);
+    background-color: var(--bg-white);
     color: var(--navy-deep);
   }
 
@@ -42,7 +42,7 @@
 @layer components {
   .btn-solid {
     @apply inline-flex items-center justify-center gap-3 text-white uppercase tracking-[0.18em] text-[11px] font-bold px-8 py-4 rounded-full transition-all shadow-xl;
-    background: linear-gradient(135deg, #E5BDB0 0%, #D88C7D 100%);
+    background: linear-gradient(135deg, #E5BDB0 0%, #B86B5A 100%);
     color: var(--navy-deep);
   }
 
@@ -97,11 +97,9 @@
 
   /* Glass Cards */
   .glass-card-vibrant {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px) saturate(190%);
-    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    background: #FFFFFF;
     border: 1px solid rgba(229, 189, 176, 0.5);
-    box-shadow: 0 16px 36px -12px rgba(26, 37, 54, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 32px -8px rgba(26, 37, 54, 0.06);
   }
 
   .glass-card-navy {
@@ -113,7 +111,7 @@
   }
 
   .glass-nav-vibrant {
-    background: rgba(253, 251, 247, 0.92);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid rgba(229, 189, 176, 0.35);
@@ -127,7 +125,7 @@
   }
 
   .text-gradient-rose {
-    background: linear-gradient(135deg, #E5BDB0 0%, #D88C7D 100%);
+    background: linear-gradient(135deg, #E5BDB0 0%, #B86B5A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -199,7 +197,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D88C7D;
+  background: #B86B5A;
   border-radius: 10px;
 }
 

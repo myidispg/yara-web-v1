@@ -101,8 +101,8 @@ export default function Navbar() {
                     {/* Logo */}
                     <Link href="/" className="shrink-0 flex flex-col items-center justify-center py-2 group">
                         <div className="flex items-center gap-2">
-                            <span className="font-serif-luxury text-3xl lg:text-4xl tracking-[0.3em] text-[#1A2536] group-hover:text-[#D88C7D] transition-colors">
-                                YA<span className="text-[#D88C7D]">-</span>RA
+                            <span className="font-serif-luxury text-3xl lg:text-4xl tracking-[0.3em] text-[#1A2536] group-hover:text-[#B86B5A] transition-colors">
+                                YA<span className="text-[#B86B5A]">-</span>RA
                             </span>
                             <span className="text-[9px] font-sans border border-[#1A2536]/40 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[#1A2536] -mt-3">®</span>
                         </div>
@@ -117,7 +117,7 @@ export default function Navbar() {
                             </div>
                             <span className="h-[1.5px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
                         </div>
-                        <span className="hidden xl:block text-[9px] tracking-[0.25em] uppercase font-bold text-[#D88C7D] mt-1">
+                        <span className="hidden xl:block text-[9px] tracking-[0.25em] uppercase font-bold text-[#B86B5A] mt-1">
                             Diamond & Gold Jewellery
                         </span>
                     </Link>
@@ -128,7 +128,7 @@ export default function Navbar() {
                             <Link 
                                 key={c.slug} 
                                 href={`/category/${c.slug}`} 
-                                className="py-1.5 border-b-2 border-transparent hover:text-[#D88C7D] hover:border-[#D88C7D] transition-all whitespace-nowrap"
+                                className="py-1.5 border-b-2 border-transparent hover:text-[#B86B5A] hover:border-[#B86B5A] transition-all whitespace-nowrap"
                             >
                                 {c.label}
                             </Link>
@@ -141,7 +141,7 @@ export default function Navbar() {
                         {!isControl && (
                             <button
                                 onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-                                className="p-2.5 text-[#1A2536] hover:text-[#D88C7D] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
+                                className="p-2.5 text-[#1A2536] hover:text-[#B86B5A] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
                                 aria-label="Search"
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -153,7 +153,7 @@ export default function Navbar() {
 
                         <Link
                             href={user ? "/account" : "/auth"}
-                            className="hidden sm:block p-2.5 text-[#1A2536] hover:text-[#D88C7D] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
+                            className="hidden sm:block p-2.5 text-[#1A2536] hover:text-[#B86B5A] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
                             aria-label="Account & Orders"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -173,7 +173,7 @@ export default function Navbar() {
                                 <path d="M16 10a4 4 0 0 1-8 0" />
                             </svg>
                             {mounted && count > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-[#D88C7D] text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                                <span className="absolute -top-1 -right-1 bg-[#B86B5A] text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
                                     {count}
                                 </span>
                             )}
@@ -184,10 +184,10 @@ export default function Navbar() {
 
             {/* Search Drawer */}
             {searchOpen && !isControl && (
-                <div className="border-t border-[#E5BDB0] bg-[#FDFBF7] px-6 lg:px-10 py-5">
+                <div className="border-t border-[#E5BDB0] bg-white px-6 lg:px-10 py-5">
                     <div className="max-w-3xl mx-auto">
                         <div className="flex items-center gap-4">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#D88C7D]">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#B86B5A]">
                                 <circle cx="11" cy="11" r="8" />
                                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
@@ -205,7 +205,7 @@ export default function Navbar() {
                                 placeholder="Search rings, earrings, pendants… (Enter for full results)"
                                 className="flex-1 bg-transparent border-b-2 border-[#E5BDB0] py-2 text-base focus:outline-none focus:border-[#1A2536] text-[#1A2536]"
                             />
-                            <button onClick={closeSearch} className="text-[#1A2536] hover:text-[#D88C7D]" aria-label="Close search">
+                            <button onClick={closeSearch} className="text-[#1A2536] hover:text-[#B86B5A]" aria-label="Close search">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
@@ -213,7 +213,7 @@ export default function Navbar() {
                             </button>
                         </div>
 
-                        {searching && <p className="text-[10px] uppercase tracking-[0.2em] text-[#D88C7D] mt-4 font-bold">Searching…</p>}
+                        {searching && <p className="text-[10px] uppercase tracking-[0.2em] text-[#B86B5A] mt-4 font-bold">Searching…</p>}
 
                         {!searching && results.length > 0 && (
                             <ul className="mt-4 divide-y divide-[#E5BDB0]/30">
@@ -227,7 +227,7 @@ export default function Navbar() {
                                             <img src={p.media?.[0]?.url ?? ""} alt={p.name} className="w-12 h-12 object-cover bg-white rounded-md border border-[#E5BDB0]/40" />
                                             <span className="flex-1">
                                                 <span className="block font-serif-luxury text-base text-[#1A2536]">{p.name}</span>
-                                                <span className="block text-xs text-[#D88C7D] font-semibold">{p.category_name}</span>
+                                                <span className="block text-xs text-[#B86B5A] font-semibold">{p.category_name}</span>
                                             </span>
                                             <span className="text-sm font-extrabold text-[#1A2536]">{inr(p.base_price)}</span>
                                         </Link>
@@ -246,7 +246,7 @@ export default function Navbar() {
                                     router.push(`/search?q=${encodeURIComponent(query.trim())}`);
                                     closeSearch();
                                 }}
-                                className="mt-4 w-full text-center text-xs uppercase tracking-[0.2em] font-bold text-[#D88C7D] hover:text-[#1A2536] py-2.5 border-2 border-[#E5BDB0] rounded-lg"
+                                className="mt-4 w-full text-center text-xs uppercase tracking-[0.2em] font-bold text-[#B86B5A] hover:text-[#1A2536] py-2.5 border-2 border-[#E5BDB0] rounded-lg"
                             >
                                 View all results for "{query}" →
                             </button>
@@ -259,15 +259,15 @@ export default function Navbar() {
             {mobileOpen && (
                 <div className="md:hidden border-t border-[#E5BDB0] px-6 py-6 space-y-4 uppercase tracking-[0.16em] text-[15px] font-medium bg-white">
                     {categories.map((c) => (
-                        <Link key={c.slug} href={`/category/${c.slug}`} className="block hover:text-[#D88C7D] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
+                        <Link key={c.slug} href={`/category/${c.slug}`} className="block hover:text-[#B86B5A] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
                             {c.label}
                         </Link>
                     ))}
                     <hr className="border-[#E5BDB0]" />
-                    <Link href={user ? "/account" : "/auth"} className="block hover:text-[#D88C7D] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
+                    <Link href={user ? "/account" : "/auth"} className="block hover:text-[#B86B5A] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
                         My Account & Orders
                     </Link>
-                    <Link href="/policies" className="block hover:text-[#D88C7D] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
+                    <Link href="/policies" className="block hover:text-[#B86B5A] text-[#1A2536]" onClick={() => setMobileOpen(false)}>
                         Policies & Certifications
                     </Link>
                 </div>

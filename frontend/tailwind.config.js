@@ -9,15 +9,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        ivory: "#FDFBF7",
-        cream: "#F5EFE6",
+        ivory: "#FFFFFF",
+        cream: "#FFFFFF",
         charcoal: "#1A2536",
         ink: "#1A2536",
         line: "rgba(229, 189, 176, 0.3)",
         blush: "#E5BDB0",
         gold: { DEFAULT: "#D4AF37", dark: "#C5A059" },
         navy: { DEFAULT: "#1A2536", darker: "#111A29" },
-        rose: { DEFAULT: "#E5BDB0", accent: "#D88C7D" },
+        rose: { DEFAULT: "#E5BDB0", accent: "#B86B5A" },
       },
       fontFamily: {
         serif: ["'Cormorant Garamond'", "Georgia", "serif"],

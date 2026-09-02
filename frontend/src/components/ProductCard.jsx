@@ -8,7 +8,7 @@ export default function ProductCard({ product }) {
 
     return (
         <Link href={`/product/${product.slug}`} className="group block">
-            <div className="glass-card-vibrant rounded-2xl overflow-hidden border border-[#1A2536]/10 hover:border-[#D88C7D] transition-all duration-500 hover:shadow-xl hover:scale-[1.03] flex flex-col">
+            <div className="glass-card-vibrant rounded-2xl overflow-hidden border border-[#1A2536]/10 hover:border-[#B86B5A] transition-all duration-500 hover:shadow-xl hover:scale-[1.03] flex flex-col">
                 {/* Image Container */}
                 <div className="relative overflow-hidden aspect-square bg-white">
                     {img ? (
