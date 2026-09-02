@@ -165,7 +165,7 @@ export default function ProductClient({ product }) {
     const resetZoom = () => { setZoomLevel(1); setZoomPosition({ x: 50, y: 50 }); };
 
     return (
-        <div className="bg-[#FDFBF7]">
+        <div className="bg-white">
             {/* Zoom Lightbox */}
             {zoomedImage && (
                 <div className="fixed inset-0 z-50 bg-[#1A2536]/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-8" onClick={() => { setZoomedImage(null); resetZoom(); }}>
@@ -201,9 +201,9 @@ export default function ProductClient({ product }) {
 
             <div className="max-w-[1440px] mx-auto px-8 lg:px-20 pt-10 pb-8">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#1A2536]/50">
-                    <Link href="/" className="hover:text-[#D88C7D]">Home</Link>
+                    <Link href="/" className="hover:text-[#B86B5A]">Home</Link>
                     {" / "}
-                    <Link href={`/category/${product.category_slug ?? ""}`} className="hover:text-[#D88C7D]">{product.category_name ?? "Jewellery"}</Link>
+                    <Link href={`/category/${product.category_slug ?? ""}`} className="hover:text-[#B86B5A]">{product.category_name ?? "Jewellery"}</Link>
                     {" / "}<span className="text-[#1A2536]">{product.name}</span>
                 </p>
             </div>
@@ -258,7 +258,7 @@ export default function ProductClient({ product }) {
                             {media.length > 1 && (
                                 <div className="flex justify-center gap-2 mt-4">
                                     {media.map((_, i) => (
-                                        <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Go to slide ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentSlide ? "bg-[#D88C7D] w-8" : "bg-[#1A2536]/20 hover:bg-[#1A2536]/40 w-2"}`} />
+                                        <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Go to slide ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentSlide ? "bg-[#B86B5A] w-8" : "bg-[#1A2536]/20 hover:bg-[#1A2536]/40 w-2"}`} />
                                     ))}
                                 </div>
                             )}
@@ -284,7 +284,7 @@ export default function ProductClient({ product }) {
                         <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536] leading-tight">
                             {product.name}
                         </h1>
-                        <p className="text-xs uppercase tracking-[0.14em] text-[#D88C7D] font-bold mt-2">Design Code: {product.design_code}</p>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[#B86B5A] font-bold mt-2">Design Code: {product.design_code}</p>
                         {product.description && (
                             <p className="text-sm text-[#1A2536]/60 leading-relaxed mt-3">{product.description}</p>
                         )}
@@ -303,7 +303,7 @@ export default function ProductClient({ product }) {
                         </div>
                         <p className="text-[11px] text-[#1A2536]/50">Zero shipping charges</p>
 
-                        <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full pt-3 border-t border-[#E5BDB0]/40 text-xs font-bold text-[#D88C7D] hover:text-[#1A2536] transition-colors flex items-center justify-between">
+                        <button onClick={() => setShowBreakdown(!showBreakdown)} className="w-full pt-3 border-t border-[#E5BDB0]/40 text-xs font-bold text-[#B86B5A] hover:text-[#1A2536] transition-colors flex items-center justify-between">
                             <span>View Price Breakdown</span>
                             <ChevronIcon open={showBreakdown} />
                         </button>
@@ -331,7 +331,7 @@ export default function ProductClient({ product }) {
                                     onClick={() => { setPurity(p); setSize(null); }}
                                     className={`flex items-center justify-center text-xs font-bold px-5 py-2.5 rounded-full border transition-all ${p === activePurity
                                             ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#D88C7D]"
+                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                         }`}
                                 >
                                     {p} Gold
@@ -350,7 +350,7 @@ export default function ProductClient({ product }) {
                                     onClick={() => { setColor(c); setSize(null); }}
                                     className={`flex items-center gap-2.5 text-xs font-bold px-4 py-2.5 rounded-full border transition-all ${c === activeColor
                                             ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#D88C7D]"
+                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                         }`}
                                 >
                                     <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: SWATCH[c] ?? "#ccc" }} />
@@ -375,11 +375,11 @@ export default function ProductClient({ product }) {
                                             onClick={() => setSize(s)}
                                             className={`w-20 py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${s === activeSize
                                                     ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                                    : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#D88C7D]"
+                                                    : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                                 }`}
                                         >
                                             <span className="text-sm font-bold">{s}</span>
-                                            <span className={`text-[8px] uppercase tracking-[0.08em] font-bold ${s === activeSize ? "text-[#E5BDB0]" : isInStock ? "text-emerald-600" : "text-[#D88C7D]"
+                                            <span className={`text-[8px] uppercase tracking-[0.08em] font-bold ${s === activeSize ? "text-[#E5BDB0]" : isInStock ? "text-emerald-600" : "text-[#B86B5A]"
                                                 }`}>
                                                 {isInStock ? `${count} in stock` : "Made to Order"}
                                             </span>
@@ -387,7 +387,7 @@ export default function ProductClient({ product }) {
                                     );
                                 })}
                             </div>
-                            <Link href="/size-guide" className="inline-block text-[10px] font-bold text-[#D88C7D] uppercase tracking-wider mt-2 hover:underline">
+                            <Link href="/size-guide" className="inline-block text-[10px] font-bold text-[#B86B5A] uppercase tracking-wider mt-2 hover:underline">
                                 Not sure? Check Size Guide →
                             </Link>
                         </div>
@@ -399,8 +399,8 @@ export default function ProductClient({ product }) {
                                     {stockCount} pc{stockCount > 1 ? "s" : ""} in stock · Ready to ship
                                 </p>
                             ) : (
-                                <p className="text-xs text-[#D88C7D] font-bold flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-[#D88C7D]"></span>
+                                <p className="text-xs text-[#B86B5A] font-bold flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-[#B86B5A]"></span>
                                     Made to Order · Ships in 10-12 days
                                 </p>
                             )}
@@ -432,8 +432,8 @@ export default function ProductClient({ product }) {
                                 </dl>
                             ) : (
                                 <>
-                                    <p className="text-[10px] text-[#D88C7D] font-bold uppercase tracking-[0.12em] mb-3 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#D88C7D]"></span> Made to Order
+                                    <p className="text-[10px] text-[#B86B5A] font-bold uppercase tracking-[0.12em] mb-3 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span> Made to Order
                                     </p>
                                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5 text-sm">
                                         <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Design Code</dt><dd className="font-semibold text-[#1A2536] text-right">{product.design_code}</dd></div>
@@ -467,7 +467,7 @@ export default function ProductClient({ product }) {
                         </button>
                         <button
                             onClick={handleBuyNow}
-                            className="flex-1 py-4 rounded-full text-xs font-bold uppercase tracking-widest transition-all border-2 border-[#D88C7D] text-[#D88C7D] hover:bg-[#D88C7D] hover:text-white flex items-center justify-center gap-2"
+                            className="flex-1 py-4 rounded-full text-xs font-bold uppercase tracking-widest transition-all border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white flex items-center justify-center gap-2"
                         >
                             Buy Now
                         </button>

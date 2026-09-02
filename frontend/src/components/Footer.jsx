@@ -11,7 +11,7 @@ export default function Footer() {
                         <div className="inline-block">
                             <div className="flex items-center gap-2">
                                 <span className="font-serif-luxury text-3xl tracking-widest font-normal text-white">
-                                    YA<span className="text-[#D88C7D]">-</span>RA
+                                    YA<span className="text-[#B86B5A]">-</span>RA
                                 </span>
                                 <span className="text-[9px] font-sans border border-white/40 rounded-full w-3.5 h-3.5 flex items-center justify-center text-white -mt-3">®</span>
                             </div>

@@ -172,7 +172,7 @@ export default function CheckoutPage() {
 
     if (!mounted || authLoading) return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">preparing your order</span>
+            <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">preparing your order</span>
             <h1 className="font-serif-luxury text-4xl font-normal text-[#1A2536] mb-2">Secure Checkout</h1>
             <p className="text-sm text-[#1A2536]/50">Loading your details…</p>
         </div>
@@ -184,7 +184,7 @@ export default function CheckoutPage() {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A2536]/60 backdrop-blur-sm">
                 <div className="glass-card-vibrant max-w-lg w-full p-8 md:p-10 text-center rounded-3xl border border-[#E5BDB0] shadow-2xl">
-                    <span className="w-14 h-14 mx-auto rounded-full bg-[#D88C7D]/10 text-[#D88C7D] flex items-center justify-center mb-4">
+                    <span className="w-14 h-14 mx-auto rounded-full bg-[#B86B5A]/10 text-[#B86B5A] flex items-center justify-center mb-4">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                         </svg>
@@ -216,7 +216,7 @@ export default function CheckoutPage() {
 
                     {mtoDialog.preOrder ? (
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="flex-1 py-3.5 border-2 border-[#D88C7D] text-[#D88C7D] hover:bg-[#D88C7D] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">
+                            <button onClick={() => { setMtoDialog(null); router.push("/cart"); }} className="flex-1 py-3.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">
                                 Edit My Bag
                             </button>
                             <button
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
     if (placed)
         return (
             <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">order confirmed</span>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">order confirmed</span>
                 <h1 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536] mb-4">Thank You For Your Order!</h1>
                 <p className="text-sm text-[#1A2536]/60 mb-10 leading-relaxed max-w-md mx-auto">
                     Your order <span className="font-bold text-[#1A2536]">{placed.number}</span> has been
@@ -261,7 +261,7 @@ export default function CheckoutPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <Link href="/account" className="px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl">Track Order</Link>
-                    <Link href="/" className="px-8 py-4 border-2 border-[#D88C7D] text-[#D88C7D] hover:bg-[#D88C7D] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">Continue Shopping</Link>
+                    <Link href="/" className="px-8 py-4 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">Continue Shopping</Link>
                 </div>
             </div>
         );
@@ -269,17 +269,17 @@ export default function CheckoutPage() {
     if (!items.length)
         return (
             <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-                <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">nothing to checkout</span>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">nothing to checkout</span>
                 <h1 className="font-serif-luxury text-4xl font-normal text-[#1A2536] mb-6">Your Shopping Bag is Empty</h1>
                 <Link href="/" className="inline-block px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl">Explore Collection</Link>
             </div>
         );
 
     return (
-        <div className="bg-[#FDFBF7] min-h-screen pb-20">
+        <div className="bg-white min-h-screen pb-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-10">
-                    <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">secure Indian checkout</span>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">secure Indian checkout</span>
                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
                         Complete Your Order
                     </h1>
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                                         <p className="text-sm font-bold text-[#1A2536] mt-1">{user?.phone || "—"}</p>
                                     </div>
                                     <div className="flex items-end">
-                                        <Link href="/account" className="text-xs text-[#D88C7D] font-bold hover:underline">Edit in My Account →</Link>
+                                        <Link href="/account" className="text-xs text-[#B86B5A] font-bold hover:underline">Edit in My Account →</Link>
                                     </div>
                                 </div>
                             </div>
@@ -325,7 +325,7 @@ export default function CheckoutPage() {
                                             key={addr.id}
                                             className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${!useNewAddress && selectedAddressId === addr.id
                                                     ? "border-[#1A2536] bg-white shadow-lg"
-                                                    : "border-[#E5BDB0] bg-white/60 hover:border-[#D88C7D]"
+                                                    : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"
                                                 }`}
                                         >
                                             <div className="flex items-start gap-4">
@@ -351,7 +351,7 @@ export default function CheckoutPage() {
                                     ))}
 
                                     <label
-                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${useNewAddress ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#D88C7D]"
+                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${useNewAddress ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">
@@ -461,7 +461,7 @@ export default function CheckoutPage() {
                                 ].map((m) => (
                                     <label
                                         key={m.id}
-                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${method === m.id ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#D88C7D]"}`}
+                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${method === m.id ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"}`}
                                     >
                                         <div className="flex items-center gap-4">
                                             <input type="radio" name="pay" checked={method === m.id} onChange={() => setMethod(m.id)} className="accent-[#1A2536]" />

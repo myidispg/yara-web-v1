@@ -15,7 +15,7 @@ const TypographyStyles = () => (
       --navy-deep: #1A2536;
       --navy-[#1A2536]: #111A29;
       --rose-gold: #E5BDB0;
-      --rose-accent: #D88C7D;
+      --rose-accent: #B86B5A;
       --champagne-gold: #D4AF37;
       --gold-warm: #C5A059;
       --bg-cream: #FDFBF7;
@@ -85,7 +85,7 @@ const TypographyStyles = () => (
 
     /* Rose Gradient button */
     .bg-gradient-rose {
-      background: linear-gradient(135deg, #E5BDB0 0%, #D88C7D 100%);
+      background: linear-gradient(135deg, #E5BDB0 0%, #B86B5A 100%);
     }
 
     .bg-gradient-navy {
@@ -95,7 +95,7 @@ const TypographyStyles = () => (
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #F5EFE6; }
-    ::-webkit-scrollbar-thumb { background: #D88C7D; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #B86B5A; border-radius: 10px; }
   `}</style>
 );
 
@@ -278,7 +278,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden bg-[#FDFBF7] text-[#1A2536] selection:bg-[#E5BDB0]/40 selection:text-[#1A2536]">
+    <div className="min-h-screen relative overflow-x-hidden bg-white text-[#1A2536] selection:bg-[#E5BDB0]/40 selection:text-[#1A2536]">
       <TypographyStyles />
 
       {/* 1. ANNOUNCEMENT BAR (Rich Gold & Deep Navy Trust Strip) */}
@@ -311,7 +311,7 @@ export default function App() {
             {/* Mobile Nav Button */}
             <button 
               onClick={() => setIsFilterDrawerOpen(true)}
-              className="lg:hidden p-2 text-[#1A2536] hover:text-[#D88C7D]"
+              className="lg:hidden p-2 text-[#1A2536] hover:text-[#B86B5A]"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -320,25 +320,25 @@ export default function App() {
             <nav className="hidden lg:flex items-center gap-7 text-xs font-bold uppercase tracking-widest text-[#1A2536]">
               <button 
                 onClick={() => setActiveTab('home')} 
-                className={`py-1.5 border-b-2 transition-all ${activeTab === 'home' ? 'border-[#D88C7D] text-[#D88C7D]' : 'border-transparent hover:text-[#D88C7D]'}`}
+                className={`py-1.5 border-b-2 transition-all ${activeTab === 'home' ? 'border-[#B86B5A] text-[#B86B5A]' : 'border-transparent hover:text-[#B86B5A]'}`}
               >
                 Home
               </button>
               <button 
                 onClick={() => { setSelectedCategory('All'); setActiveTab('shop'); }} 
-                className={`py-1.5 border-b-2 transition-all ${activeTab === 'shop' ? 'border-[#D88C7D] text-[#D88C7D]' : 'border-transparent hover:text-[#D88C7D]'}`}
+                className={`py-1.5 border-b-2 transition-all ${activeTab === 'shop' ? 'border-[#B86B5A] text-[#B86B5A]' : 'border-transparent hover:text-[#B86B5A]'}`}
               >
                 All Jewellery
               </button>
               <button 
                 onClick={() => { setSelectedCategory('Rings'); setActiveTab('shop'); }} 
-                className="py-1.5 border-b-2 border-transparent hover:text-[#D88C7D] transition-all"
+                className="py-1.5 border-b-2 border-transparent hover:text-[#B86B5A] transition-all"
               >
                 Rings
               </button>
               <button 
                 onClick={() => { setSelectedCategory('Earrings'); setActiveTab('shop'); }} 
-                className="py-1.5 border-b-2 border-transparent hover:text-[#D88C7D] transition-all"
+                className="py-1.5 border-b-2 border-transparent hover:text-[#B86B5A] transition-all"
               >
                 Earrings
               </button>
@@ -356,8 +356,8 @@ export default function App() {
               className="cursor-pointer flex flex-col items-center justify-center py-2 group"
             >
               <div className="flex items-center gap-2">
-                <span className="font-serif-luxury text-3xl sm:text-4xl font-semibold tracking-[0.2em] text-[#1A2536] group-hover:text-[#D88C7D] transition-colors">
-                  YA<span className="text-[#D88C7D]">-</span>RA
+                <span className="font-serif-luxury text-3xl sm:text-4xl font-semibold tracking-[0.2em] text-[#1A2536] group-hover:text-[#B86B5A] transition-colors">
+                  YA<span className="text-[#B86B5A]">-</span>RA
                 </span>
                 <span className="text-[9px] font-sans border border-[#1A2536]/40 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[#1A2536] -mt-3">®</span>
               </div>
@@ -374,7 +374,7 @@ export default function App() {
                 <span className="h-[1.5px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
               </div>
 
-              <span className="text-[9px] sm:text-[10px] tracking-[0.25em] uppercase font-bold text-[#D88C7D]">
+              <span className="text-[9px] sm:text-[10px] tracking-[0.25em] uppercase font-bold text-[#B86B5A]">
                 Diamond & Gold Jewellery
               </span>
             </div>
@@ -400,14 +400,14 @@ export default function App() {
 
               <button 
                 onClick={() => setActiveTab('shop')} 
-                className="p-2.5 text-[#1A2536] hover:text-[#D88C7D] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
+                className="p-2.5 text-[#1A2536] hover:text-[#B86B5A] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
               >
                 <Search className="w-5 h-5" />
               </button>
 
               <button 
                 onClick={() => setActiveTab('account')} 
-                className="hidden sm:block p-2.5 text-[#1A2536] hover:text-[#D88C7D] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
+                className="hidden sm:block p-2.5 text-[#1A2536] hover:text-[#B86B5A] transition-colors rounded-full hover:bg-[#E5BDB0]/20"
               >
                 <User className="w-5 h-5" />
               </button>
@@ -418,7 +418,7 @@ export default function App() {
               >
                 <ShoppingBag className="w-4 h-4 text-[#E5BDB0]" />
                 {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#D88C7D] text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  <span className="absolute -top-1 -right-1 bg-[#B86B5A] text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
                     {cart.reduce((a, b) => a + b.qty, 0)}
                   </span>
                 )}
@@ -498,13 +498,13 @@ export default function App() {
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               
-              <div className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 border-l-[#D88C7D] hover:shadow-xl transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-[#D88C7D]/15 flex items-center justify-center text-[#D88C7D] shrink-0">
-                  <Award className="w-6 h-6 text-[#D88C7D]" />
+              <div className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 border-l-[#B86B5A] hover:shadow-xl transition-all">
+                <div className="w-12 h-12 rounded-2xl bg-[#B86B5A]/15 flex items-center justify-center text-[#B86B5A] shrink-0">
+                  <Award className="w-6 h-6 text-[#B86B5A]" />
                 </div>
                 <div>
                   <h4 className="font-bold text-sm text-[#1A2536]">100% Natural Diamonds</h4>
-                  <p className="text-xs text-[#D88C7D] font-semibold">IGI & SGL Certified</p>
+                  <p className="text-xs text-[#B86B5A] font-semibold">IGI & SGL Certified</p>
                 </div>
               </div>
 
@@ -545,12 +545,12 @@ export default function App() {
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
               <div>
-                <span className="font-cursive text-3xl text-[#D88C7D] block -mb-2">curated for you</span>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-2">curated for you</span>
                 <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
                   Shop by Category
                 </h2>
               </div>
-              <p className="text-xs font-bold text-[#D88C7D] tracking-widest uppercase">
+              <p className="text-xs font-bold text-[#B86B5A] tracking-widest uppercase">
                 100% NATURAL DIAMONDS • 14KT & 18KT GOLD
               </p>
             </div>
@@ -640,7 +640,7 @@ export default function App() {
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
               <div>
-                <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">bestselling pieces</span>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">bestselling pieces</span>
                 <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
                   Signature Designs
                 </h2>
@@ -675,7 +675,7 @@ export default function App() {
                 return (
                   <div 
                     key={product.id}
-                    className="group glass-card-vibrant rounded-[32px] overflow-hidden p-4 border border-[#E5BDB0]/60 hover:shadow-2xl hover:border-[#D88C7D] transition-all duration-300 flex flex-col justify-between"
+                    className="group glass-card-vibrant rounded-[32px] overflow-hidden p-4 border border-[#E5BDB0]/60 hover:shadow-2xl hover:border-[#B86B5A] transition-all duration-300 flex flex-col justify-between"
                   >
                     <div className="relative">
                       {/* Product Image */}
@@ -700,7 +700,7 @@ export default function App() {
                         onClick={() => toggleWishlist(product.id)}
                         className="absolute top-3 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-md shadow-md text-[#1A2536] hover:bg-white transition-all"
                       >
-                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#D88C7D] text-[#D88C7D]' : 'text-[#1A2536]'}`} />
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#B86B5A] text-[#B86B5A]' : 'text-[#1A2536]'}`} />
                       </button>
 
                       {/* Badges */}
@@ -721,7 +721,7 @@ export default function App() {
                       <div className="flex justify-between items-start gap-2">
                         <h3 
                           onClick={() => { setSelectedProduct(product); setActiveTab('product'); }}
-                          className="font-serif-luxury text-xl font-medium text-[#1A2536] hover:text-[#D88C7D] cursor-pointer leading-snug"
+                          className="font-serif-luxury text-xl font-medium text-[#1A2536] hover:text-[#B86B5A] cursor-pointer leading-snug"
                         >
                           {product.name}
                         </h3>
@@ -731,7 +731,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-[#D88C7D] font-bold flex items-center gap-2">
+                      <p className="text-xs text-[#B86B5A] font-bold flex items-center gap-2">
                         <span>{product.diamondWeight} Natural Diamond</span>
                         <span>•</span>
                         <span>{product.diamondClarity}</span>
@@ -842,7 +842,7 @@ export default function App() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-[#1A2536] text-white shadow-md' : 'bg-white text-[#1A2536] border border-gray-200 hover:border-[#D88C7D]'}`}
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-[#1A2536] text-white shadow-md' : 'bg-white text-[#1A2536] border border-gray-200 hover:border-[#B86B5A]'}`}
                 >
                   {cat}
                 </button>
@@ -854,7 +854,7 @@ export default function App() {
                 onClick={() => setIsFilterDrawerOpen(true)}
                 className="px-4 py-2 bg-white text-[#1A2536] border border-[#E5BDB0] rounded-full text-xs font-bold flex items-center gap-2 shadow-sm"
               >
-                <SlidersHorizontal className="w-4 h-4 text-[#D88C7D]" /> Filters
+                <SlidersHorizontal className="w-4 h-4 text-[#B86B5A]" /> Filters
               </button>
 
               <div className="flex items-center bg-white p-1 rounded-full border border-gray-200 text-xs">
@@ -887,7 +887,7 @@ export default function App() {
                 return (
                   <div 
                     key={product.id}
-                    className="group glass-card-vibrant rounded-[32px] overflow-hidden p-4 border border-[#E5BDB0]/60 hover:shadow-2xl hover:border-[#D88C7D] transition-all duration-300 flex flex-col justify-between"
+                    className="group glass-card-vibrant rounded-[32px] overflow-hidden p-4 border border-[#E5BDB0]/60 hover:shadow-2xl hover:border-[#B86B5A] transition-all duration-300 flex flex-col justify-between"
                   >
                     <div className="relative">
                       <div 
@@ -910,7 +910,7 @@ export default function App() {
                         onClick={() => toggleWishlist(product.id)}
                         className="absolute top-3 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-md shadow-md text-[#1A2536]"
                       >
-                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#D88C7D] text-[#D88C7D]' : 'text-[#1A2536]'}`} />
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#B86B5A] text-[#B86B5A]' : 'text-[#1A2536]'}`} />
                       </button>
 
                       <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
@@ -923,12 +923,12 @@ export default function App() {
                     <div className="pt-4 px-1 space-y-2">
                       <h3 
                         onClick={() => { setSelectedProduct(product); setActiveTab('product'); }}
-                        className="font-serif-luxury text-xl font-medium text-[#1A2536] hover:text-[#D88C7D] cursor-pointer"
+                        className="font-serif-luxury text-xl font-medium text-[#1A2536] hover:text-[#B86B5A] cursor-pointer"
                       >
                         {product.name}
                       </h3>
 
-                      <p className="text-xs text-[#D88C7D] font-bold">{product.diamondWeight} Natural • {product.diamondClarity}</p>
+                      <p className="text-xs text-[#B86B5A] font-bold">{product.diamondWeight} Natural • {product.diamondClarity}</p>
                       <p className="text-xs text-emerald-700 font-semibold">✨ Ready to Ship ({product.deliveryDays})</p>
 
                       <div className="pt-3 flex items-center justify-between border-t border-[#E5BDB0]/40">
@@ -981,7 +981,7 @@ export default function App() {
                 <div className="h-28 rounded-2xl overflow-hidden border border-[#E5BDB0] opacity-80 hover:opacity-100 cursor-pointer">
                   <img src={selectedProduct.hoverImage} alt="Thumb 2" className="w-full h-full object-cover" />
                 </div>
-                <div className="h-28 rounded-2xl overflow-hidden border border-[#E5BDB0] bg-[#FAF7F2] flex items-center justify-center text-xs font-bold text-[#D88C7D]">
+                <div className="h-28 rounded-2xl overflow-hidden border border-[#E5BDB0] bg-[#FAF7F2] flex items-center justify-center text-xs font-bold text-[#B86B5A]">
                   + IGI Certificate
                 </div>
               </div>
@@ -991,7 +991,7 @@ export default function App() {
             <div className="lg:col-span-5 space-y-6">
               
               <div>
-                <span className="font-cursive text-3xl text-[#D88C7D] block -mb-1">handcrafted solitaire</span>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">handcrafted solitaire</span>
                 <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
                   {selectedProduct.name}
                 </h1>
@@ -1014,7 +1014,7 @@ export default function App() {
 
                 <button 
                   onClick={() => setIsPriceBreakupOpen(true)}
-                  className="w-full pt-3 border-t border-[#E5BDB0]/60 text-xs font-bold text-[#D88C7D] hover:underline flex items-center justify-between"
+                  className="w-full pt-3 border-t border-[#E5BDB0]/60 text-xs font-bold text-[#B86B5A] hover:underline flex items-center justify-between"
                 >
                   <span>View Detailed Price Breakup (Gold, Diamond & Making)</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1046,7 +1046,7 @@ export default function App() {
               {/* Pincode Check */}
               <div className="space-y-2 pt-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#D88C7D]" /> Check Delivery & COD:
+                  <MapPin className="w-3.5 h-3.5 text-[#B86B5A]" /> Check Delivery & COD:
                 </label>
                 
                 <form onSubmit={handlePincodeCheck} className="flex gap-2">
@@ -1103,7 +1103,7 @@ export default function App() {
       {activeTab === 'cart' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
           <div className="border-b border-[#E5BDB0] pb-4">
-            <span className="font-cursive text-3xl text-[#D88C7D]">your luxury selections</span>
+            <span className="font-cursive text-3xl text-[#B86B5A]">your luxury selections</span>
             <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
               Shopping Bag ({cart.reduce((a, b) => a + b.qty, 0)} Items)
             </h1>
@@ -1111,7 +1111,7 @@ export default function App() {
 
           {cart.length === 0 ? (
             <div className="text-center py-16 space-y-4">
-              <ShoppingBag className="w-16 h-16 text-[#D88C7D] mx-auto" />
+              <ShoppingBag className="w-16 h-16 text-[#B86B5A] mx-auto" />
               <h3 className="font-serif-luxury text-2xl text-gray-600">Your bag is empty</h3>
               <button 
                 onClick={() => setActiveTab('shop')}
@@ -1136,7 +1136,7 @@ export default function App() {
                       />
                       <div className="flex-1 space-y-1">
                         <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">{item.product.name}</h3>
-                        <p className="text-xs text-[#D88C7D] font-bold">Purity: {item.karat} Solid Gold | Tone: {item.metal}</p>
+                        <p className="text-xs text-[#B86B5A] font-bold">Purity: {item.karat} Solid Gold | Tone: {item.metal}</p>
                         <p className="text-xs font-bold text-emerald-700">✓ 100% Natural Diamond Guaranteed</p>
                         <p className="font-extrabold text-[#1A2536] pt-1">{formatINR(price * item.qty)}</p>
                       </div>
@@ -1207,7 +1207,7 @@ export default function App() {
       {activeTab === 'checkout' && (
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
           <div className="border-b border-[#E5BDB0] pb-4 text-center">
-            <span className="font-cursive text-3xl text-[#D88C7D]">secure Indian checkout</span>
+            <span className="font-cursive text-3xl text-[#B86B5A]">secure Indian checkout</span>
             <h1 className="font-serif-luxury text-3xl font-normal text-[#1A2536]">
               Complete Your Order
             </h1>
@@ -1216,7 +1216,7 @@ export default function App() {
           <div className="glass-card-vibrant p-6 sm:p-8 rounded-3xl border border-[#E5BDB0] space-y-6">
             <div className="space-y-4">
               <h3 className="font-bold text-sm uppercase text-[#1A2536] flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#D88C7D]" /> Delivery Address (India)
+                <MapPin className="w-4 h-4 text-[#B86B5A]" /> Delivery Address (India)
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -1230,7 +1230,7 @@ export default function App() {
 
             <div className="space-y-4 pt-4 border-t border-[#E5BDB0]">
               <h3 className="font-bold text-sm uppercase text-[#1A2536] flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-[#D88C7D]" /> Indian Payment Gateways
+                <CreditCard className="w-4 h-4 text-[#B86B5A]" /> Indian Payment Gateways
               </h3>
 
               <div className="space-y-3">
@@ -1269,7 +1269,7 @@ export default function App() {
       {activeTab === 'account' && (
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
           <div className="border-b border-[#E5BDB0] pb-4">
-            <span className="font-cursive text-3xl text-[#D88C7D]">welcome back</span>
+            <span className="font-cursive text-3xl text-[#B86B5A]">welcome back</span>
             <h1 className="font-serif-luxury text-3xl font-normal text-[#1A2536]">
               My YA-RA Account
             </h1>
@@ -1286,7 +1286,7 @@ export default function App() {
                 <img src={MOCK_PRODUCTS[0].image} alt="Order item" className="w-16 h-16 rounded-xl object-cover" />
                 <div>
                   <h4 className="font-serif-luxury font-semibold text-base">{MOCK_PRODUCTS[0].name}</h4>
-                  <p className="text-xs text-[#D88C7D] font-bold">18KT Solid Gold • VVS Natural Diamond</p>
+                  <p className="text-xs text-[#B86B5A] font-bold">18KT Solid Gold • VVS Natural Diamond</p>
                   <p className="font-bold text-xs mt-1">{formatINR(MOCK_PRODUCTS[0].price18k)}</p>
                 </div>
               </div>
@@ -1304,7 +1304,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-[#E5BDB0] pb-3">
               <div>
                 <h3 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Transparent Price Breakup</h3>
-                <p className="text-xs text-[#D88C7D] font-bold">YA-RA Honest Indian Pricing Model</p>
+                <p className="text-xs text-[#B86B5A] font-bold">YA-RA Honest Indian Pricing Model</p>
               </div>
               <button onClick={() => setIsPriceBreakupOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
                 <X className="w-5 h-5 text-gray-600" />
@@ -1344,7 +1344,7 @@ export default function App() {
           <div className="glass-card-vibrant max-w-lg w-full p-6 sm:p-8 rounded-3xl space-y-6 border border-[#E5BDB0]">
             <div className="flex justify-between items-center border-b border-[#E5BDB0] pb-3">
               <div>
-                <span className="font-cursive text-2xl text-[#D88C7D]">doorstep luxury</span>
+                <span className="font-cursive text-2xl text-[#B86B5A]">doorstep luxury</span>
                 <h3 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Book Free Try At Home</h3>
               </div>
               <button onClick={() => setIsTryAtHomeOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
@@ -1388,7 +1388,7 @@ export default function App() {
                 onChange={(e) => setPriceRange(Number(e.target.value))}
                 className="w-full accent-[#1A2536]"
               />
-              <p className="text-sm font-extrabold text-[#D88C7D]">{formatINR(priceRange)}</p>
+              <p className="text-sm font-extrabold text-[#B86B5A]">{formatINR(priceRange)}</p>
             </div>
 
             <button 
