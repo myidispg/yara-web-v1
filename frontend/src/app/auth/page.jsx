@@ -115,7 +115,7 @@ export default function AuthPage() {
                         </div>
 
                         <p className="font-cursive text-3xl text-[#E5BDB0] mb-4">every diamond tells your story</p>
-                        <h2 className="font-serif-luxury text-4xl sm:text-5xl leading-tight mb-6 font-normal">
+                        <h2 className="font-serif-luxury text-white text-4xl sm:text-5xl leading-tight mb-6 font-normal">
                             Welcome to YA-RA
                         </h2>
                         <p className="text-sm text-white/70 max-w-xs leading-relaxed mb-10">

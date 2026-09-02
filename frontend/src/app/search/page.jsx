@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import api from "@/api/client";
 import ProductCard from "@/components/ProductCard";
 
-const PAGE = 18;
+const PAGE = 20;
 
 const SORT_OPTIONS = [
     { value: "newest", label: "Newest Arrivals" },
@@ -37,6 +37,16 @@ function SearchInner() {
 
     useEffect(() => setMounted(true), []);
 
+    // Forcefully unlock body scroll in case a drawer/modal left it locked
+    useEffect(() => {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // Force reflow to fix iOS Safari scroll locking
+        void document.body.offsetHeight;
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+    }, []);
+
     useEffect(() => {
         document.title = q ? `Search: "${q}" | YA-RA Jewellery` : "Search | YA-RA Jewellery";
     }, [q]);
@@ -55,7 +65,6 @@ function SearchInner() {
             const totalResults = data?.count ?? list.length;
             setTotal(totalResults);
             setItems((prev) => (append ? [...prev, ...list] : list));
-            // Record committed searches (first page only), fire-and-forget
             if (!append && q) {
                 api.post("/control/search/track/", { q, results: totalResults }).catch(() => { });
             }
@@ -74,75 +83,85 @@ function SearchInner() {
     if (!mounted) return null;
 
     return (
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-20 py-12 pb-20">
-            <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-4">
-                <Link href="/" className="hover:text-gold-dark">Home</Link> / Search
-            </p>
+        <div className="w-full bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
+                {/* Breadcrumb */}
+                <p className="text-xs text-[#1A2536]/50 mb-6">
+                    <Link href="/" className="hover:text-[#B86B5A]">Home</Link> / Search
+                </p>
 
-            {q ? (
-                <>
-                    <h1 className="font-serif text-4xl md:text-5xl mb-2">Search Results</h1>
-                    <p className="text-sm text-ink/60 mb-8">
-                        {loading ? "Searching…" : `${total} piece${total !== 1 ? "s" : ""} found for`} <span className="font-semibold text-ink">"{q}"</span>
-                    </p>
-
-                    <div className="flex items-center justify-end mb-6">
-                        <label className="flex items-center gap-3 text-xs">
-                            <span className="uppercase tracking-[0.16em] font-medium">Sort By:</span>
-                            <select value={sort} onChange={(e) => setSort(e.target.value)}
-                                className="border border-line bg-white px-4 py-2 text-sm rounded-md focus:outline-none focus:border-gold-dark">
-                                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                        </label>
-                    </div>
-
-                    {loading ? (
-                        <p className="text-sm text-ink/50">Loading results…</p>
-                    ) : items.length ? (
-                        <>
-                            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                                {items.map((p) => <ProductCard key={p.id ?? p.slug} product={p} />)}
-                            </div>
-                            <div className="text-center mt-10">
-                                {hasMore ? (
-                                    <button onClick={() => fetchPage(items.length, true)} disabled={loadingMore}
-                                        className="btn-outline disabled:opacity-40">
-                                        {loadingMore ? "Loading…" : "Load More Results"}
-                                    </button>
-                                ) : (
-                                    total > PAGE && <p className="text-[10px] uppercase tracking-[0.2em] text-ink/50">You've viewed all {total} results.</p>
-                                )}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="bg-white rounded-xl border border-line p-10 shadow-card text-center">
-                            <p className="font-serif text-2xl mb-2">No pieces match "{q}"</p>
-                            <p className="text-sm text-ink/60 mb-6">Try a different keyword, or browse a collection instead.</p>
-                            <div className="flex flex-wrap justify-center gap-2">
-                                {POPULAR.map((c) => (
-                                    <Link key={c.href} href={c.href}
-                                        className="text-xs font-medium px-4 py-2 rounded-full border border-line bg-white hover:border-ink hover:bg-ink hover:text-white transition-colors">
-                                        {c.label}
-                                    </Link>
-                                ))}
-                            </div>
+                {q ? (
+                    <>
+                        {/* Header */}
+                        <div className="mb-8">
+                            <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">search results</span>
+                            <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536] mb-2">
+                                {loading ? "Searching…" : `${total} piece${total !== 1 ? "s" : ""} found for`}{" "}
+                                <span className="font-bold text-[#B86B5A]">"{q}"</span>
+                            </h1>
                         </div>
-                    )}
-                </>
-            ) : (
-                <div className="bg-white rounded-xl border border-line p-10 shadow-card text-center">
-                    <p className="font-serif text-2xl mb-2">Search YA-RA</p>
-                    <p className="text-sm text-ink/60 mb-6">Use the search bar above to find designs by name, code, or category.</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                        {POPULAR.map((c) => (
-                            <Link key={c.href} href={c.href}
-                                className="text-xs font-medium px-4 py-2 rounded-full border border-line bg-white hover:border-ink hover:bg-ink hover:text-white transition-colors">
-                                {c.label}
-                            </Link>
-                        ))}
+
+                        {/* Sort Toolbar */}
+                        <div className="flex items-center justify-end mb-6">
+                            <label className="glass-card-vibrant flex items-center gap-3 text-xs px-4 py-2.5 rounded-full border border-[#E5BDB0]">
+                                <span className="uppercase tracking-[0.16em] font-bold text-[#1A2536]">Sort By:</span>
+                                <select value={sort} onChange={(e) => setSort(e.target.value)}
+                                    className="bg-transparent focus:outline-none font-bold text-[#1A2536] cursor-pointer">
+                                    {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                            </label>
+                        </div>
+
+                        {/* Results */}
+                        {loading ? (
+                            <p className="text-sm text-[#1A2536]/50 text-center py-20">Loading results…</p>
+                        ) : items.length ? (
+                            <>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
+                                    {items.map((p) => <ProductCard key={p.id ?? p.slug} product={p} />)}
+                                </div>
+                                <div className="text-center mt-12">
+                                    {hasMore ? (
+                                        <button onClick={() => fetchPage(items.length, true)} disabled={loadingMore}
+                                            className="px-8 py-4 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all disabled:opacity-40">
+                                            {loadingMore ? "Loading…" : "Load More Results"}
+                                        </button>
+                                    ) : (
+                                        total > PAGE && <p className="text-[10px] uppercase tracking-[0.2em] text-[#1A2536]/50 font-bold">You've viewed all {total} results.</p>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-10 text-center max-w-2xl mx-auto">
+                                <p className="font-serif-luxury text-3xl text-[#1A2536] mb-3">No pieces match "{q}"</p>
+                                <p className="text-sm text-[#1A2536]/60 mb-8">Try a different keyword, or browse our popular collections instead.</p>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {POPULAR.map((c) => (
+                                        <Link key={c.href} href={c.href}
+                                            className="px-5 py-2.5 rounded-full border border-[#E5BDB0] bg-white text-xs font-bold text-[#1A2536] hover:border-[#B86B5A] hover:text-[#B86B5A] transition-colors">
+                                            {c.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-10 text-center max-w-2xl mx-auto">
+                        <span className="font-cursive text-4xl text-[#B86B5A] block mb-2">explore our collection</span>
+                        <h1 className="font-serif-luxury text-3xl text-[#1A2536] mb-4">Search YA-RA</h1>
+                        <p className="text-sm text-[#1A2536]/60 mb-8">Use the search bar above to find designs by name, code, or category, or browse our popular collections below.</p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {POPULAR.map((c) => (
+                                <Link key={c.href} href={c.href}
+                                    className="px-5 py-2.5 rounded-full border border-[#E5BDB0] bg-white text-xs font-bold text-[#1A2536] hover:border-[#B86B5A] hover:text-[#B86B5A] transition-colors">
+                                    {c.label}
+                                </Link>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
