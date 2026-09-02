@@ -58,6 +58,22 @@ export default function ProductClient({ product }) {
         document.title = `${product.name} | YA-RA Jewels`;
     }, [product.name]);
 
+    // Cleanup video elements on unmount to prevent Safari/Webkit "EmptyRanges" error
+    useEffect(() => {
+        return () => {
+            const videos = document.querySelectorAll('video');
+            videos.forEach(video => {
+                try {
+                    video.pause();
+                    video.removeAttribute('src');
+                    video.load(); // forces the browser to release the media engine
+                } catch (e) {
+                    // Ignore errors during cleanup
+                }
+            });
+        };
+    }, []);
+
     useEffect(() => {
         const carousel = carouselRef.current;
         if (!carousel) return;
@@ -330,8 +346,8 @@ export default function ProductClient({ product }) {
                                     key={p}
                                     onClick={() => { setPurity(p); setSize(null); }}
                                     className={`flex items-center justify-center text-xs font-bold px-5 py-2.5 rounded-full border transition-all ${p === activePurity
-                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
+                                        ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
+                                        : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                         }`}
                                 >
                                     {p} Gold
@@ -349,8 +365,8 @@ export default function ProductClient({ product }) {
                                     key={c}
                                     onClick={() => { setColor(c); setSize(null); }}
                                     className={`flex items-center gap-2.5 text-xs font-bold px-4 py-2.5 rounded-full border transition-all ${c === activeColor
-                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                            : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
+                                        ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
+                                        : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                         }`}
                                 >
                                     <span className="w-4 h-4 rounded-full border border-black/10" style={{ background: SWATCH[c] ?? "#ccc" }} />
@@ -374,8 +390,8 @@ export default function ProductClient({ product }) {
                                             key={s}
                                             onClick={() => setSize(s)}
                                             className={`w-20 py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${s === activeSize
-                                                    ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
-                                                    : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
+                                                ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
+                                                : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
                                                 }`}
                                         >
                                             <span className="text-sm font-bold">{s}</span>
@@ -459,8 +475,8 @@ export default function ProductClient({ product }) {
                         <button
                             onClick={handleAdd}
                             className={`flex-1 py-4 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 ${added
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-[#1A2536] hover:bg-[#111A29] text-white"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-[#1A2536] hover:bg-[#111A29] text-white"
                                 }`}
                         >
                             {added ? "✓ Added to Bag" : "Add to Shopping Bag"}
