@@ -37,14 +37,20 @@ export default function Navbar() {
 
     useEffect(() => {
         if (!mounted) return;
-        const originalOverflow = document.body.style.overflow;
-        if (searchOpen) {
+        if (searchOpen || mobileOpen) {
             document.body.style.overflow = "hidden";
+        } else {
+            // Explicitly restore scroll. "" can fail on iOS Safari.
+            document.body.style.overflow = "";
+            // Force a reflow to ensure iOS Safari re-enables scroll engine
+            void document.body.offsetHeight;
+            document.body.style.overflow = "auto";
         }
+
         return () => {
-            document.body.style.overflow = originalOverflow;
+            document.body.style.overflow = "auto";
         };
-    }, [searchOpen, mounted]);
+    }, [searchOpen, mobileOpen, mounted]);
 
     useEffect(() => {
         if (initialPathRef.current === null) {
@@ -111,8 +117,8 @@ export default function Navbar() {
                             <span className="h-[1.5px] bg-gradient-to-r from-transparent via-[#E5BDB0] to-[#E5BDB0] flex-1"></span>
                             <div className="relative w-4 h-4 flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-[#1A2536]">
-                                    <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7"/>
-                                    <path d="M12 2V22M3 9H21M7.5 5.5L12 9L16.5 5.5" stroke="currentColor" strokeWidth="1.2"/>
+                                    <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7" />
+                                    <path d="M12 2V22M3 9H21M7.5 5.5L12 9L16.5 5.5" stroke="currentColor" strokeWidth="1.2" />
                                 </svg>
                             </div>
                             <span className="h-[1.5px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
@@ -125,9 +131,9 @@ export default function Navbar() {
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex flex-1 justify-center gap-6 lg:gap-8 uppercase tracking-widest text-xs font-bold text-[#1A2536]">
                         {categories.map((c) => (
-                            <Link 
-                                key={c.slug} 
-                                href={`/category/${c.slug}`} 
+                            <Link
+                                key={c.slug}
+                                href={`/category/${c.slug}`}
                                 className="py-1.5 border-b-2 border-transparent hover:text-[#B86B5A] hover:border-[#B86B5A] transition-all whitespace-nowrap"
                             >
                                 {c.label}
