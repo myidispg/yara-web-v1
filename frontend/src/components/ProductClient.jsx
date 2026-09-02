@@ -54,6 +54,11 @@ export default function ProductClient({ product }) {
     const carouselRef = useRef(null);
     const zoomContainerRef = useRef(null);
 
+    // Pincode checker state
+    const [pincode, setPincode] = useState("");
+    const [pincodeResult, setPincodeResult] = useState(null);
+    const [checkingPincode, setCheckingPincode] = useState(false);
+
     useEffect(() => {
         document.title = `${product.name} | YA-RA Jewels`;
     }, [product.name]);
@@ -66,7 +71,7 @@ export default function ProductClient({ product }) {
                 try {
                     video.pause();
                     video.removeAttribute('src');
-                    video.load(); // forces the browser to release the media engine
+                    video.load();
                 } catch (e) {
                     // Ignore errors during cleanup
                 }
@@ -179,6 +184,64 @@ export default function ProductClient({ product }) {
     };
 
     const resetZoom = () => { setZoomLevel(1); setZoomPosition({ x: 50, y: 50 }); };
+
+    // Pincode checker logic — NCR only (Delhi, Gurugram, Faridabad, Noida)
+    const checkPincode = () => {
+        if (!/^\d{6}$/.test(pincode)) {
+            setPincodeResult({ error: "Please enter a valid 6-digit pincode" });
+            return;
+        }
+
+        setCheckingPincode(true);
+
+        setTimeout(() => {
+            const pin = parseInt(pincode);
+
+            // NCR delivery zones — exact PIN ranges
+            const isDelhi = pin >= 110001 && pin <= 110096;
+            const isGurugram = pin >= 122001 && pin <= 122022;
+            const isFaridabad = pin >= 121001 && pin <= 121014;
+            const isNoida = pin >= 201301 && pin <= 201313;
+
+            const isDeliverable = isDelhi || isGurugram || isFaridabad || isNoida;
+
+            let city = "";
+            if (isDelhi) city = "Delhi";
+            else if (isGurugram) city = "Gurugram";
+            else if (isFaridabad) city = "Faridabad";
+            else if (isNoida) city = "Noida";
+
+            if (!isDeliverable) {
+                setPincodeResult({
+                    notAvailable: true,
+                    city: "Your Area",
+                    message: "We currently deliver only in Delhi, Gurugram, Faridabad & Noida (NCR region)."
+                });
+                setCheckingPincode(false);
+                return;
+            }
+
+            const isInStock = stockCount > 0;
+            const baseDays = isInStock ? 2 : 12;
+            const deliveryDays = baseDays + Math.floor(Math.random() * 2);
+
+            const deliveryDate = new Date();
+            deliveryDate.setDate(deliveryDate.getDate() + deliveryDays);
+
+            setPincodeResult({
+                deliveryDate: deliveryDate.toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "short"
+                }),
+                deliveryDays,
+                codAvailable: true,
+                city,
+                shippingInfo: "Free insured delivery via premium courier"
+            });
+            setCheckingPincode(false);
+        }, 800);
+    };
 
     return (
         <div className="bg-white">
@@ -422,6 +485,101 @@ export default function ProductClient({ product }) {
                             )}
                         </div>
                     )}
+
+                    {/* Pincode Delivery Checker */}
+                    <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-5">
+                        <div className="flex items-start gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-[#1A2536] flex items-center justify-center flex-shrink-0">
+                                <svg className="w-5 h-5 text-[#E5BDB0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold text-[#1A2536] mb-1">Check Delivery Availability</h3>
+                                <p className="text-[11px] text-[#1A2536]/60">Enter your pincode for estimated delivery date</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 mb-3">
+                            <input
+                                type="text"
+                                value={pincode}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                                    setPincode(val);
+                                    setPincodeResult(null);
+                                }}
+                                placeholder="Enter 6-digit pincode"
+                                maxLength={6}
+                                className="flex-1 px-4 py-3 text-sm border border-[#E5BDB0] rounded-xl focus:outline-none focus:border-[#1A2536] transition-colors"
+                            />
+                            <button
+                                onClick={checkPincode}
+                                disabled={checkingPincode || pincode.length !== 6}
+                                className="px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {checkingPincode ? "..." : "Check"}
+                            </button>
+                        </div>
+
+                        {pincodeResult && (
+                            <div className="mt-4 pt-4 border-t border-[#E5BDB0]/40 space-y-3">
+                                {pincodeResult.error ? (
+                                    <p className="text-xs text-red-600 font-semibold">{pincodeResult.error}</p>
+                                ) : pincodeResult.notAvailable ? (
+                                    <div className="flex items-start gap-3 p-3 rounded-xl bg-[#B86B5A]/10 border border-[#B86B5A]/30">
+                                        <div className="w-8 h-8 rounded-full bg-[#B86B5A]/20 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-4 h-4 text-[#B86B5A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                            </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-[#B86B5A]">Delivery Not Available</p>
+                                            <p className="text-sm text-[#1A2536] mt-0.5">{pincodeResult.message}</p>
+                                            <Link href="/contact" className="text-[11px] text-[#B86B5A] font-bold hover:underline mt-1 inline-block">
+                                                Contact us for special delivery →
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-[#1A2536]">Delivery to {pincodeResult.city}</p>
+                                                <p className="text-sm text-[#1A2536] mt-0.5">
+                                                    Estimated by <span className="font-bold text-[#B86B5A]">{pincodeResult.deliveryDate}</span>
+                                                </p>
+                                                <p className="text-[11px] text-[#1A2536]/60 mt-1">{pincodeResult.shippingInfo}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pl-11">
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${pincodeResult.codAvailable ? "bg-emerald-50" : "bg-[#1A2536]/5"}`}>
+                                                {pincodeResult.codAvailable ? (
+                                                    <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg className="w-3.5 h-3.5 text-[#1A2536]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <span className={`text-xs font-semibold ${pincodeResult.codAvailable ? "text-emerald-700" : "text-[#1A2536]/50"}`}>
+                                                {pincodeResult.codAvailable ? "Partial Cash on Delivery Available" : "COD not available in this area"}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Specifications */}
                     <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] overflow-hidden">

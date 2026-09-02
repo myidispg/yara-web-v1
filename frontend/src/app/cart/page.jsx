@@ -27,8 +27,8 @@ export default function CartPage() {
             <p className="text-sm text-[#1A2536]/60 mb-8 max-w-md mx-auto leading-relaxed">
                 Discover certified natural diamonds, handcrafted in BIS hallmarked gold.
             </p>
-            <Link 
-                href="/" 
+            <Link
+                href="/"
                 className="inline-block px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl"
             >
                 Explore The Collection
@@ -64,7 +64,10 @@ export default function CartPage() {
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
                                             {i.name}
                                         </Link>
-                                        <p className="text-xs text-[#B86B5A] font-bold">{i.label}</p>
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1A2536]/[0.04] border border-[#E5BDB0] text-[10px] font-bold text-[#1A2536] uppercase tracking-wider">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                                            {i.label}
+                                        </span>
                                         <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
                                         <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -75,8 +78,8 @@ export default function CartPage() {
                                         <p className="font-extrabold text-xl text-[#1A2536]">{inr(i.unit_price * i.qty)}</p>
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
-                                                <button 
-                                                    onClick={() => setQty(i.key, i.qty - 1)} 
+                                                <button
+                                                    onClick={() => setQty(i.key, i.qty - 1)}
                                                     disabled={i.qty <= 1}
                                                     className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                                                 >
@@ -85,15 +88,15 @@ export default function CartPage() {
                                                 <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
                                                     {i.qty}
                                                 </span>
-                                                <button 
+                                                <button
                                                     onClick={() => setQty(i.key, i.qty + 1)}
                                                     className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white transition-colors font-bold"
                                                 >
                                                     +
                                                 </button>
                                             </div>
-                                            <button 
-                                                onClick={() => removeItem(i.key)} 
+                                            <button
+                                                onClick={() => removeItem(i.key)}
                                                 className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#B86B5A] font-bold transition-colors"
                                             >
                                                 Remove
@@ -107,12 +110,15 @@ export default function CartPage() {
                                     <Link href={`/product/${i.slug}`} className="shrink-0">
                                         <img src={i.image} alt={i.name} className="w-28 h-28 object-cover rounded-2xl border border-[#E5BDB0]/40" />
                                     </Link>
-                                    
+
                                     <div className="flex-1 min-w-0 space-y-1.5">
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
                                             {i.name}
                                         </Link>
-                                        <p className="text-xs text-[#B86B5A] font-bold">{i.label}</p>
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1A2536]/[0.04] border border-[#E5BDB0] text-[10px] font-bold text-[#1A2536] uppercase tracking-wider">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                                            {i.label}
+                                        </span>
                                         <p className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 font-semibold">Design Code: {i.design_code}</p>
                                         <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 pt-1">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -123,8 +129,8 @@ export default function CartPage() {
                                     <div className="flex flex-col items-end gap-3 shrink-0">
                                         <p className="font-extrabold text-lg text-[#1A2536]">{inr(i.unit_price * i.qty)}</p>
                                         <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
-                                            <button 
-                                                onClick={() => setQty(i.key, i.qty - 1)} 
+                                            <button
+                                                onClick={() => setQty(i.key, i.qty - 1)}
                                                 disabled={i.qty <= 1}
                                                 className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                                             >
@@ -133,15 +139,15 @@ export default function CartPage() {
                                             <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
                                                 {i.qty}
                                             </span>
-                                            <button 
+                                            <button
                                                 onClick={() => setQty(i.key, i.qty + 1)}
                                                 className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white transition-colors font-bold"
                                             >
                                                 +
                                             </button>
                                         </div>
-                                        <button 
-                                            onClick={() => removeItem(i.key)} 
+                                        <button
+                                            onClick={() => removeItem(i.key)}
                                             className="text-[10px] uppercase tracking-[0.14em] text-[#1A2536]/50 hover:text-[#B86B5A] font-bold transition-colors"
                                         >
                                             Remove
@@ -155,7 +161,7 @@ export default function CartPage() {
                     {/* Order Summary */}
                     <aside className="glass-card-vibrant p-6 sm:p-8 rounded-3xl border border-[#E5BDB0] w-full lg:w-[380px] shrink-0 lg:sticky lg:top-24 space-y-6">
                         <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Order Summary</h2>
-                        
+
                         <div className="space-y-3 text-sm border-b border-[#E5BDB0]/40 pb-6">
                             <div className="flex justify-between">
                                 <span className="text-[#1A2536]/70">Subtotal</span>
@@ -176,14 +182,14 @@ export default function CartPage() {
                             <span className="font-extrabold text-2xl text-[#1A2536]">{inr(subtotal)}</span>
                         </div>
 
-                        <button 
-                            onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")} 
+                        <button
+                            onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")}
                             className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2"
                         >
                             <span>Proceed To Secure Checkout</span>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                         </button>
-                        
+
                         <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#E5BDB0]/40">
                             <div className="text-center">
                                 <p className="text-[9px] font-bold text-[#1A2536] uppercase tracking-wider">Hallmarked</p>
