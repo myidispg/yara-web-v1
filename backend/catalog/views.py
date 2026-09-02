@@ -3,9 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from django.db.models import F, Min, Q
+from django.db.models import F, Min, Q, DecimalField
+from django.db.models.functions import Coalesce
+from django.db.models.expressions import ExpressionWrapper
 
-from .models import Category, Design
+from .models import Category, Design, RateCard
 from .serializers import CategorySerializer, DesignDetailSerializer, DesignListSerializer
 
 
@@ -87,9 +89,51 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if purity or color or p.get("in_stock"):
             qs = qs.distinct()
 
+                # Effective "from" price: cheapest in-stock piece, else MTO estimate @ 14Kt.
+        # Mirrors design_from_price() so filtering matches what the card displays.
+        rc = RateCard.get()
+        gold_rate = float(rc.gold_rate_14kt)
+        dia_rate = float(rc.rate_for_grade(rc.default_grade))
+        making_pct = float(rc.making_charges_percentage) / 100.0
+        gst_pct = float(rc.gst_percentage) / 100.0
+
+        diamond_w = ExpressionWrapper(
+            F("diamond_weight_round_melle")
+            + F("pointer_solitaire_weight")
+            + F("fancy_cut_weight"),
+            output_field=DecimalField()
+        )
+        pre_making = ExpressionWrapper(
+            (F("base_net_weight_14kt") * gold_rate) + (diamond_w * dia_rate),
+            output_field=DecimalField()
+        )
+        est_price = ExpressionWrapper(
+            (pre_making + (pre_making * making_pct)) * (1 + gst_pct),
+            output_field=DecimalField()
+        )
+
+        # Annotate with effective "from" price
+        # Coalesce ensures every design gets a min_price value
         qs = qs.annotate(
-            min_price=Min("products__price", filter=Q(products__status="in_stock")))
-        sort = p.get("sort", "newest")
+            min_price=Coalesce(
+                Min("products__price", filter=Q(products__status="in_stock")),
+                est_price,
+                output_field=DecimalField()
+            )
+        )
+
+        # Price range filter - only apply if parameter exists AND is valid
+        price_min = p.get("price_min")
+        price_max = p.get("price_max")
+        
+        if price_min and price_min.replace('.', '', 1).isdigit():
+            qs = qs.filter(min_price__gte=float(price_min))
+        if price_max and price_max.replace('.', '', 1).isdigit():
+            # Only filter if it's less than our "no limit" threshold
+            if float(price_max) < 200000:
+                qs = qs.filter(min_price__lte=float(price_max))
+
+        sort = (p.get("sort", "newest") or "newest").replace("_", "-")
         if sort == "price-asc":
             qs = qs.order_by(F("min_price").asc(nulls_last=True), "-created_at")
         elif sort == "price-desc":

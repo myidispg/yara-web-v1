@@ -21,8 +21,8 @@ const COLOR_OPTIONS = ["Yellow", "Rose", "White"];
 const SWATCH = { Yellow: "#FFD700", Rose: "#E5BDB0", White: "#E8E8E8" };
 const SORT_OPTIONS = [
     { value: "newest", label: "Newest First" },
-    { value: "price_asc", label: "Price: Low to High" },
-    { value: "price_desc", label: "Price: High to Low" },
+    { value: "price-asc", label: "Price: Low to High" },
+    { value: "price-desc", label: "Price: High to Low" },
 ];
 
 const BANNERS = [
@@ -40,7 +40,7 @@ const BANNERS = [
 
 export default function CategoryPage() {
     const { slug } = useParams();
-    const [sel, setSel] = useState({ karat: [], color: [] });
+    const [sel, setSel] = useState({ karat: [], color: [], priceMax: 200000 });
     const [inStockOnly, setInStockOnly] = useState(false);
     const [sort, setSort] = useState("newest");
     const [items, setItems] = useState([]);
@@ -66,7 +66,7 @@ export default function CategoryPage() {
     }, [slug]);
 
     const hasMore = items.length < total;
-    const activeCount = sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0) + (selectedSub ? 1 : 0);
+    const activeCount = sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0) + (selectedSub ? 1 : 0) + (sel.priceMax < 200000 ? 1 : 0);
 
     const toggle = (group, value) =>
         setSel((s) => ({
@@ -75,7 +75,7 @@ export default function CategoryPage() {
         }));
 
     const clearAll = () => {
-        setSel({ karat: [], color: [] });
+        setSel({ karat: [], color: [], priceMax: 200000 });
         setInStockOnly(false);
         setSelectedSub("");
     };
@@ -86,6 +86,7 @@ export default function CategoryPage() {
         if (sel.karat.length) p.purity = sel.karat;
         if (sel.color.length) p.color = sel.color;
         if (inStockOnly) p.in_stock = "1";
+        if (sel.priceMax < 200000) p.price_max = sel.priceMax;
         return p;
     };
 
@@ -143,7 +144,7 @@ export default function CategoryPage() {
 
     const filterBody = (
         <div className="space-y-6">
-            {/* Subcategories - Only shows subs for this specific category */}
+            {/* Subcategories */}
             {subcategories.length > 0 && (
                 <div>
                     <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Subcategories</h3>
@@ -173,12 +174,38 @@ export default function CategoryPage() {
                 </div>
             )}
 
+            {/* Price Range */}
+            <div>
+                <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Price Range</h3>
+                <input
+                    type="range"
+                    min="10000"
+                    max="200000"
+                    step="5000"
+                    value={sel.priceMax}
+                    onChange={(e) => setSel({ ...sel, priceMax: Number(e.target.value) })}
+                    className="w-full accent-[#1A2536]"
+                />
+                <div className="flex justify-between items-center mt-2">
+                    <span className="text-[10px] font-bold text-[#1A2536]/50">₹10K</span>
+                    <span className="text-xs font-extrabold text-[#B86B5A]">
+                        {sel.priceMax >= 200000
+                            ? "Any Price"
+                            : `Up to ${sel.priceMax >= 100000 ? `₹${(sel.priceMax / 100000).toFixed(1)}L` : `₹${(sel.priceMax / 1000).toFixed(0)}K`}`}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#1A2536]/50">₹2L+</span>
+                </div>
+            </div>
+
+            {/* Gold Purity */}
             <div>
                 <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Gold Purity</h3>
                 <div className="flex flex-wrap gap-2">
                     {KARAT_OPTIONS.map((k) => <Chip key={k} group="karat" value={k} />)}
                 </div>
             </div>
+
+            {/* Gold Colour */}
             <div>
                 <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Gold Colour</h3>
                 <div className="flex flex-wrap gap-2">
@@ -192,6 +219,8 @@ export default function CategoryPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Availability */}
             <div>
                 <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Availability</h3>
                 <button
@@ -235,26 +264,6 @@ export default function CategoryPage() {
 
     return (
         <div className="bg-white pb-28 lg:pb-12">
-            {/* Hero Section */}
-            {/* <div className="relative rounded-[32px] overflow-hidden bg-white mx-4 sm:mx-6 lg:mx-8 mt-8 mb-10 p-6 sm:p-8 border-2 border-[#E5BDB0] shadow-xl">
-                <div className="relative z-10 max-w-2xl space-y-2">
-                    <span className="font-cursive text-2xl sm:text-3xl text-[#B86B5A] block -mb-1">fine jewellery edit</span>
-                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536] leading-tight">
-                        {title}
-                    </h1>
-                    <p className="text-[#1A2536]/70 text-xs sm:text-sm font-medium leading-relaxed">
-                        {subtitle}
-                    </p>
-                    <div className="pt-2">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1A2536] text-white text-[10px] font-bold uppercase tracking-widest">
-                            ✨ 100% Natural Diamonds • Solid Gold
-                        </span>
-                    </div>
-                </div>
-                <div className="absolute right-[-40px] top-[-40px] w-96 h-96 bg-[#E5BDB0]/15 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute left-[-40px] bottom-[-40px] w-72 h-72 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none"></div>
-            </div> */}
-
             <div className="max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-6 pt-8 pb-12 space-y-8">
                 {/* Breadcrumb */}
                 <p className="text-xs text-gray-500">
@@ -305,7 +314,13 @@ export default function CategoryPage() {
                                 {!hasMore && total > PAGE && <p className="text-center text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-8 font-bold">You've viewed all {total} designs.</p>}
                             </>
                         ) : (
-                            <p className="text-sm text-gray-500">No designs match your filters yet.</p>
+                            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-10 text-center max-w-2xl mx-auto">
+                                <p className="font-serif-luxury text-2xl text-[#1A2536] mb-3">No designs match your filters</p>
+                                <p className="text-sm text-[#1A2536]/60 mb-6">Try adjusting your filters or clearing them to see more designs.</p>
+                                <button onClick={clearAll} className="px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl">
+                                    Clear All Filters
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
