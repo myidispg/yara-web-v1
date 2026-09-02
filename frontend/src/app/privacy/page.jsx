@@ -2,73 +2,126 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Privacy Policy | YA-RA Jewels",
-  description: "YA-RA's privacy policy and data protection practices.",
+  description: "How we collect, use, and protect your personal information.",
 };
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-4xl mx-auto px-8 lg:px-20 py-12">
-      <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-4">
-        <Link href="/" className="hover:text-gold-dark">Home</Link> / Privacy Policy
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Breadcrumb */}
+      <p className="text-xs text-[#1A2536]/50 mb-6">
+        <Link href="/" className="hover:text-[#B86B5A]">Home</Link> / <Link href="/policies" className="hover:text-[#B86B5A]">Policies</Link> / Privacy Policy
       </p>
-      <h1 className="font-serif text-4xl md:text-5xl mb-6">Privacy Policy</h1>
-      <p className="text-sm text-ink/50 mb-8">Last updated: August 15, 2026</p>
-      
-      <div className="prose prose-sm max-w-none text-ink/70 space-y-6">
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">1. Information We Collect</h2>
-          <p>We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us. This includes:</p>
-          <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li>Name, email address, phone number, and shipping address</li>
-            <li>Payment information (processed securely through our payment partners)</li>
-            <li>Order history and preferences</li>
-            <li>Communications with our customer service team</li>
+
+      {/* Header */}
+      <div className="mb-10">
+        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">your data, protected</span>
+        <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Privacy Policy</h1>
+      </div>
+
+      <div className="space-y-8 text-[#1A2536]/70 leading-relaxed">
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">1. Information We Collect</h2>
+          <p className="mb-4">We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us. This includes:</p>
+          <ul className="space-y-2 ml-4">
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Name, email address, phone number, and shipping address</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Payment information (processed securely through our payment partners)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Order history and preferences</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Communications with our customer service team</span>
+            </li>
           </ul>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">2. How We Use Your Information</h2>
-          <p>We use the information we collect to:</p>
-          <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li>Process and fulfill your orders</li>
-            <li>Send order confirmations and shipping updates</li>
-            <li>Provide customer support and respond to inquiries</li>
-            <li>Send marketing communications (with your consent)</li>
-            <li>Improve our products and services</li>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">2. How We Use Your Information</h2>
+          <p className="mb-4">We use the information we collect to:</p>
+          <ul className="space-y-2 ml-4">
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Process and fulfill your orders</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Send order confirmations and shipping updates</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Provide customer support and respond to inquiries</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Send marketing communications (with your consent)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Improve our products and services</span>
+            </li>
           </ul>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">3. Information Sharing</h2>
-          <p>We do not sell your personal information. We share information only with:</p>
-          <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li>Service providers who assist in our operations (shipping, payment processing)</li>
-            <li>Professional advisors (lawyers, accountants)</li>
-            <li>Law enforcement when required by law</li>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">3. Information Sharing</h2>
+          <p className="mb-4">We do not sell your personal information. We share information only with:</p>
+          <ul className="space-y-2 ml-4">
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Service providers who assist in our operations (shipping, payment processing)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Professional advisors (lawyers, accountants)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Law enforcement when required by law</span>
+            </li>
           </ul>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">4. Data Security</h2>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">4. Data Security</h2>
           <p>We implement appropriate security measures to protect your personal information, including encryption, secure servers, and access controls. However, no method of transmission over the internet is 100% secure.</p>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">5. Your Rights</h2>
-          <p>You have the right to:</p>
-          <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li>Access your personal information</li>
-            <li>Correct inaccurate data</li>
-            <li>Request deletion of your data</li>
-            <li>Opt-out of marketing communications</li>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">5. Your Rights</h2>
+          <p className="mb-4">You have the right to:</p>
+          <ul className="space-y-2 ml-4">
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Access your personal information</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Correct inaccurate data</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Request deletion of your data</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#B86B5A] mt-1">◆</span>
+              <span>Opt-out of marketing communications</span>
+            </li>
           </ul>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">6. Contact Us</h2>
-          <p>If you have questions about this privacy policy, please contact us at:</p>
-          <p className="mt-2"><a href="mailto:privacy@yarajewels.com" className="text-gold-dark hover:text-ink">privacy@yarajewels.com</a></p>
-        </section>
+
+        <div className="text-center pt-4">
+          <Link href="/contact" className="inline-block px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl">
+            Contact Us About Privacy
+          </Link>
+        </div>
       </div>
     </div>
   );

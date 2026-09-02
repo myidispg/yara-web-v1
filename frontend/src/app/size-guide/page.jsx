@@ -2,58 +2,56 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Ring Size Guide | YA-RA Jewels",
-  description: "How to measure your ring size accurately for the perfect fit.",
+  description: "How to measure your perfect ring size at home.",
 };
 
 export default function SizeGuidePage() {
   return (
-    <div className="max-w-4xl mx-auto px-8 lg:px-20 py-12">
-      <p className="text-xs uppercase tracking-[0.16em] text-ink/50 mb-4">
-        <Link href="/" className="hover:text-gold-dark">Home</Link> / Size Guide
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Breadcrumb */}
+      <p className="text-xs text-[#1A2536]/50 mb-6">
+        <Link href="/" className="hover:text-[#B86B5A]">Home</Link> / <Link href="/policies" className="hover:text-[#B86B5A]">Policies</Link> / Ring Size Guide
       </p>
-      <h1 className="font-serif text-4xl md:text-5xl mb-6">Ring Size Guide</h1>
-      
-      <div className="space-y-8 text-ink/70">
-        <div className="bg-gold/10 border border-gold/30 rounded-2xl p-8">
-          <h2 className="font-serif text-2xl text-ink mb-3">Finding Your Perfect Fit</h2>
-          <p className="leading-relaxed">
-            Getting the right ring size is crucial for comfort and security. Follow our guide 
-            to measure your size accurately, or visit our showroom for professional sizing.
-          </p>
-        </div>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-4">Method 1: Measure an Existing Ring</h2>
+
+      {/* Header */}
+      <div className="mb-10">
+        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">find your perfect fit</span>
+        <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Ring Size Guide</h1>
+      </div>
+
+      <div className="space-y-8 text-[#1A2536]/70 leading-relaxed">
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-4">Method 1: Measure an Existing Ring</h2>
           <ol className="space-y-3 list-decimal pl-6">
             <li>Take a ring that fits the intended finger well</li>
-            <li>Measure the <strong>internal diameter</strong> in millimeters using a ruler</li>
+            <li>Measure the <strong className="text-[#1A2536]">internal diameter</strong> in millimeters using a ruler</li>
             <li>Match the measurement to our size chart below</li>
           </ol>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-4">Method 2: Measure Your Finger</h2>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-4">Method 2: Measure Your Finger</h2>
           <ol className="space-y-3 list-decimal pl-6">
             <li>Wrap a strip of paper or string around the base of your finger</li>
             <li>Mark where the ends meet</li>
             <li>Measure the length in millimeters</li>
             <li>Match the circumference to our size chart below</li>
           </ol>
-          <p className="mt-4 text-sm text-ink/60">
-            <strong>Tip:</strong> Measure your finger at the end of the day when it's at its largest. 
+          <p className="mt-4 text-sm text-[#1A2536]/60 bg-[#E5BDB0]/20 p-4 rounded-xl border border-[#E5BDB0]/40">
+            <strong className="text-[#1A2536]">Pro Tip:</strong> Measure your finger at the end of the day when it's at its largest. 
             Avoid measuring when your hands are cold.
           </p>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-4">Size Chart</h2>
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-4">Size Chart</h2>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-line">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-cream">
-                  <th className="border border-line px-4 py-3 text-left text-xs uppercase tracking-wider">Size</th>
-                  <th className="border border-line px-4 py-3 text-left text-xs uppercase tracking-wider">Diameter (mm)</th>
-                  <th className="border border-line px-4 py-3 text-left text-xs uppercase tracking-wider">Circumference (mm)</th>
+                <tr className="bg-[#1A2536] text-white">
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-wider font-bold">Size</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-wider font-bold">Diameter (mm)</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase tracking-wider font-bold">Circumference (mm)</th>
                 </tr>
               </thead>
               <tbody>
@@ -67,27 +65,31 @@ export default function SizeGuidePage() {
                   ["18", "26.2", "82.5"],
                   ["20", "27.8", "87.6"],
                 ].map(([size, diameter, circumference]) => (
-                  <tr key={size} className="hover:bg-cream/50">
-                    <td className="border border-line px-4 py-3 font-semibold">{size}</td>
-                    <td className="border border-line px-4 py-3">{diameter}</td>
-                    <td className="border border-line px-4 py-3">{circumference}</td>
+                  <tr key={size} className="border-b border-[#E5BDB0]/40 hover:bg-[#E5BDB0]/10 transition-colors">
+                    <td className="px-4 py-3 font-bold text-[#1A2536]">{size}</td>
+                    <td className="px-4 py-3 text-[#1A2536]/70">{diameter}</td>
+                    <td className="px-4 py-3 text-[#1A2536]/70">{circumference}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </section>
-        
-        <section>
-          <h2 className="font-serif text-2xl text-ink mb-3">Need Help?</h2>
-          <p className="mb-4">
+
+        <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+          <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-3">Need Help?</h2>
+          <p className="mb-6">
             If you're between sizes, we recommend choosing the larger size. Our rings can be 
             resized within 2 sizes up or down. For professional sizing, visit our showroom or 
             contact our customer service team.
           </p>
-          <div className="flex gap-4">
-            <Link href="/showroom" className="btn-outline">Visit Showroom</Link>
-            <Link href="/contact" className="btn-solid">Contact Us</Link>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link href="/showroom" className="px-8 py-4 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all text-center">
+              Visit Showroom
+            </Link>
+            <Link href="/contact" className="px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl text-center">
+              Contact Us
+            </Link>
           </div>
         </section>
       </div>
