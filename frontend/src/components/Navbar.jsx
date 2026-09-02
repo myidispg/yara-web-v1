@@ -40,16 +40,10 @@ export default function Navbar() {
         if (searchOpen || mobileOpen) {
             document.body.style.overflow = "hidden";
         } else {
-            // Explicitly restore scroll. "" can fail on iOS Safari.
-            document.body.style.overflow = "";
-            // Force a reflow to ensure iOS Safari re-enables scroll engine
-            void document.body.offsetHeight;
-            document.body.style.overflow = "auto";
+            // removeProperty is the ONLY bulletproof way to fix Safari's scroll lock bug
+            document.body.style.removeProperty('overflow');
+            document.documentElement.style.removeProperty('overflow');
         }
-
-        return () => {
-            document.body.style.overflow = "auto";
-        };
     }, [searchOpen, mobileOpen, mounted]);
 
     useEffect(() => {
@@ -69,7 +63,7 @@ export default function Navbar() {
         const t = setTimeout(async () => {
             try {
                 const { data } = await api.get("/products/", { params: { search: query.trim() } });
-                setResults((data?.results ?? data).slice(0, 6));
+                setResults((data?.results ?? data).slice(0, 4)); // Limit to 3 so the button is always visible
             } catch { setResults([]); }
             setSearching(false);
         }, 350);
@@ -77,6 +71,21 @@ export default function Navbar() {
     }, [query]);
 
     const closeSearch = () => { setSearchOpen(false); setQuery(""); setResults([]); };
+
+    // Helper to safely navigate to search page and fix Safari scroll locking
+    const navigateToSearch = () => {
+        if (query.trim().length < 2) return;
+
+        // 1. Instantly delete inline overflow styles
+        document.body.style.removeProperty('overflow');
+        document.documentElement.style.removeProperty('overflow');
+
+        // 2. Close the drawer
+        closeSearch();
+
+        // 3. Push the route
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+    };
 
     return (
         <header className="sticky top-0 z-40">
@@ -203,10 +212,7 @@ export default function Navbar() {
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Escape") closeSearch();
-                                    if (e.key === "Enter" && query.trim().length >= 2) {
-                                        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-                                        closeSearch();
-                                    }
+                                    if (e.key === "Enter") navigateToSearch();
                                 }}
                                 placeholder="Search rings, earrings, pendants… (Enter for full results)"
                                 className="flex-1 bg-transparent border-b-2 border-[#E5BDB0] py-2 text-base focus:outline-none focus:border-[#1A2536] text-[#1A2536]"
@@ -246,15 +252,13 @@ export default function Navbar() {
                             <p className="text-sm text-[#1A2536]/60 mt-4">No pieces match "{query}".</p>
                         )}
 
-                        {!searching && results.length > 0 && (
+                        {!searching && query.trim().length >= 2 && (
                             <button
-                                onClick={() => {
-                                    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-                                    closeSearch();
-                                }}
-                                className="mt-4 w-full text-center text-xs uppercase tracking-[0.2em] font-bold text-[#B86B5A] hover:text-[#1A2536] py-2.5 border-2 border-[#E5BDB0] rounded-lg"
+                                onClick={navigateToSearch}
+                                className="mt-4 w-full text-center text-xs uppercase tracking-[0.2em] font-bold text-white bg-[#B86B5A] hover:bg-[#1A2536] py-3.5 border-2 border-[#B86B5A] rounded-full transition-all shadow-lg flex items-center justify-center gap-2"
                             >
-                                View all results for "{query}" →
+                                View all results for "{query}"
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
                             </button>
                         )}
                     </div>
