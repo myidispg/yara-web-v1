@@ -39,12 +39,9 @@ function SearchInner() {
 
     // Forcefully unlock body scroll in case a drawer/modal left it locked
     useEffect(() => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-        // Force reflow to fix iOS Safari scroll locking
-        void document.body.offsetHeight;
-        document.body.style.overflow = 'auto';
-        document.documentElement.style.overflow = 'auto';
+        document.body.style.removeProperty('overflow');
+        document.documentElement.style.removeProperty('overflow');
+        document.body.classList.remove('overflow-hidden');
     }, []);
 
     useEffect(() => {
