@@ -106,8 +106,8 @@ export default function Navbar() {
             </div> */}
 
             {/* Main Navigation */}
-            <div className="glass-nav-vibrant">
-                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-4 max-w-7xl mx-auto">
+            <div className="glass-nav-vibrant py-3">
+                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-5 max-w-7xl mx-auto">
                     {/* Mobile Menu Button */}
                     <button className="md:hidden text-[#1A2536] text-2xl" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
                         ☰
