@@ -543,9 +543,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         # Use new values from the update if provided, else current values
         new_karat = serializer.validated_data.get('karat', instance.karat)
         new_grade = serializer.validated_data.get('diamond_grade', instance.diamond_grade)
+        new_net_weight = serializer.validated_data.get('actual_net_weight', instance.actual_net_weight)
+        new_diamond_weight = serializer.validated_data.get('actual_diamond_weight', instance.actual_diamond_weight)
+        new_color_stone_weight = serializer.validated_data.get('actual_color_stone_weight', instance.actual_color_stone_weight)
+        
         new_price = Product.calculate_price(
-            net_weight=instance.actual_net_weight,
-            diamond_weight=instance.actual_diamond_weight,
+            net_weight=new_net_weight,
+            diamond_weight=new_diamond_weight,
             karat=new_karat,
             diamond_grade=new_grade,
         )

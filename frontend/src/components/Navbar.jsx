@@ -106,15 +106,15 @@ export default function Navbar() {
             </div> */}
 
             {/* Main Navigation */}
-            <div className="glass-nav-vibrant py-3">
-                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-5 max-w-7xl mx-auto">
+            <div className="glass-nav-vibrant py-1">
+    <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2 max-w-7xl mx-auto">
                     {/* Mobile Menu Button */}
                     <button className="md:hidden text-[#1A2536] text-2xl" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
                         ☰
                     </button>
 
                     {/* Logo */}
-                    <Link href="/" className="shrink-0 flex flex-col items-center justify-center py-2 group">
+                    <Link href="/" className="shrink-0 flex flex-col items-center justify-center py-1 group">
                         <div className="flex items-center gap-2">
                             <span className="font-serif-luxury text-3xl lg:text-4xl tracking-[0.3em] text-[#1A2536] group-hover:text-[#B86B5A] transition-colors">
                                 YA<span className="text-[#B86B5A]">-</span>RA

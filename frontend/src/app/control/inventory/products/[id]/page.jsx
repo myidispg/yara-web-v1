@@ -70,13 +70,18 @@ export default function ControlProductPage() {
 
     const openEdit = () => {
         setEditForm({
+            item_code: p.item_code,
             karat: p.karat,
             gold_color: p.gold_color,
             ring_size: p.ring_size || "",
             diamond_grade: p.diamond_grade,
+            actual_net_weight: p.actual_net_weight || "",
+            actual_diamond_weight: p.actual_diamond_weight || "",
+            actual_color_stone_weight: p.actual_color_stone_weight || "",
             report_lab: p.report_lab || "",
             report_number: p.report_number || "",
             hallmark_number: p.hallmark_number || "",
+            status: p.status,
         });
         setShowEdit(true);
     };
@@ -85,14 +90,20 @@ export default function ControlProductPage() {
         setSaving(true);
         try {
             const payload = {
+                item_code: editForm.item_code.trim(),
                 karat: editForm.karat,
                 gold_color: editForm.gold_color,
                 ring_size: editForm.ring_size || null,
                 diamond_grade: editForm.diamond_grade,
+                actual_net_weight: parseFloat(editForm.actual_net_weight) || 0,
+                actual_diamond_weight: parseFloat(editForm.actual_diamond_weight) || 0,
+                actual_color_stone_weight: parseFloat(editForm.actual_color_stone_weight) || 0,
                 report_lab: editForm.report_lab.trim(),
                 report_number: editForm.report_number.trim(),
                 hallmark_number: editForm.hallmark_number.trim(),
-            }; await controlApi.updateProduct(p.id, payload);
+                status: editForm.status,
+            };
+            await controlApi.updateProduct(p.id, payload);
             setShowEdit(false);
             await load();
         } catch (err) {
@@ -228,11 +239,35 @@ export default function ControlProductPage() {
             {/* Edit Modal */}
             {showEdit && editForm && (
                 <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowEdit(false)}>
-                    <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <h2 className="font-serif text-2xl mb-6">Edit {p.item_code}</h2>
 
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code</label>
+                                    <input
+                                        value={editForm.item_code}
+                                        onChange={(e) => setEditForm({ ...editForm, item_code: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Status</label>
+                                    <select
+                                        value={editForm.status}
+                                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    >
+                                        <option value="in_stock">In Stock</option>
+                                        <option value="sold">Sold (Online)</option>
+                                        <option value="sold_offline">Sold (Offline)</option>
+                                        <option value="reserved">Reserved</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Karat</label>
                                     <select value={editForm.karat} onChange={(e) => setEditForm({ ...editForm, karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
@@ -245,17 +280,49 @@ export default function ControlProductPage() {
                                         {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
+                                {isRing && (
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Ring Size</label>
+                                        <select value={editForm.ring_size} onChange={(e) => setEditForm({ ...editForm, ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                            <option value="">No size</option>
+                                            {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
-                            {isRing && (
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Ring Size</label>
-                                    <select value={editForm.ring_size} onChange={(e) => setEditForm({ ...editForm, ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
-                                        <option value="">No size</option>
-                                        {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
-                                    </select>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Net Weight (g)</label>
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        value={editForm.actual_net_weight}
+                                        onChange={(e) => setEditForm({ ...editForm, actual_net_weight: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
                                 </div>
-                            )}
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Weight (ct)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editForm.actual_diamond_weight}
+                                        onChange={(e) => setEditForm({ ...editForm, actual_diamond_weight: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Color Stone (ct)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editForm.actual_color_stone_weight}
+                                        onChange={(e) => setEditForm({ ...editForm, actual_color_stone_weight: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
+                                </div>
+                            </div>
 
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Grade</label>
