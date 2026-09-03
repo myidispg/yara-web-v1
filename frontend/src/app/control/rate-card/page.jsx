@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import controlApi from "@/api/controlClient";
 
-const inr = (n) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
+const inr = (n) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
+
+const inputCls = "w-full border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536] transition-colors";
+const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-2";
 
 export default function RateCardPage() {
     const [rateCard, setRateCard] = useState(null);
@@ -13,12 +15,13 @@ export default function RateCardPage() {
     const [saving, setSaving] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
+    const formDirtyRef = useRef(false);
     const [form, setForm] = useState({ 
         gold_rate_14kt: "", 
         gold_rate_18kt: "", 
         making_fixed_per_gram: "", 
         making_pct_24kt: "", 
-        gst: "", 
+        gst_percentage: "", 
         default_grade: "" 
     });
     const [auto, setAuto] = useState({
@@ -33,10 +36,8 @@ export default function RateCardPage() {
     const [newBand, setNewBand] = useState({ name: "", rate: "" });
     const [lastRefreshed, setLastRefreshed] = useState(null);
 
-    // Track whether form is being edited to prevent overwriting user input
-    const formDirtyRef = useRef(false);
+    const markFormDirty = () => { formDirtyRef.current = true; };
 
-    // Initial load (full form + bands)
     const load = async () => {
         try {
             const [{ data }, hist] = await Promise.all([
@@ -46,14 +47,13 @@ export default function RateCardPage() {
             setRateCard(data);
             setHistory(hist.data || []);
             setLastRefreshed(new Date());
-            // Only update form state if user isn't actively editing
             if (!formDirtyRef.current) {
                 setForm({
                     gold_rate_14kt: data.gold_rate_14kt.toString(),
                     gold_rate_18kt: data.gold_rate_18kt.toString(),
                     making_fixed_per_gram: data.making_fixed_per_gram?.toString() || "0",
                     making_pct_24kt: data.making_pct_24kt?.toString() || "0",
-                    gst: data.gst_percentage.toString(),
+                    gst_percentage: data.gst_percentage.toString(),
                     default_grade: data.default_grade,
                 });
                 setAuto({
@@ -73,395 +73,257 @@ export default function RateCardPage() {
         }
     };
 
-    // Lightweight auto-refresh (just rateCard + history, not the form)
-    const autoRefresh = async () => {
-        try {
-            const [{ data }, hist] = await Promise.all([
-                controlApi.getRateCard(),
-                controlApi.getRateHistory().catch(() => ({ data: [] }))
-            ]);
-            setRateCard(data);
-            setHistory(hist.data || []);
-            setLastRefreshed(new Date());
-        } catch (err) {
-            // Silent fail for auto-refresh
-        }
-    };
+    useEffect(() => { load(); }, []);
 
-    useEffect(() => {
-        load();
-        const timer = setInterval(autoRefresh, 15000); // every 15 seconds
-        return () => clearInterval(timer);
-    }, []);
+    const activeBands = bands.filter((b) => b.name && b.rate);
 
-    const markFormDirty = () => { formDirtyRef.current = true; };
-    const markFormClean = () => { formDirtyRef.current = false; };
-
-        const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [savingMode, setSavingMode] = useState(null); // 'sync', 'async', or null
-
-    const handleSaveClick = (e) => {
-        e.preventDefault();
-        
-        // Count in-stock products not in orders
-        // We'll estimate from the dashboard or show a generic message
-        setShowConfirmDialog(true);
-    };
-
-    const confirmSave = async (mode) => {
-        setShowConfirmDialog(false);
-        setSavingMode(mode);
+    const handleSaveClick = async () => {
         setSaving(true);
-        
         try {
-            const diamond_rates = {};
-            bands.forEach((b) => {
-                if (b.name.trim() && b.rate) diamond_rates[b.name.trim()] = parseFloat(b.rate);
-            });
-            
             const payload = {
                 gold_rate_14kt: parseFloat(form.gold_rate_14kt),
                 gold_rate_18kt: parseFloat(form.gold_rate_18kt),
                 making_fixed_per_gram: parseFloat(form.making_fixed_per_gram) || 0,
                 making_pct_24kt: parseFloat(form.making_pct_24kt) || 0,
-                gst_percentage: parseFloat(form.gst),
-                diamond_rates,
+                gst_percentage: parseFloat(form.gst_percentage),
                 default_grade: form.default_grade,
+                diamond_rates: Object.fromEntries(bands.filter((b) => b.name).map((b) => [b.name, parseFloat(b.rate) || 0])),
                 auto_fetch_enabled: auto.enabled,
                 auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
-                increment_percentage: parseFloat(auto.increment),
+                increment_percentage: parseFloat(auto.increment) || 0.50,
                 change_threshold_type: auto.thresholdType,
-                change_threshold_percentage: parseFloat(auto.thresholdPct),
-                change_threshold_amount: parseFloat(auto.thresholdAmt),
-                update_mode: mode,  // 'sync' or 'async'
+                change_threshold_percentage: parseFloat(auto.thresholdPct) || 0.50,
+                change_threshold_amount: parseFloat(auto.thresholdAmt) || 500,
             };
-            
-            const { data } = await controlApi.updateRateCard(payload);
-            markFormClean();
-            
-            if (mode === 'sync') {
-                alert(`Settings updated! ${data.products_updated} product prices recalculated.`);
-                await load();
-            } else {
-                alert(`Settings saved! Price recalculation started in background. Changes will appear within 1-2 minutes.`);
-                await load();
-            }
-        } catch (err) {
-            alert("Failed to update: " + JSON.stringify(err.response?.data || err.message));
-        } finally {
-            setSaving(false);
-            setSavingMode(null);
-        }
-    };
-
-    const fetchNow = async () => {
-        setFetching(true);
-        setFetchOutput("");
-        try {
-            const { data } = await controlApi.fetchRatesNow();
-            setFetchOutput(data.output || "Done.");
+            await controlApi.updateRateCard(payload);
+            formDirtyRef.current = false;
+            alert("Rate card updated successfully!");
             await load();
         } catch (err) {
-            setFetchOutput("Failed: " + (err.response?.data?.error || err.message));
+            alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
         } finally {
-            setFetching(false);
+            setSaving(false);
         }
     };
 
-    if (loading) return <div className="text-center py-12">Loading rate card...</div>;
-
-    const activeBands = bands.filter((b) => b.name.trim() && b.rate);
-    const lastFetch = history.find((h) => h.fetch_successful);
-    const lastApplied = history.find((h) => h.rate_applied);
+    if (loading) return (
+        <div className="flex items-center justify-center py-24">
+            <p className="text-sm text-[#1A2536]/50">Loading rate card…</p>
+        </div>
+    );
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="font-serif text-4xl">Rate Card</h1>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-end justify-between flex-wrap gap-4">
+                <div>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">pricing configuration</span>
+                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Rate Card</h1>
+                </div>
                 {lastRefreshed && (
-                    <p className="text-xs text-ink/50">
-                        Auto-refreshed: {lastRefreshed.toLocaleTimeString("en-IN")} (every 15s)
-                    </p>
+                    <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                        <span className="text-xs text-[#1A2536]/60">Auto-refreshed: </span>
+                        <span className="text-xs font-bold text-[#1A2536]">{lastRefreshed.toLocaleTimeString("en-IN")}</span>
+                    </div>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <form onChange={markFormDirty} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6 min-w-0">
-                    <h2 className="font-serif text-2xl">Live Rates</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Live Rates Card */}
+                <form onChange={markFormDirty} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
+                    <div>
+                        <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">current rates</span>
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Live Rates</h2>
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold 14Kt (₹/g)</label>
-                            <input type="number" step="1" min="0" max="500000" value={form.gold_rate_14kt} onChange={(e) => setForm({ ...form, gold_rate_14kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold 18Kt (₹/g)</label>
-                            <input type="number" step="1" min="0" max="500000" value={form.gold_rate_18kt} onChange={(e) => setForm({ ...form, gold_rate_18kt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
-                        </div>
-                                                <div className="col-span-2">
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Making Charges (Per Gram)</label>
-                            <p className="text-xs text-ink/50 mb-3">Total = Fixed amount + (% × 24Kt gold rate)</p>
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-[9px] uppercase tracking-[0.16em] text-ink/50 block mb-1">Fixed ₹/gram</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={form.making_fixed_per_gram}
-                                        onChange={(e) => setForm({ ...form, making_fixed_per_gram: e.target.value })}
-                                        className="w-full border border-line rounded-lg px-4 py-3"
-                                        placeholder="400"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] uppercase tracking-[0.16em] text-ink/50 block mb-1">% of 24Kt</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="100"
-                                        value={form.making_pct_24kt}
-                                        onChange={(e) => setForm({ ...form, making_pct_24kt: e.target.value })}
-                                        className="w-full border border-line rounded-lg px-4 py-3"
-                                        placeholder="4"
-                                        required
-                                    />
-                                </div>
+                    {/* Gold Rates */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                            Gold Rates
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelCls}>Gold 14Kt (₹/g)</label>
+                                <input type="number" step="1" min="0" max="500000" value={form.gold_rate_14kt} onChange={(e) => setForm({ ...form, gold_rate_14kt: e.target.value })} className={inputCls} required />
                             </div>
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">GST (%)</label>
-                            <input type="number" step="0.01" min="0" max="100" value={form.gst} onChange={(e) => setForm({ ...form, gst: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" required />
+                            <div>
+                                <label className={labelCls}>Gold 18Kt (₹/g)</label>
+                                <input type="number" step="1" min="0" max="500000" value={form.gold_rate_18kt} onChange={(e) => setForm({ ...form, gold_rate_18kt: e.target.value })} className={inputCls} required />
+                            </div>
                         </div>
                     </div>
 
+                    {/* Making Charges */}
                     <div>
-                        <h3 className="font-serif text-xl mb-3">Diamond Grade Bands (₹/carat)</h3>
-                        <div className="space-y-3">
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                            Making Charges
+                        </p>
+                        <p className="text-xs text-[#1A2536]/50 mb-3">Total = Fixed amount + (% × 24Kt gold rate)</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[9px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/70 block mb-1">Fixed ₹/gram</label>
+                                <input type="number" step="0.01" min="0" value={form.making_fixed_per_gram} onChange={(e) => setForm({ ...form, making_fixed_per_gram: e.target.value })} className={inputCls} placeholder="400" required />
+                            </div>
+                            <div>
+                                <label className="text-[9px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/70 block mb-1">% of 24Kt</label>
+                                <input type="number" step="0.01" min="0" max="100" value={form.making_pct_24kt} onChange={(e) => setForm({ ...form, making_pct_24kt: e.target.value })} className={inputCls} placeholder="4" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* GST */}
+                    <div>
+                        <label className={labelCls}>GST (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" value={form.gst_percentage} onChange={(e) => setForm({ ...form, gst_percentage: e.target.value })} className={inputCls} required />
+                    </div>
+
+                    {/* Diamond Bands */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                            Diamond Grade Bands (₹/carat)
+                        </p>
+                        <div className="space-y-3 mb-3">
                             {bands.map((b, i) => (
-                                <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center">
-                                    <input value={b.name} onChange={(e) => { const n = [...bands]; n[i].name = e.target.value; setBands(n); }} placeholder="Band (e.g., HI/SI)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
-                                    <input type="number" value={b.rate} onChange={(e) => { const n = [...bands]; n[i].rate = e.target.value; setBands(n); }} placeholder="₹/ct (blank = ignored)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
-                                    <button type="button" onClick={() => setBands(bands.filter((_, x) => x !== i))} className="text-red-500 text-sm">✕</button>
+                                <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-3 items-center">
+                                    <input value={b.name} onChange={(e) => { const n = [...bands]; n[i].name = e.target.value; setBands(n); }} placeholder="Band (e.g., HI/SI)" className={inputCls} />
+                                    <input type="number" value={b.rate} onChange={(e) => { const n = [...bands]; n[i].rate = e.target.value; setBands(n); }} placeholder="₹/ct (blank = ignored)" className={inputCls} />
+                                    <button type="button" onClick={() => setBands(bands.filter((_, x) => x !== i))} className="w-9 h-9 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             ))}
-                            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center">
-                                <input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder="Add custom band (e.g., EF/VVS)" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
-                                <input type="number" value={newBand.rate} onChange={(e) => setNewBand({ ...newBand, rate: e.target.value })} placeholder="₹/ct" className="w-full min-w-0 border border-line rounded-lg px-4 py-2 text-sm" />
-                                <button type="button" onClick={() => { if (newBand.name.trim()) { setBands([...bands, { ...newBand }]); setNewBand({ name: "", rate: "" }); } }} className="btn-outline text-xs">+ Add</button>
-                            </div>
                         </div>
-                        <p className="text-xs text-ink/50 mt-2">Bands with an empty rate are ignored. Custom bands become selectable when adding products.</p>
+                        <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-center">
+                            <input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder="Add custom band (e.g., EF/VVS)" className={inputCls} />
+                            <input type="number" value={newBand.rate} onChange={(e) => setNewBand({ ...newBand, rate: e.target.value })} placeholder="₹/ct" className={inputCls} />
+                            <button type="button" onClick={() => { if (newBand.name.trim()) { setBands([...bands, { ...newBand }]); setNewBand({ name: "", rate: "" }); } }} className="px-5 py-3 bg-[#B86B5A] hover:bg-[#A05A4A] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                                + Add
+                            </button>
+                        </div>
+                        <p className="text-xs text-[#1A2536]/50 mt-2">Bands with an empty rate are ignored. Custom bands become selectable when adding products.</p>
                     </div>
 
+                    {/* Default Band */}
                     <div>
-                        <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Default Band (for MTO & base prices)</label>
-                        <select value={form.default_grade} onChange={(e) => setForm({ ...form, default_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3">
+                        <label className={labelCls}>Default Band (for MTO & base prices)</label>
+                        <select value={form.default_grade} onChange={(e) => setForm({ ...form, default_grade: e.target.value })} className={inputCls}>
                             {activeBands.map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
                         </select>
                     </div>
 
-                    <div className="border-t border-line pt-6">
-                        <h3 className="font-serif text-xl mb-4">Automatic Gold Rate Updates</h3>
-                        <div className="space-y-4">
-                            <label className="flex items-center gap-3 text-sm font-semibold cursor-pointer">
-                                <input type="checkbox" checked={auto.enabled} onChange={(e) => setAuto({ ...auto, enabled: e.target.checked })} className="w-4 h-4" />
-                                Enable auto-fetch (6 AM – 11 PM IST)
-                            </label>
-                            <div>
-                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Fetch Interval (minutes)</label>
-                                <input type="number" step="1" min="1" max="1440" value={auto.interval} onChange={(e) => setAuto({ ...auto, interval: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" />
-                                <p className="text-[10px] text-ink/50 mt-1">Set to 1 for testing. Production: 30.</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Markup After Rounding (%)</label>
-                                    <input type="number" step="0.01" min="0" max="10" value={auto.increment} onChange={(e) => setAuto({ ...auto, increment: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Update Threshold Type</label>
-                                    <select value={auto.thresholdType} onChange={(e) => setAuto({ ...auto, thresholdType: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3">
-                                        <option value="percentage">Percentage (%)</option>
-                                        <option value="amount">Amount (₹)</option>
-                                    </select>
-                                </div>
-                                {auto.thresholdType === "percentage" ? (
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Change Threshold (%)</label>
-                                        <input type="number" step="0.01" min="0" max="10" value={auto.thresholdPct} onChange={(e) => setAuto({ ...auto, thresholdPct: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" />
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Change Threshold (₹ / 10g)</label>
-                                        <input type="number" step="1" min="0" max="10000" value={auto.thresholdAmt} onChange={(e) => setAuto({ ...auto, thresholdAmt: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3" />
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-ink/50">
-                                Formula: fetched 24Kt ₹/10g → round up to nearest 100 → add markup % → round up to nearest 100. Rates update only when the result differs from the current rate by at least the threshold.
-                            </p>
-                        </div>
-                    </div>
-
-                    <button type="button" onClick={handleSaveClick} disabled={saving} className="btn-solid w-full">
-                        {saving ? "Saving..." : "Update Rate Card"}
+                    <button type="button" onClick={handleSaveClick} disabled={saving} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
+                        {saving ? "Saving…" : "Update Rate Card"}
                     </button>
                 </form>
 
-                {/* Confirmation Dialog */}
-                {showConfirmDialog && (
-                    <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowConfirmDialog(false)}>
-                        <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-                            <h2 className="font-serif text-2xl mb-4">Update Rate Card</h2>
-                            <p className="text-sm text-ink/70 mb-6">
-                                This will update pricing parameters. Choose how to recalculate existing product prices:
-                            </p>
-                            
-                            <div className="space-y-3 mb-6">
-                                <button
-                                    onClick={() => confirmSave('sync')}
-                                    className="w-full text-left border border-line rounded-lg p-4 hover:border-gold-dark hover:bg-cream transition-colors"
-                                >
-                                    <p className="font-semibold mb-1">Synchronous (Wait)</p>
-                                    <p className="text-xs text-ink/60">
-                                        Recalculate prices now. You'll wait ~1-3 seconds while all in-stock products are updated. Best for small catalogs (&lt;500 products).
-                                    </p>
-                                </button>
-                                
-                                <button
-                                    onClick={() => confirmSave('async')}
-                                    className="w-full text-left border border-line rounded-lg p-4 hover:border-gold-dark hover:bg-cream transition-colors"
-                                >
-                                    <p className="font-semibold mb-1">Asynchronous (Background)</p>
-                                    <p className="text-xs text-ink/60">
-                                        Save settings immediately. Price recalculation happens in the background over the next 1-2 minutes. Best for large catalogs or when you're in a hurry.
-                                    </p>
-                                </button>
-                            </div>
-                            
-                            <div className="flex gap-3">
-                                <button onClick={() => setShowConfirmDialog(false)} className="btn-outline flex-1">Cancel</button>
-                            </div>
+                {/* Auto-Fetch Settings Card */}
+                <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
+                    <div>
+                        <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">automation</span>
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Automatic Gold Rate Updates</h2>
+                    </div>
+
+                    <label className="flex items-center gap-3 text-sm font-semibold cursor-pointer glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3">
+                        <input type="checkbox" checked={auto.enabled} onChange={(e) => setAuto({ ...auto, enabled: e.target.checked })} className="w-5 h-5 accent-[#B86B5A]" />
+                        <div>
+                            <span className="font-bold text-[#1A2536]">Enable auto-fetch</span>
+                            <p className="text-xs text-[#1A2536]/60 mt-0.5">Active 6 AM – 11 PM IST</p>
+                        </div>
+                    </label>
+
+                    <div>
+                        <label className={labelCls}>Fetch Interval (minutes)</label>
+                        <input type="number" step="1" min="1" max="1440" value={auto.interval} onChange={(e) => setAuto({ ...auto, interval: e.target.value })} className={inputCls} />
+                        <p className="text-[10px] text-[#1A2536]/50 mt-1">Set to 1 for testing. Production: 30.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelCls}>Markup After Rounding (%)</label>
+                            <input type="number" step="0.01" min="0" max="10" value={auto.increment} onChange={(e) => setAuto({ ...auto, increment: e.target.value })} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Update Threshold Type</label>
+                            <select value={auto.thresholdType} onChange={(e) => setAuto({ ...auto, thresholdType: e.target.value })} className={inputCls}>
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="amount">Amount (₹)</option>
+                            </select>
                         </div>
                     </div>
-                )}
 
-                <div className="space-y-6 min-w-0">
-                    <div className="bg-white rounded-xl border border-line p-8 shadow-card">
-                        <h2 className="font-serif text-2xl mb-4 text-ink">Last Updated</h2>
-                        <p className="text-ink/70 font-medium">
-                            {rateCard?.updated_at ? new Date(rateCard.updated_at).toLocaleString("en-IN") : "Never"}
+                    {auto.thresholdType === "percentage" ? (
+                        <div>
+                            <label className={labelCls}>Change Threshold (%)</label>
+                            <input type="number" step="0.01" min="0" max="10" value={auto.thresholdPct} onChange={(e) => setAuto({ ...auto, thresholdPct: e.target.value })} className={inputCls} />
+                        </div>
+                    ) : (
+                        <div>
+                            <label className={labelCls}>Change Threshold (₹ / 10g)</label>
+                            <input type="number" step="1" min="0" max="10000" value={auto.thresholdAmt} onChange={(e) => setAuto({ ...auto, thresholdAmt: e.target.value })} className={inputCls} />
+                        </div>
+                    )}
+
+                    <div className="glass-card-vibrant rounded-2xl border border-[#B86B5A]/30 bg-gradient-to-br from-[#B86B5A]/5 to-transparent p-5">
+                        <p className="text-xs text-[#1A2536]/70 leading-relaxed">
+                            <span className="font-bold text-[#1A2536]">Formula:</span> fetched 24Kt ₹/10g → round up to nearest 100 → add markup % → round up to nearest 100. Rates update only when the result differs from the current rate by at least the threshold.
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line p-8 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Auto-Fetch Status</h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-ink/60">Status</span>
-                                <span className={`font-semibold ${auto.enabled ? "text-green-600" : "text-ink/50"}`}>
-                                    {auto.enabled ? "Enabled" : "Disabled"}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="text-ink/60">Last successful fetch</span>
-                                <span className="font-semibold text-right">
-                                    {lastFetch ? new Date(lastFetch.fetched_at).toLocaleString("en-IN") : "—"}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="text-ink/60">Last rate auto-update</span>
-                                <span className="font-semibold text-right">
-                                    {lastApplied ? new Date(lastApplied.fetched_at).toLocaleString("en-IN") : "—"}
-                                </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                                <span className="text-ink/60">Last scheduler check</span>
-                                <span className="font-semibold text-right">
-                                    {rateCard?.last_auto_run_at ? new Date(rateCard.last_auto_run_at).toLocaleString("en-IN") : "—"}
-                                </span>
-                            </div>
-                            <button type="button" onClick={fetchNow} disabled={fetching} className="btn-outline w-full mt-4">
-                                {fetching ? "Fetching…" : "Fetch Rates Now"}
-                            </button>
-                            {fetchOutput && <p className="text-xs text-ink/60 mt-2 whitespace-pre-wrap">{fetchOutput}</p>}
-                        </div>
-                    </div>
-
-                                        <div className="bg-cream rounded-xl p-8">
-                        <h3 className="font-serif text-xl mb-4">Impact Notice</h3>
-                        <p className="text-sm text-ink/70 leading-relaxed mb-2">
-                            <strong>When you update the rate card:</strong>
-                        </p>
-                        <ul className="text-sm text-ink/70 leading-relaxed space-y-1 list-disc list-inside">
-                            <li>All in-stock products will be recalculated immediately (sync) or in the background (async)</li>
-                            <li>Prices locked into existing orders will NOT change</li>
-                            <li>Made-to-Order quotes will use the new rates</li>
-                            <li>Sold/offline-sold products retain their historical prices</li>
-                        </ul>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-line p-8 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Quick Stats</h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-ink/60">18Kt vs 14Kt Premium</span>
-                                <span className="font-semibold">
-                                    {((parseFloat(form.gold_rate_18kt) / parseFloat(form.gold_rate_14kt) - 1) * 100).toFixed(1)}%
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-ink/60">Active Grade Bands</span>
-                                <span className="font-semibold">{activeBands.length}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-ink/60">Default Band</span>
-                                <span className="font-semibold">{form.default_grade}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <button type="button" onClick={handleSaveClick} disabled={saving} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
+                        {saving ? "Saving…" : "Update Rate Card"}
+                    </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden mt-8">
-                <div className="px-6 py-4 border-b border-line bg-cream">
-                    <h3 className="font-semibold">Gold Rate Fetch History (last 30 days)</h3>
+            {/* Rate History */}
+            {history.length > 0 && (
+                <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                    <div className="mb-5">
+                        <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">audit trail</span>
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Rate History (Last 30 Days)</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">
+                                    <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Date</th>
+                                    <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Raw 24Kt</th>
+                                    <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Calculated</th>
+                                    <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Previous</th>
+                                    <th className="text-left px-4 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Applied</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {history.slice(0, 20).map((h) => (
+                                    <tr key={h.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
+                                        <td className="px-4 py-3 text-xs text-[#1A2536]/70">{new Date(h.fetched_at).toLocaleString("en-IN")}</td>
+                                        <td className="px-4 py-3 text-xs font-mono text-[#1A2536]">{h.raw_24kt_rate || "—"}</td>
+                                        <td className="px-4 py-3 text-xs font-mono font-bold text-[#1A2536]">{h.calculated_rate || "—"}</td>
+                                        <td className="px-4 py-3 text-xs font-mono text-[#1A2536]/70">{h.previous_rate || "—"}</td>
+                                        <td className="px-4 py-3">
+                                            {h.rate_applied ? (
+                                                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Applied
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-[#1A2536]/40">Skipped</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <table className="w-full">
-                    <thead className="bg-cream/50">
-                        <tr>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Time</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Raw 24Kt (₹/10g)</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Calculated</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Previous</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Applied</th>
-                            <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {history.length === 0 ? (
-                            <tr><td colSpan="6" className="px-6 py-8 text-center text-sm text-ink/50">No fetches recorded yet.</td></tr>
-                        ) : history.map((h) => (
-                            <tr key={h.id} className="border-b border-line hover:bg-cream/30">
-                                <td className="px-6 py-3 text-sm">{new Date(h.fetched_at).toLocaleString("en-IN")}</td>
-                                <td className="px-6 py-3 text-sm">{h.raw_24kt_rate ?? "—"}</td>
-                                <td className="px-6 py-3 text-sm">{h.calculated_rate ?? "—"}</td>
-                                <td className="px-6 py-3 text-sm">{h.previous_rate ?? "—"}</td>
-                                <td className="px-6 py-3 text-sm">{h.rate_applied ? "✅" : "—"}</td>
-                                <td className="px-6 py-3 text-sm">
-                                    {h.fetch_successful ? (
-                                        <span className="text-green-600 font-semibold">OK</span>
-                                    ) : (
-                                        <span className="text-red-600 font-semibold" title={h.error_message}>Failed</span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            )}
         </div>
     );
 }
