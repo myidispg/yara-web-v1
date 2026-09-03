@@ -1,6 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+    const pathname = usePathname();
+    const isControl = pathname.startsWith("/control");
+
+    // Don't render footer on control panel
+    if (isControl) return null;
+
     return (
         <footer className="bg-[#1A2536] text-white pt-16 pb-12 border-t-2 border-[#D4AF37]/40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
