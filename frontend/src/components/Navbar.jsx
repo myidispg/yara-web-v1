@@ -27,6 +27,9 @@ export default function Navbar() {
     const initialPathRef = useRef(null);
     const isControl = pathname.startsWith("/control");
 
+    // Don't render navbar on control panel
+    if (isControl) return null;
+
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [query, setQuery] = useState("");
@@ -107,7 +110,7 @@ export default function Navbar() {
 
             {/* Main Navigation */}
             <div className="glass-nav-vibrant py-1">
-    <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2 max-w-7xl mx-auto">
+                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2 max-w-7xl mx-auto">
                     {/* Mobile Menu Button */}
                     <button className="md:hidden text-[#1A2536] text-2xl" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
                         ☰
