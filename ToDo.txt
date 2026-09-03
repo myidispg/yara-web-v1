@@ -33,6 +33,8 @@
 26. Suppose that in category page with 500 items, I scrolled down to page 15 of pagination. And I clicked on a product and 
     then from that product, i came back. It should remember my position and scroll down to that automatically.
 
+27. Update pin code check for delivery. 
+
 Features suggested by Qwen:
 OTP verification (deferred)
 Google Sign-in (deferred)
