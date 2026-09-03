@@ -90,7 +90,7 @@ export default function Navbar() {
     return (
         <header className="sticky top-0 z-40">
             {/* Announcement Bar */}
-            <div className="bg-[#1A2536] text-white text-center py-2.5 px-4 text-[11px] uppercase tracking-wider font-semibold border-b border-[#D4AF37]/30">
+            {/* <div className="bg-[#1A2536] text-white text-center py-2.5 px-4 text-[11px] uppercase tracking-wider font-semibold border-b border-[#D4AF37]/30">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
                     <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1.5 text-[#E5BDB0]">
@@ -103,7 +103,7 @@ export default function Navbar() {
                         <span className="text-[#E5BDB0] font-serif-luxury italic text-xs">✨ Free Insured Pan-India Express Delivery</span>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Main Navigation */}
             <div className="glass-nav-vibrant">
