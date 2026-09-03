@@ -9,9 +9,9 @@ const inr = (n) =>
 
 const RING_SLUGS = ["rings", "solitaires", "color-stone"];
 
-const inputCls = "w-full border border-line rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold-dark";
-const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2";
-const sectionCls = "text-xs uppercase tracking-[0.2em] font-semibold text-gold-dark mb-4";
+const inputCls = "w-full border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536] transition-colors";
+const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-2";
+const sectionCls = "text-[10px] uppercase tracking-[0.2em] font-bold text-[#B86B5A] mb-4 flex items-center gap-2";
 
 export default function NewPage() {
     const router = useRouter();
@@ -60,13 +60,17 @@ export default function NewPage() {
                 setDesigns(dsData);
                 setProductForm((f) => ({ ...f, diamond_grade: rcData.default_grade || "IJ/SI" }));
 
-                // Apply URL design_id AFTER designs are loaded
+                // Check for design_id parameter and auto-select if it exists
                 const params = new URLSearchParams(window.location.search);
                 const dId = params.get("design_id");
-                if (dId && dsData.some((d) => String(d.id) === dId)) {
-                    setPreselectedDesignId(dId);
-                    setExistingDesignId(dId);
-                    setUseNewDesign(false);
+                if (dId) {
+                    const matchingDesign = dsData.find((d) => String(d.id) === dId);
+                    if (matchingDesign) {
+                        setPreselectedDesignId(dId);
+                        setExistingDesignId(dId);
+                        setUseNewDesign(false);
+                        setMode("product"); // Auto-set mode to product when design_id is present
+                    }
                 }
             } catch (e) { console.error(e); }
         })();
@@ -234,19 +238,43 @@ export default function NewPage() {
 
     if (!mode)
         return (
-            <div className="max-w-3xl mx-auto">
-                <button onClick={() => router.push("/control/inventory")} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back to Inventory</button>
-                <h1 className="font-serif text-4xl mb-8">What are you adding?</h1>
-                <div className="grid grid-cols-2 gap-6">
-                    <button onClick={() => setMode("design")} className="bg-white rounded-xl border border-line p-8 shadow-card hover:shadow-hero transition-shadow text-left">
-                        <p className="text-3xl mb-3">📐</p>
-                        <h2 className="font-serif text-2xl mb-2">Add Design</h2>
-                        <p className="text-sm text-ink/60">Create a blueprint only. It becomes sellable immediately as Made-to-Order.</p>
+            <div className="max-w-3xl mx-auto space-y-8">
+                <button onClick={() => router.push("/control/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Inventory
+                </button>
+
+                <div>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">create new</span>
+                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">What are you adding?</h1>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <button
+                        onClick={() => setMode("design")}
+                        className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] p-8 text-left transition-all hover:shadow-xl group"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-[#B86B5A]/10 flex items-center justify-center mb-4 group-hover:bg-[#B86B5A]/20 transition-colors">
+                            <svg className="w-8 h-8 text-[#B86B5A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-2 group-hover:text-[#B86B5A] transition-colors">Add Design</h2>
+                        <p className="text-sm text-[#1A2536]/60">Create a blueprint only. It becomes sellable immediately as Made-to-Order.</p>
                     </button>
-                    <button onClick={() => setMode("product")} className="bg-white rounded-xl border border-line p-8 shadow-card hover:shadow-hero transition-shadow text-left">
-                        <p className="text-3xl mb-3">💎</p>
-                        <h2 className="font-serif text-2xl mb-2">Add Product</h2>
-                        <p className="text-sm text-ink/60">Add a physical piece from the workshop. Attach it to an existing design or create a new one.</p>
+                    <button
+                        onClick={() => setMode("product")}
+                        className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] p-8 text-left transition-all hover:shadow-xl group"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mb-4 group-hover:bg-[#D4AF37]/20 transition-colors">
+                            <svg className="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-2 group-hover:text-[#B86B5A] transition-colors">Add Product</h2>
+                        <p className="text-sm text-[#1A2536]/60">Add a physical piece from the workshop. Attach it to an existing design or create a new one.</p>
                     </button>
                 </div>
             </div>
@@ -254,7 +282,7 @@ export default function NewPage() {
 
     const designFields = (
         <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                     <label className={labelCls}>Category *</label>
                     <select value={designForm.category} onChange={(e) => setDesignForm({ ...designForm, category: e.target.value })} className={inputCls}>
@@ -273,7 +301,7 @@ export default function NewPage() {
             </div>
             <div>
                 <label className={labelCls}>Description</label>
-                <textarea rows="3" value={designForm.description} onChange={(e) => setDesignForm({ ...designForm, description: e.target.value })} className={inputCls} />
+                <textarea rows="4" value={designForm.description} onChange={(e) => setDesignForm({ ...designForm, description: e.target.value })} className={inputCls} />
             </div>
         </div>
     );
@@ -281,8 +309,11 @@ export default function NewPage() {
     const materialsFields = (
         <div className="space-y-6">
             <div>
-                <p className={sectionCls}>Design References (blueprint for Made-to-Order quotes)</p>
-                <div className="grid grid-cols-2 gap-6">
+                <p className={sectionCls}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                    Design References (blueprint for Made-to-Order quotes)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
                         <input type="number" step="0.001" min="0" max={200} value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
@@ -312,7 +343,7 @@ export default function NewPage() {
                         <input type="number" step="0.01" min="0" max={50} value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
                     </div>
                 </div>
-                {isRingDesign && <p className="text-xs text-ink/50 mt-3">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
+                {isRingDesign && <p className="text-xs text-[#1A2536]/50 mt-3">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
             </div>
         </div>
     );
@@ -320,8 +351,11 @@ export default function NewPage() {
     const pieceFields = (
         <div className="space-y-6">
             <div>
-                <p className={sectionCls}>This Physical Piece (measured)</p>
-                <div className="grid grid-cols-3 gap-4">
+                <p className={sectionCls}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
+                    This Physical Piece (measured)
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
                         <label className={labelCls}>Karat</label>
                         <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
@@ -389,11 +423,11 @@ export default function NewPage() {
                     </div>
                 </div>
             </div>
-            <div className="bg-cream rounded-xl p-6 flex items-center justify-between">
-                <p className="text-sm text-ink/60">Estimated price (live rates, {productForm.diamond_grade})</p>
-                <p className="text-2xl font-serif">{inr(liveEstimate())}</p>
+            <div className="glass-card-vibrant rounded-2xl border border-[#B86B5A]/30 bg-gradient-to-br from-[#B86B5A]/5 to-transparent p-6 flex items-center justify-between">
+                <p className="text-sm text-[#1A2536]/70">Estimated price (live rates, {productForm.diamond_grade})</p>
+                <p className="text-3xl font-serif-luxury font-extrabold text-[#B86B5A]">{inr(liveEstimate())}</p>
             </div>
-            <p className="text-xs text-ink/50">
+            <p className="text-xs text-[#1A2536]/50 leading-relaxed">
                 Diamond total = melle + pointer + fancy. Entered weights are stored on this product and folded into the design's size references (running average) for better future estimates. Blank fields fall back to the design references.
             </p>
         </div>
@@ -402,24 +436,35 @@ export default function NewPage() {
     const mediaStep = (
         <div className="space-y-4">
             <label className={labelCls}>Upload Images / Videos</label>
-            <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={(e) => setFiles([...files, ...Array.from(e.target.files)])}
-                className="w-full text-sm"
-            />
+            <div className="border-2 border-dashed border-[#E5BDB0] rounded-2xl p-8 text-center">
+                <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={(e) => setFiles([...files, ...Array.from(e.target.files)])}
+                    className="hidden"
+                    id="file-upload"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Choose Files
+                </label>
+                <p className="text-xs text-[#1A2536]/50 mt-3">Media is optional. Files upload after the record is created.</p>
+            </div>
             {files.length > 0 && (
                 <ul className="space-y-2">
                     {files.map((f, i) => (
-                        <li key={i} className="flex items-center justify-between bg-cream rounded-lg px-4 py-2 text-sm">
-                            <span>{f.name} <span className="text-ink/40">({(f.size / 1024).toFixed(0)} KB)</span></span>
-                            <button onClick={() => setFiles(files.filter((_, x) => x !== i))} className="text-red-500">✕</button>
+                        <li key={i} className="flex items-center justify-between glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3 text-sm">
+                            <span className="text-[#1A2536]">
+                                {f.name} <span className="text-[#1A2536]/50">({(f.size / 1024).toFixed(0)} KB)</span>
+                            </span>
+                            <button onClick={() => setFiles(files.filter((_, x) => x !== i))} className="text-red-500 hover:text-red-600 font-bold">✕</button>
                         </li>
                     ))}
                 </ul>
             )}
-            <p className="text-xs text-ink/50">Files upload to secure storage after the record is created. Media is optional.</p>
         </div>
     );
 
@@ -427,27 +472,61 @@ export default function NewPage() {
     const isMediaStep = !isReviewStep && step === 2 && (mode === "design" || useNewDesign);
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <button onClick={() => router.push("/control/inventory")} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back to Inventory</button>
-            <h1 className="font-serif text-4xl mb-8">{mode === "design" ? "Add Design" : "Add Product"}</h1>
+        <div className="max-w-4xl mx-auto space-y-6">
+            <button onClick={() => router.push("/control/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Inventory
+            </button>
 
-            <div className="flex items-center gap-2 mb-10">
+            {/* Header */}
+            <div>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">create new</span>
+                <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">{mode === "design" ? "Add Design" : "Add Product"}</h1>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="flex flex-wrap items-center gap-2">
                 {steps.map((s, i) => (
-                    <button key={s} onClick={() => i < step && setStep(i)} className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] px-4 py-2 rounded-full transition-colors ${i === step ? "bg-ink text-white" : i < step ? "bg-gold-dark text-white" : "bg-cream text-ink/50"}`}>
-                        <span>{i + 1}</span> {s}
+                    <button
+                        key={s}
+                        onClick={() => i < step && setStep(i)}
+                        className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-full transition-all ${i === step
+                                ? "bg-[#1A2536] text-white shadow"
+                                : i < step
+                                    ? "bg-[#B86B5A] text-white"
+                                    : "glass-card-vibrant border border-[#E5BDB0] text-[#1A2536]/50"
+                            }`}
+                    >
+                        <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">{i + 1}</span>
+                        {s}
                     </button>
                 ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-line p-8 shadow-card">
+            {/* Form Card */}
+            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                 {step === 0 && (mode === "design" ? designFields : (
                     <div className="space-y-6">
                         {!preselectedDesignId && (
-                            <div className="flex gap-4">
-                                <button onClick={() => { setUseNewDesign(false); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${!useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => { setUseNewDesign(false); }}
+                                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${!useNewDesign
+                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg"
+                                            : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"
+                                        }`}
+                                >
                                     Existing Design
                                 </button>
-                                <button onClick={() => { setUseNewDesign(true); }} className={`flex-1 p-4 rounded-xl border text-sm font-semibold ${useNewDesign ? "border-ink bg-ink text-white" : "border-line"}`}>
+                                <button
+                                    onClick={() => { setUseNewDesign(true); }}
+                                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${useNewDesign
+                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg"
+                                            : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"
+                                        }`}
+                                >
                                     Create New Design
                                 </button>
                             </div>
@@ -464,7 +543,7 @@ export default function NewPage() {
                                     <option value="">Choose a design…</option>
                                     {designs.map((d) => <option key={d.id} value={d.id}>{d.design_code} — {d.name}</option>)}
                                 </select>
-                                {preselectedDesignId && <p className="text-xs text-ink/50 mt-1">Pre-selected from inventory view.</p>}
+                                {preselectedDesignId && <p className="text-xs text-[#1A2536]/50 mt-1">Pre-selected from inventory view.</p>}
                             </div>
                         )}
                     </div>
@@ -476,52 +555,72 @@ export default function NewPage() {
 
                 {isReviewStep && (
                     <div className="space-y-4 text-sm">
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
                                 <p className={labelCls}>Design</p>
                                 {mode === "design" || useNewDesign ? (
                                     <>
-                                        <p className="font-serif text-xl">{designForm.name}</p>
-                                        <p className="text-ink/60">{selectedCategory?.label} · {designForm.design_code}</p>
-                                        <p className="text-ink/60">
+                                        <p className="font-serif-luxury text-xl font-semibold text-[#1A2536]">{designForm.name}</p>
+                                        <p className="text-[#1A2536]/60 text-xs mt-1">{selectedCategory?.label} · {designForm.design_code}</p>
+                                        <p className="text-[#1A2536]/60 text-xs mt-1">
                                             {designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`} ·
                                             dia {sum3(designForm.melle, designForm.pointer, designForm.fancy).toFixed(2)} Ct
                                             {(parseFloat(designForm.cstone) || 0) > 0 && ` · stone ${parseFloat(designForm.cstone).toFixed(2)} Ct`}
                                         </p>
                                     </>
                                 ) : (
-                                    <p className="font-serif text-xl">{targetDesign?.name} <span className="text-sm text-ink/50">({targetDesign?.design_code})</span></p>
+                                    <p className="font-serif-luxury text-xl font-semibold text-[#1A2536]">
+                                        {targetDesign?.name} <span className="text-sm text-[#1A2536]/50">({targetDesign?.design_code})</span>
+                                    </p>
                                 )}
                             </div>
                             <div>
                                 <p className={labelCls}>Summary</p>
                                 {mode === "product" && (
-                                    <p className="text-ink/70">
+                                    <p className="text-[#1A2536]/70 text-xs">
                                         {productForm.karat} {productForm.gold_color}
                                         {ringContext && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}
                                     </p>
                                 )}
                                 {mode === "product" && (
-                                    <p className="text-ink/70">
+                                    <p className="text-[#1A2536]/70 text-xs mt-1">
                                         Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
                                         dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy) > 0
                                             ? sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2)
                                             : "refs"} Ct
                                     </p>
                                 )}
-                                {(mode === "design" || useNewDesign) && <p className="text-ink/70">Media files: {files.length}</p>}
+                                {(mode === "design" || useNewDesign) && <p className="text-[#1A2536]/70 text-xs mt-1">Media files: {files.length}</p>}
                             </div>
                         </div>
-                        {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
+                        {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 font-semibold">{error}</p>}
                     </div>
                 )}
 
-                <div className="flex justify-between mt-10 pt-6 border-t border-line">
-                    <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="btn-outline disabled:opacity-40">← Back</button>
+                <div className="flex justify-between mt-10 pt-6 border-t border-[#E5BDB0]/40">
+                    <button
+                        onClick={() => setStep(Math.max(0, step - 1))}
+                        disabled={step === 0}
+                        className="px-6 py-3 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        ← Back
+                    </button>
                     {step < steps.length - 1 ? (
-                        <button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="btn-solid disabled:opacity-40">Continue →</button>
+                        <button
+                            onClick={() => setStep(step + 1)}
+                            disabled={!canProceed()}
+                            className="px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Continue →
+                        </button>
                     ) : (
-                        <button onClick={submit} disabled={submitting} className="btn-solid">{submitting ? "Saving…" : mode === "design" ? "Create Design" : "Save Product"}</button>
+                        <button
+                            onClick={submit}
+                            disabled={submitting}
+                            className="px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow disabled:opacity-50"
+                        >
+                            {submitting ? "Saving…" : mode === "design" ? "Create Design" : "Save Product"}
+                        </button>
                     )}
                 </div>
             </div>

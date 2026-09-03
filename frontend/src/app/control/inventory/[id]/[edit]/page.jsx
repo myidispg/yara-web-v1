@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
-const inputCls = "w-full border border-line rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold-dark";
-const labelCls = "text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2";
+const inputCls = "w-full border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536] transition-colors";
+const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-2";
 
 export default function EditDesignPage() {
     const { id } = useParams();
@@ -94,15 +94,34 @@ export default function EditDesignPage() {
         await reload();
     };
 
-    if (!form) return <div className="text-center py-12">Loading design…</div>;
+    if (!form) return (
+        <div className="flex items-center justify-center py-24">
+            <p className="text-sm text-[#1A2536]/50">Loading design…</p>
+        </div>
+    );
 
     return (
-        <div className="max-w-3xl mx-auto">
-            <button onClick={() => router.push(`/control/inventory?design=${id}`)} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back</button>
-            <h1 className="font-serif text-3xl mb-8">Edit Design</h1>
+        <div className="max-w-3xl mx-auto space-y-6">
+            {/* Back button */}
+            <button 
+                onClick={() => router.push(`/control/inventory?design=${id}`)} 
+                className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Design
+            </button>
 
-            <form onSubmit={save} className="bg-white rounded-xl border border-line p-8 shadow-card space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+            {/* Header */}
+            <div>
+                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">update blueprint</span>
+                <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Edit Design</h1>
+            </div>
+
+            {/* Main Form */}
+            <form onSubmit={save} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label className={labelCls}>Design Name *</label>
                         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required />
@@ -122,50 +141,80 @@ export default function EditDesignPage() {
 
                 <div>
                     <label className={labelCls}>Description</label>
-                    <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} rows={3} />
+                    <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} rows={4} />
                 </div>
 
-                <div className="grid grid-cols-4 gap-4">
-                    <div>
-                        <label className={labelCls}>Melle (Ct)</label>
-                        <input type="number" step="0.01" value={form.diamond_weight_round_melle} onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })} className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Pointer (Ct)</label>
-                        <input type="number" step="0.01" value={form.pointer_solitaire_weight} onChange={(e) => setForm({ ...form, pointer_solitaire_weight: e.target.value })} className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Fancy (Ct)</label>
-                        <input type="number" step="0.01" value={form.fancy_cut_weight} onChange={(e) => setForm({ ...form, fancy_cut_weight: e.target.value })} className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Color Stone (Ct)</label>
-                        <input type="number" step="0.01" value={form.color_stone_weight} onChange={(e) => setForm({ ...form, color_stone_weight: e.target.value })} className={inputCls} />
+                <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Diamond Weights (Ct)</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label className={labelCls}>Melle</label>
+                            <input type="number" step="0.01" value={form.diamond_weight_round_melle} onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Pointer</label>
+                            <input type="number" step="0.01" value={form.pointer_solitaire_weight} onChange={(e) => setForm({ ...form, pointer_solitaire_weight: e.target.value })} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Fancy</label>
+                            <input type="number" step="0.01" value={form.fancy_cut_weight} onChange={(e) => setForm({ ...form, fancy_cut_weight: e.target.value })} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Color Stone</label>
+                            <input type="number" step="0.01" value={form.color_stone_weight} onChange={(e) => setForm({ ...form, color_stone_weight: e.target.value })} className={inputCls} />
+                        </div>
                     </div>
                 </div>
 
-                <label className="flex items-center gap-3 text-sm font-semibold cursor-pointer">
-                    <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} className="w-4 h-4" />
-                    Active (visible on storefront)
+                <label className="flex items-center gap-3 text-sm font-semibold cursor-pointer glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3">
+                    <input 
+                        type="checkbox" 
+                        checked={form.is_active} 
+                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })} 
+                        className="w-5 h-5 accent-[#B86B5A]" 
+                    />
+                    <div>
+                        <span className="font-bold text-[#1A2536]">Active</span>
+                        <p className="text-xs text-[#1A2536]/60 mt-0.5">Visible on storefront</p>
+                    </div>
                 </label>
 
-                <button type="submit" disabled={saving} className="btn-solid w-full">{saving ? "Saving…" : "Save Changes"}</button>
+                <button 
+                    type="submit" 
+                    disabled={saving} 
+                    className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
+                >
+                    {saving ? "Saving…" : "Save Changes"}
+                </button>
             </form>
 
-            <div className="bg-white rounded-xl border border-line p-8 shadow-card mt-6">
-                <h3 className="font-serif text-xl mb-4">Media ({design?.media?.length || 0})</h3>
-                <div className="grid grid-cols-4 gap-3 mb-4">
+            {/* Media Section */}
+            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">
+                        Media <span className="text-[#B86B5A]">({design?.media?.length || 0})</span>
+                    </h3>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-5">
                     {(design?.media || []).map((m) => (
-                        <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden bg-cream group">
+                        <div key={m.id} className="relative aspect-square rounded-xl overflow-hidden bg-[#1A2536]/[0.03] border border-[#E5BDB0]/40 group">
                             {m.kind === "video"
                                 ? <video src={m.url} className="w-full h-full object-cover" muted />
                                 : <img src={m.url} alt="" className="w-full h-full object-cover" />}
-                            <button type="button" onClick={() => removeMedia(m.id)}
-                                className="absolute top-1 right-1 bg-red-600 text-white text-xs w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                            <button 
+                                type="button" 
+                                onClick={() => removeMedia(m.id)}
+                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white text-xs w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg"
+                            >
+                                ✕
+                            </button>
+                            <span className="absolute bottom-2 left-2 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                {m.kind === "video" ? "▶" : "◆"}
+                            </span>
                         </div>
                     ))}
                 </div>
-                <label className="btn-outline inline-block cursor-pointer text-sm">
+                <label className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer">
                     {uploading ? "Uploading…" : "+ Add Media"}
                     <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} disabled={uploading} />
                 </label>
