@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 const STATUS = {
-    placed: { label: "Placed", cls: "bg-blue-100 text-blue-800" },
-    confirmed: { label: "Confirmed", cls: "bg-yellow-100 text-yellow-800" },
-    shipped: { label: "Shipped", cls: "bg-purple-100 text-purple-800" },
-    delivered: { label: "Delivered", cls: "bg-green-100 text-green-800" },
-    cancelled: { label: "Cancelled", cls: "bg-red-100 text-red-800" },
+    placed: { label: "Placed", cls: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" },
+    confirmed: { label: "Confirmed", cls: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+    shipped: { label: "Shipped", cls: "bg-purple-50 text-purple-700 border-purple-200", dot: "bg-purple-500" },
+    delivered: { label: "Delivered", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+    cancelled: { label: "Cancelled", cls: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" },
 };
 
 const PAYMENT_LABELS = {
@@ -26,6 +26,7 @@ const PAYMENT_LABELS = {
 
 export default function OrderDetailPage() {
     const { id } = useParams();
+    const router = useRouter();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [mtoModal, setMtoModal] = useState(null);
@@ -46,28 +47,34 @@ export default function OrderDetailPage() {
         })();
     }, [id]);
 
-    if (loading || !order) return <div className="text-center py-12">Loading order…</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center py-24">
+            <p className="text-sm text-[#1A2536]/50">Loading order…</p>
+        </div>
+    );
+    if (!order) return (
+        <div className="flex items-center justify-center py-24">
+            <p className="text-sm text-red-600 font-semibold">Order not found</p>
+        </div>
+    );
 
-    const st = STATUS[order.status] || { label: order.status, cls: "bg-gray-100 text-gray-800" };
+    const st = STATUS[order.status] || { label: order.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-500" };
 
     const openMtoModal = async (item) => {
         setMtoModal(item);
         setAvailableProducts([]);
         try {
-            // Only fetch products for this specific design that are in stock
             const { data } = await controlApi.getInstances({
                 design_id: item.design_id,
                 status: 'in_stock'
             });
             const products = data.results || data;
-
             const matching = products.filter(p =>
                 p.design_id == item.design_id &&
                 p.karat === item.karat &&
                 p.gold_color === item.gold_color &&
                 p.diamond_grade === item.diamond_grade
             );
-
             setAvailableProducts(matching);
         } catch (err) {
             console.error("Failed to load products:", err);
@@ -96,11 +103,9 @@ export default function OrderDetailPage() {
         if (!confirm(labels[newStatus])) return;
         try {
             const { data } = await controlApi.updateOrderStatus(id, newStatus);
-            // If backend returns full order, use it. Otherwise reload.
             if (data && data.order_number) {
                 setOrder(data);
             } else {
-                // Reload the order
                 const { data: freshOrder } = await controlApi.getOrder(id);
                 setOrder(freshOrder);
             }
@@ -110,122 +115,177 @@ export default function OrderDetailPage() {
     };
 
     return (
-        <div>
-            <button onClick={() => window.history.back()} className="mb-6 text-sm text-gold-dark hover:text-ink">← Back</button>
+        <div className="space-y-6">
+            {/* Back button */}
+            <button onClick={() => router.push("/control/orders")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                All Orders
+            </button>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-                <div>
-                    <div className="flex items-center gap-4">
-                        <h1 className="font-serif text-3xl font-mono">{order.order_number}</h1>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
+            {/* Order Header Card */}
+            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">order details</span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h1 className="font-serif-luxury text-2xl sm:text-3xl font-semibold text-[#1A2536] font-mono">
+                                {order.order_number}
+                            </h1>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${st.cls}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}></span>
+                                {st.label}
+                            </span>
+                        </div>
+                        <p className="text-sm text-[#1A2536]/60 mt-2">
+                            Placed {new Date(order.placed_at || order.created_at).toLocaleString("en-IN")} · {PAYMENT_LABELS[order.payment_method] || order.payment_method}
+                        </p>
                     </div>
-                    <p className="text-sm text-ink/60 mt-1">
-                        Placed {new Date(order.placed_at || order.created_at).toLocaleString("en-IN")} · {PAYMENT_LABELS[order.payment_method] || order.payment_method}
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    {order.status === "placed" && (
-                        <button onClick={() => updateStatus("confirmed")} className="btn-outline text-sm">Confirm</button>
-                    )}
-                    {order.status === "confirmed" && (
-                        <button onClick={() => updateStatus("shipped")} className="btn-outline text-sm">Mark Shipped</button>
-                    )}
-                    {order.status === "shipped" && (
-                        <button onClick={() => updateStatus("delivered")} className="btn-outline text-sm">Mark Delivered</button>
-                    )}
-                    {(order.status === "placed" || order.status === "confirmed") && (
-                        <button onClick={() => updateStatus("cancelled")} className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50">Cancel</button>
-                    )}
-                    <Link href="/control/orders" className="btn-outline text-sm">All Orders</Link>
+                    <div className="flex flex-wrap gap-2">
+                        {order.status === "placed" && (
+                            <button onClick={() => updateStatus("confirmed")} className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
+                                Confirm Order
+                            </button>
+                        )}
+                        {order.status === "confirmed" && (
+                            <button onClick={() => updateStatus("shipped")} className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
+                                Mark Shipped
+                            </button>
+                        )}
+                        {order.status === "shipped" && (
+                            <button onClick={() => updateStatus("delivered")} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
+                                Mark Delivered
+                            </button>
+                        )}
+                        {(order.status === "placed" || order.status === "confirmed") && (
+                            <button onClick={() => updateStatus("cancelled")} className="px-5 py-2.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                                Cancel
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left column: Customer, Payment, Address, Timeline */}
-                <div className="space-y-6">
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Customer</h3>
-                        <div className="space-y-2 text-sm">
+                <div className="space-y-5">
+                    {/* Customer */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A2536]/[0.05] flex items-center justify-center">
+                                <svg className="w-4 h-4 text-[#1A2536]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Customer</h3>
+                        </div>
+                        <div className="space-y-2.5 text-sm">
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Name</span>
-                                <span className="font-semibold text-right">{order.customer_name}</span>
+                                <span className="text-[#1A2536]/60">Name</span>
+                                <span className="font-bold text-[#1A2536] text-right">{order.customer_name}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Email</span>
-                                <span className="font-semibold text-right">{order.customer_email}</span>
+                                <span className="text-[#1A2536]/60">Email</span>
+                                <span className="font-bold text-[#1A2536] text-right text-xs">{order.customer_email}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Phone</span>
-                                <span className="font-semibold text-right">{order.customer_phone}</span>
+                                <span className="text-[#1A2536]/60">Phone</span>
+                                <span className="font-bold text-[#1A2536] text-right">{order.customer_phone}</span>
                             </div>
                         </div>
                         {order.customer_id && (
                             <Link
                                 href={`/control/customers/${order.customer_id}`}
-                                className="btn-outline w-full mt-4 text-sm"
                                 onClick={(e) => {
-                                    // Prevent navigation if customer_id is invalid
                                     if (!order.customer_id || order.customer_id <= 0) {
                                         e.preventDefault();
                                         alert("Customer profile not available");
                                     }
                                 }}
+                                className="mt-4 block text-center px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all"
                             >
                                 View Customer Profile
                             </Link>
                         )}
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Payment</h3>
-                        <div className="space-y-2 text-sm">
+                    {/* Payment */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A2536]/[0.05] flex items-center justify-center">
+                                <svg className="w-4 h-4 text-[#1A2536]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Payment</h3>
+                        </div>
+                        <div className="space-y-2.5 text-sm">
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Method</span>
-                                <span className="font-semibold uppercase">{order.payment_method}</span>
+                                <span className="text-[#1A2536]/60">Method</span>
+                                <span className="font-bold uppercase text-[#1A2536]">{order.payment_method}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Transaction ID</span>
-                                <span className="font-mono text-xs">{order.transaction_id || "—"}</span>
+                                <span className="text-[#1A2536]/60">Transaction ID</span>
+                                <span className="font-mono text-xs text-[#1A2536]">{order.transaction_id || "—"}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Subtotal (excl. tax)</span>
-                                <span>{inr(order.subtotal_excl_tax)}</span>
+                                <span className="text-[#1A2536]/60">Subtotal</span>
+                                <span className="font-semibold text-[#1A2536]">{inr(order.subtotal_excl_tax)}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">GST (3%)</span>
-                                <span>{inr(order.gst_amount)}</span>
+                                <span className="text-[#1A2536]/60">GST (3%)</span>
+                                <span className="font-semibold text-[#1A2536]">{inr(order.gst_amount)}</span>
                             </div>
                             <div className="flex justify-between gap-2">
-                                <span className="text-ink/60">Shipping</span>
-                                <span>{inr(order.shipping_fee)}</span>
+                                <span className="text-[#1A2536]/60">Shipping</span>
+                                <span className="font-semibold text-[#1A2536]">{inr(order.shipping_fee)}</span>
                             </div>
-                            <div className="border-t border-line pt-2 mt-2 flex justify-between gap-2 font-semibold">
-                                <span>Total</span>
-                                <span className="text-lg">{inr(order.total)}</span>
+                            <div className="border-t border-[#E5BDB0]/40 pt-2.5 mt-2.5 flex justify-between gap-2">
+                                <span className="font-bold text-[#1A2536]">Total</span>
+                                <span className="font-extrabold text-lg text-[#1A2536]">{inr(order.total)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Shipping Address</h3>
+                    {/* Shipping Address */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A2536]/[0.05] flex items-center justify-center">
+                                <svg className="w-4 h-4 text-[#1A2536]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Shipping Address</h3>
+                        </div>
                         {order.address ? (
-                            <p className="text-sm text-ink/70 leading-relaxed">
-                                {order.address.full_name}<br />
+                            <p className="text-sm text-[#1A2536]/80 leading-relaxed">
+                                <span className="font-bold text-[#1A2536] block mb-1">{order.address.full_name}</span>
                                 {order.address.line1}{order.address.line2 ? `, ${order.address.line2}` : ""}<br />
                                 {order.address.city}, {order.address.state} — {order.address.pincode}<br />
-                                {order.address.phone}
+                                <span className="text-[#1A2536]/50 text-xs">{order.address.phone}</span>
                             </p>
                         ) : (
-                            <p className="text-sm text-ink/50">No address recorded.</p>
+                            <p className="text-sm text-[#1A2536]/50">No address recorded.</p>
                         )}
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card">
-                        <h3 className="font-serif text-xl mb-4">Timeline</h3>
+                    {/* Timeline */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
+                        <div className="flex items-center gap-2 mb-5">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A2536]/[0.05] flex items-center justify-center">
+                                <svg className="w-4 h-4 text-[#1A2536]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Timeline</h3>
+                        </div>
                         <div className="relative pl-8">
-                            <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-line" />
+                            <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-[#E5BDB0]/60" />
                             {(order.timeline || []).map((event, idx) => {
                                 const isLast = idx === order.timeline.length - 1;
+                                const eventSt = STATUS[event.status] || { label: event.status, dot: "bg-[#E5BDB0]" };
                                 const labels = {
                                     placed: "Order Placed",
                                     confirmed: "Order Confirmed",
@@ -234,16 +294,15 @@ export default function OrderDetailPage() {
                                     cancelled: "Cancelled"
                                 };
                                 return (
-                                    <div key={idx} className="relative mb-6 last:mb-0">
-                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs ${isLast ? "bg-gold-dark border-gold-dark text-white" : "bg-white border-line text-ink/40"
-                                            }`}>
+                                    <div key={idx} className="relative mb-5 last:mb-0">
+                                        <div className={`absolute -left-8 top-1 w-6 h-6 rounded-full flex items-center justify-center text-xs ${isLast ? `${eventSt.dot} text-white` : "bg-white border-2 border-[#E5BDB0] text-[#1A2536]/40"}`}>
                                             {isLast ? "✓" : "•"}
                                         </div>
                                         <div>
-                                            <p className={`font-semibold text-sm ${isLast ? "text-ink" : "text-ink/70"}`}>
+                                            <p className={`font-bold text-sm ${isLast ? "text-[#1A2536]" : "text-[#1A2536]/70"}`}>
                                                 {labels[event.status] || event.status}
                                             </p>
-                                            <p className="text-xs text-ink/50">
+                                            <p className="text-xs text-[#1A2536]/50 mt-0.5">
                                                 {event.timestamp ? new Date(event.timestamp).toLocaleString("en-IN") : "—"}
                                             </p>
                                         </div>
@@ -255,19 +314,26 @@ export default function OrderDetailPage() {
 
                     {/* Invoice */}
                     {order.status === "delivered" && order.invoice_number && (
-                        <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
-                            <h3 className="font-serif text-xl mb-3">Invoice</h3>
+                        <div className="glass-card-vibrant rounded-3xl border-2 border-[#D4AF37]/30 bg-gradient-to-br from-white to-[#F5EFE6] p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Invoice</h3>
+                            </div>
                             <div className="space-y-2 text-sm mb-4">
                                 <div className="flex justify-between">
-                                    <span className="text-ink/60">Invoice No.</span>
-                                    <span className="font-mono font-semibold">{order.invoice_number}</span>
+                                    <span className="text-[#1A2536]/60">Invoice No.</span>
+                                    <span className="font-mono font-bold text-[#1A2536]">{order.invoice_number}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-ink/60">Total</span>
-                                    <span className="font-semibold">{inr(order.total)}</span>
+                                    <span className="text-[#1A2536]/60">Total</span>
+                                    <span className="font-extrabold text-[#1A2536]">{inr(order.total)}</span>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                                 <button
                                     onClick={async () => {
                                         try {
@@ -275,13 +341,12 @@ export default function OrderDetailPage() {
                                             const url = URL.createObjectURL(response.data);
                                             window.open(url, '_blank');
                                         } catch (err) {
-                                            console.error("Failed to open invoice:", err);
                                             alert("Failed to open invoice PDF.");
                                         }
                                     }}
-                                    className="btn-outline flex-1 text-sm"
+                                    className="px-4 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all"
                                 >
-                                    View PDF
+                                    View
                                 </button>
                                 <button
                                     onClick={async () => {
@@ -296,11 +361,10 @@ export default function OrderDetailPage() {
                                             document.body.removeChild(a);
                                             URL.revokeObjectURL(url);
                                         } catch (err) {
-                                            console.error("Failed to download invoice:", err);
                                             alert("Failed to download invoice PDF.");
                                         }
                                     }}
-                                    className="btn-solid flex-1 text-sm"
+                                    className="px-4 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all"
                                 >
                                     Download
                                 </button>
@@ -309,112 +373,142 @@ export default function OrderDetailPage() {
                     )}
 
                     {order.status === "delivered" && !order.invoice_number && (
-                        <div className="bg-cream rounded-xl border border-line p-6 shadow-card">
-                            <h3 className="font-serif text-xl mb-3">Invoice</h3>
-                            <p className="text-sm text-ink/60">Invoice not yet generated.</p>
+                        <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536] mb-2">Invoice</h3>
+                            <p className="text-sm text-[#1A2536]/60">Invoice not yet generated.</p>
                         </div>
                     )}
                 </div>
 
-                {/* Right column: Items table */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
-                        <div className="px-6 py-4 border-b border-line bg-cream flex items-center justify-between">
-                            <h3 className="font-semibold">Items ({order.items.length})</h3>
+                {/* Right column: Items + Totals */}
+                <div className="lg:col-span-2 space-y-5">
+                    {/* Items Table */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
+                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between">
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">
+                                Items <span className="text-[#B86B5A]">({order.items.length})</span>
+                            </h3>
                         </div>
-                        <table className="w-full">
-                            <thead className="bg-cream/50">
-                                <tr>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Product</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
-                                    <th className="text-right px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Qty</th>
-                                    <th className="text-right px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Total</th>
-                                    <th className="text-center px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Fulfillment</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {order.items.map((it) => (
-                                    <tr key={it.id} className="border-b border-line last:border-0">
-                                        <td className="px-6 py-4 text-sm">
-                                            {it.design_id ? (
-                                                <Link href={`/control/inventory?design=${it.design_id}`} className="text-gold-dark hover:text-ink font-semibold">
-                                                    {it.product_name}
-                                                </Link>
-                                            ) : (
-                                                <span className="font-medium">{it.product_name}</span>
-                                            )}
-                                            {it.design_code && (
-                                                <p className="text-xs text-ink/50 font-mono mt-0.5">{it.design_code}</p>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-ink/70">{it.variant_label || "—"}</td>
-                                        <td className="px-6 py-4 text-sm text-right">{it.quantity}</td>
-                                        <td className="px-6 py-4 text-sm text-right font-semibold">{inr(it.total_price)}</td>
-                                        <td className="px-6 py-4 text-sm">
-                                            {it.is_mto_pending ? (
-                                                <button
-                                                    onClick={() => openMtoModal(it)}
-                                                    className="btn-outline text-xs"
-                                                >
-                                                    Map Product
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-green-600">✓ Mapped</span>
-                                            )}
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-[#1A2536]/[0.03]">
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Product</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Variant</th>
+                                        <th className="text-right px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Qty</th>
+                                        <th className="text-right px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Total</th>
+                                        <th className="text-center px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Fulfillment</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {order.items.map((it) => (
+                                        <tr key={it.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
+                                            <td className="px-6 py-4 text-sm">
+                                                {it.design_id ? (
+                                                    <Link href={`/control/inventory?design=${it.design_id}`} className="font-bold text-[#B86B5A] hover:text-[#1A2536] hover:underline transition-colors">
+                                                        {it.product_name}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="font-bold text-[#1A2536]">{it.product_name}</span>
+                                                )}
+                                                {it.design_code && (
+                                                    <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">{it.design_code}</p>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">{it.variant_label || "—"}</td>
+                                            <td className="px-6 py-4 text-sm text-right font-bold text-[#1A2536]">{it.quantity}</td>
+                                            <td className="px-6 py-4 text-sm text-right font-extrabold text-[#1A2536]">{inr(it.total_price)}</td>
+                                            <td className="px-6 py-4 text-sm text-center">
+                                                {it.is_mto_pending ? (
+                                                    <button
+                                                        onClick={() => openMtoModal(it)}
+                                                        className="px-4 py-1.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all"
+                                                    >
+                                                        Map Product
+                                                    </button>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-bold">
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Mapped
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {/* Totals summary */}
-                    <div className="bg-white rounded-xl border border-line p-6 shadow-card max-w-sm ml-auto">
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span className="text-ink/60">Subtotal</span><span>{inr(order.subtotal)}</span></div>
-                            <div className="flex justify-between"><span className="text-ink/60">Shipping</span><span>{inr(order.shipping_fee)}</span></div>
-                            <div className="flex justify-between border-t border-line pt-2 mt-2">
-                                <span className="font-semibold">Total</span>
-                                <span className="font-semibold text-lg">{inr(order.total)}</span>
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 ml-auto max-w-sm">
+                        <div className="space-y-2.5 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-[#1A2536]/60">Subtotal</span>
+                                <span className="font-semibold text-[#1A2536]">{inr(order.subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[#1A2536]/60">Shipping</span>
+                                <span className="font-semibold text-[#1A2536]">{inr(order.shipping_fee)}</span>
+                            </div>
+                            <div className="border-t border-[#E5BDB0]/40 pt-2.5 mt-2.5 flex justify-between">
+                                <span className="font-bold text-[#1A2536]">Total</span>
+                                <span className="font-extrabold text-xl text-[#1A2536]">{inr(order.total)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* MTO Modal */}
             {mtoModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                        <h2 className="font-serif text-2xl mb-4">Map Product to MTO Order</h2>
-                        <p className="text-sm text-ink/70 mb-4">
+                <div className="fixed inset-0 bg-[#1A2536]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">fabrication mapping</span>
+                                <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Map Product to MTO Order</h2>
+                            </div>
+                            <button onClick={() => setMtoModal(null)} className="w-9 h-9 rounded-full hover:bg-[#E5BDB0]/20 flex items-center justify-center text-[#1A2536]">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p className="text-sm text-[#1A2536]/70 mb-6">
                             Select a fabricated product to map to this order:
                         </p>
                         <div className="space-y-3 mb-6">
                             {availableProducts.length === 0 ? (
-                                <p className="text-center text-ink/60 py-8">
-                                    No matching products available. Add a new product first.
-                                </p>
+                                <div className="text-center py-12">
+                                    <p className="text-sm text-[#1A2536]/60">
+                                        No matching products available. Add a new product first.
+                                    </p>
+                                </div>
                             ) : (
                                 availableProducts.map((product) => (
-                                    <div key={product.id} className="border border-line rounded-lg p-4 hover:border-gold">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-mono font-semibold">{product.item_code}</p>
-                                                <p className="text-sm text-ink/70">
+                                    <div key={product.id} className="border-2 border-[#E5BDB0] rounded-2xl p-4 hover:border-[#B86B5A] transition-colors">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-mono font-bold text-[#1A2536]">{product.item_code}</p>
+                                                <p className="text-sm text-[#1A2536]/80 mt-1">
                                                     {product.karat} {product.gold_color} Gold
                                                     {product.ring_size && ` · Size ${product.ring_size}`}
                                                 </p>
-                                                <p className="text-xs text-ink/50 mt-1">
+                                                <p className="text-xs text-[#1A2536]/50 mt-1">
                                                     Hallmark: {product.hallmark_number || "—"} ·
                                                     Report: {product.report_number || "—"}
                                                 </p>
-                                                <p className="text-xs text-ink/50">
+                                                <p className="text-xs text-[#1A2536]/50">
                                                     Weight: {product.actual_net_weight}g ·
                                                     Diamond: {product.actual_diamond_weight}ct
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={() => mapProduct(product.id)}
-                                                className="btn-solid text-sm"
+                                                className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow shrink-0"
                                             >
                                                 Map to Order
                                             </button>
@@ -425,7 +519,7 @@ export default function OrderDetailPage() {
                         </div>
                         <button
                             onClick={() => setMtoModal(null)}
-                            className="btn-outline w-full"
+                            className="w-full py-3 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all"
                         >
                             Cancel
                         </button>

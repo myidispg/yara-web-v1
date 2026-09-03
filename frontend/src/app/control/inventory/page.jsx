@@ -11,10 +11,10 @@ const inr = (n) =>
 const RING_SLUGS = ["rings", "solitaires", "color-stone"];
 
 const INSTANCE_STATUS = {
-    in_stock: { label: "In Stock", cls: "bg-green-100 text-green-800" },
-    sold: { label: "Sold (Online)", cls: "bg-gray-200 text-gray-700" },
-    sold_offline: { label: "Sold (Offline)", cls: "bg-purple-100 text-purple-800" },
-    reserved: { label: "Reserved", cls: "bg-yellow-100 text-yellow-800" },
+    in_stock: { label: "In Stock", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+    sold: { label: "Sold (Online)", cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" },
+    sold_offline: { label: "Sold (Offline)", cls: "bg-purple-50 text-purple-700 border-purple-200", dot: "bg-purple-500" },
+    reserved: { label: "Reserved", cls: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
 };
 
 export default function InventoryPage() {
@@ -25,7 +25,6 @@ export default function InventoryPage() {
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
-    // Bulk selection state
     const [checked, setChecked] = useState([]);
     const [checkedDesigns, setCheckedDesigns] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
@@ -74,7 +73,6 @@ export default function InventoryPage() {
         }
     };
 
-    // Deep link: /control/inventory?design=ID opens that design directly
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const designId = params.get("design");
@@ -125,7 +123,6 @@ export default function InventoryPage() {
         }
     };
 
-    // ── Bulk operations ────────────────────────────────────────────
     const visibleProducts = statusFilter ? allProducts.filter((p) => p.status === statusFilter) : allProducts;
     const allChecked = visibleProducts.length > 0 && visibleProducts.every((p) => checked.includes(p.id));
 
@@ -193,59 +190,89 @@ export default function InventoryPage() {
         }
     };
 
-    if (loading) return <div className="text-center py-12">Loading inventory...</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center py-24">
+            <p className="text-sm text-[#1A2536]/50">Loading inventory…</p>
+        </div>
+    );
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="font-serif text-4xl">Inventory</h1>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-end justify-between flex-wrap gap-4">
+                <div>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">designs & products</span>
+                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Inventory</h1>
+                </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex rounded-lg border border-line overflow-hidden">
-                        <button onClick={() => { setView("designs"); setSelected(null); }} className={`px-4 py-2 text-sm font-semibold ${view === "designs" ? "bg-ink text-white" : "bg-white text-ink/60 hover:text-ink"}`}>Designs</button>
-                        <button onClick={() => { setView("products"); setSelected(null); }} className={`px-4 py-2 text-sm font-semibold ${view === "products" ? "bg-ink text-white" : "bg-white text-ink/60 hover:text-ink"}`}>All Products</button>
+                    <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
+                        <button 
+                            onClick={() => { setView("designs"); setSelected(null); }} 
+                            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${view === "designs" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                        >
+                            Designs
+                        </button>
+                        <button 
+                            onClick={() => { setView("products"); setSelected(null); }} 
+                            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${view === "products" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                        >
+                            All Products
+                        </button>
                     </div>
-                    <p className="text-sm text-ink/60 mr-2">{products.length} designs</p>
-                    <Link href="/control/inventory/new?mode=product" className="btn-outline">+ Add Product</Link>
-                    <Link href="/control/inventory/new?mode=design" className="btn-solid">+ Add Design</Link>
+                    <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                        <span className="text-sm font-bold text-[#1A2536]">{products.length}</span>
+                        <span className="text-sm text-[#1A2536]/60 ml-1">designs</span>
+                    </div>
+                    <Link href="/control/inventory/new?mode=product" className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                        + Add Product
+                    </Link>
+                    <Link href="/control/inventory/new?mode=design" className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
+                        + Add Design
+                    </Link>
                 </div>
             </div>
 
             {view === "products" ? (
-                <div>
+                <div className="space-y-4">
                     {/* Bulk action bar */}
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }} className="border border-line rounded-lg px-4 py-2 text-sm bg-white">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <select 
+                            value={statusFilter} 
+                            onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }} 
+                            className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536]"
+                        >
                             <option value="">All statuses</option>
                             <option value="in_stock">In Stock</option>
                             <option value="sold">Sold (Online)</option>
                             <option value="sold_offline">Sold (Offline)</option>
                             <option value="reserved">Reserved</option>
                         </select>
-                        <span className="text-sm text-ink/60">{visibleProducts.length} products</span>
+                        <span className="text-sm text-[#1A2536]/60">{visibleProducts.length} products</span>
                         {checked.length > 0 && (
-                            <div className="flex items-center gap-2 ml-auto bg-ink text-white rounded-lg px-4 py-2">
-                                <span className="text-sm font-semibold mr-2">{checked.length} selected</span>
-                                <button onClick={() => runBulk("mark_sold_offline")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Mark Sold Offline</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => runBulk("return_to_stock")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Return to Stock</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={exportSelected} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Export Selected</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => runBulk("delete")} disabled={bulkBusy} className="text-xs font-semibold text-red-300 hover:text-red-400 disabled:opacity-40">Delete</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => setChecked([])} className="text-xs text-white/60 hover:text-white">Clear</button>
+                            <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                                <span className="text-xs font-bold text-[#1A2536]">{checked.length} selected</span>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runBulk("mark_sold_offline")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Mark Sold</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runBulk("return_to_stock")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Return</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={exportSelected} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Export</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => setChecked([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
                             </div>
                         )}
                     </div>
 
                     {bulkResult && (
-                        <div className="mb-4 rounded-xl border border-line bg-cream p-4 text-sm">
-                            <p className="font-semibold">
+                        <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-4 text-sm">
+                            <p className="font-bold text-[#1A2536]">
                                 Done: {bulkResult.processed.length} processed
                                 {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
                             </p>
                             {bulkResult.skipped.length > 0 && (
-                                <ul className="mt-2 text-xs text-ink/60 space-y-1 max-h-32 overflow-y-auto">
+                                <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
                                     {bulkResult.skipped.map((s) => (
                                         <li key={s.id}>• {s.item_code}: {s.reason}</li>
                                     ))}
@@ -254,118 +281,136 @@ export default function InventoryPage() {
                         </div>
                     )}
 
-                    <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
-                        <table className="w-full">
-                            <thead className="bg-cream/50">
-                                <tr>
-                                    <th className="px-4 py-3 w-10">
-                                        <input type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4" />
-                                    </th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Item Code</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Design</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Hallmark</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Weight</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Price</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {visibleProducts.map((p) => {
-                                    const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-800" };
-                                    return (
-                                        <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-line hover:bg-cream/30 cursor-pointer">
-                                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                                                <input type="checkbox" checked={checked.includes(p.id)} onChange={() => toggleCheck(p.id)} className="w-4 h-4" />
-                                            </td>
-                                            <td className="px-6 py-4 font-mono text-sm text-gold-dark font-semibold">{p.item_code}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                <p className="font-medium">{p.design_name}</p>
-                                                <p className="text-xs text-ink/50">{p.design_code}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm">{p.hallmark_number || "—"}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                {p.karat} {p.gold_color}
-                                                {p.ring_size && ` · Size ${p.ring_size}`}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
-                                            <td className="px-6 py-4 font-semibold">{inr(p.price)}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {visibleProducts.length === 0 && (
-                                    <tr><td colSpan="8" className="px-6 py-8 text-center text-sm text-ink/50">No products found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">
+                                        <th className="px-4 py-3.5 w-10">
+                                            <input type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4 accent-[#B86B5A]" />
+                                        </th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Item Code</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Design</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Hallmark</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Variant</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Weight</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Price</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {visibleProducts.map((p) => {
+                                        const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
+                                        return (
+                                            <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <input type="checkbox" checked={checked.includes(p.id)} onChange={() => toggleCheck(p.id)} className="w-4 h-4 accent-[#B86B5A]" />
+                                                </td>
+                                                <td className="px-6 py-4 font-mono text-sm font-bold text-[#B86B5A]">{p.item_code}</td>
+                                                <td className="px-6 py-4 text-sm">
+                                                    <p className="font-bold text-[#1A2536]">{p.design_name}</p>
+                                                    <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">{p.design_code}</p>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || "—"}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">
+                                                    {p.karat} {p.gold_color}
+                                                    {p.ring_size && ` · Size ${p.ring_size}`}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
+                                                <td className="px-6 py-4 font-extrabold text-[#1A2536]">{inr(p.price)}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${st.cls}`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}></span>
+                                                        {st.label}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    {visibleProducts.length === 0 && (
+                                        <tr><td colSpan="8" className="px-6 py-16 text-center">
+                                            <p className="font-serif-luxury text-xl text-[#1A2536] mb-2">No products found</p>
+                                            <p className="text-sm text-[#1A2536]/50">Try adjusting your status filter.</p>
+                                        </td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             ) : selected ? (
-                <div>
-                    <button onClick={() => setSelected(null)} className="mb-6 text-sm text-gold-dark hover:text-ink">
-                        ← Back to Inventory
+                <div className="space-y-6">
+                    <button onClick={() => setSelected(null)} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Inventory
                     </button>
 
-                    <div className="bg-white rounded-xl border border-line p-8 shadow-card mb-6">
-                        <div className="flex items-start justify-between mb-4">
+                    {/* Design Header Card */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                        <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
                             <div>
-                                <h2 className="font-serif text-2xl mb-2">{selected.name}</h2>
-                                <p className="text-sm text-ink/60">Design Code: {selected.design_code} · {selected.category_name}</p>
+                                <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">design details</span>
+                                <h2 className="font-serif-luxury text-2xl sm:text-3xl font-semibold text-[#1A2536] mb-2">{selected.name}</h2>
+                                <p className="text-sm text-[#1A2536]/60">
+                                    <span className="font-mono font-bold">{selected.design_code}</span> · {selected.category_name}
+                                    {!selected.is_active && <span className="ml-2 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-bold uppercase border border-red-200">Inactive</span>}
+                                </p>
                             </div>
                             <div className="flex gap-2">
-                                <Link href={`/control/inventory/${selected.id}/edit`} className="btn-outline text-sm">
+                                <Link href={`/control/inventory/${selected.id}/edit`} className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
                                     Edit Design
                                 </Link>
-                                <button onClick={deleteDesign} className="btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50">
-                                    Delete Design
+                                <button onClick={deleteDesign} className="px-5 py-2.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                                    Delete
                                 </button>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-6 mb-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-6">
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">
-                                    {RING_SLUGS.includes(selected.category_slug) ? "Base Weight @ Size 12 · 14Kt" : "Base Weight @ 14Kt"}
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-1">
+                                    {RING_SLUGS.includes(selected.category_slug) ? "Base Weight @14Kt" : "Base Weight @14Kt"}
                                 </p>
-                                <p className="font-semibold">{Number(selected.base_net_weight_14kt).toFixed(3)} g</p>
+                                <p className="text-lg font-extrabold text-[#1A2536]">{Number(selected.base_net_weight_14kt).toFixed(3)} g</p>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">From Price</p>
-                                <p className="font-semibold">{inr(selected.base_price)}</p>
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-1">From Price</p>
+                                <p className="text-lg font-extrabold text-[#B86B5A]">{inr(selected.base_price)}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">Total Products</p>
-                                <p className="font-semibold">{selected.instance_count}</p>
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-1">Total Products</p>
+                                <p className="text-lg font-extrabold text-[#1A2536]">{selected.instance_count}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60 mb-1">In Stock</p>
-                                <p className="font-semibold text-green-600">{selected.in_stock_count}</p>
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-1">In Stock</p>
+                                <p className="text-lg font-extrabold text-emerald-600">{selected.in_stock_count}</p>
                             </div>
                         </div>
 
                         {selected.size_weight_refs && Object.keys(selected.size_weight_refs).length > 0 && (
-                            <div className="bg-cream rounded-xl p-4 mb-4 space-y-3">
+                            <div className="bg-[#1A2536]/[0.03] rounded-2xl p-5 mb-6 space-y-4 border border-[#E5BDB0]/40">
                                 <div>
-                                    <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">14Kt Reference Weights</p>
+                                    <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">14Kt Reference Weights</p>
                                     <div className="flex flex-wrap gap-2 text-xs">
                                         {Object.entries(selected.size_weight_refs).map(([size, w]) => (
-                                            <span key={`14-${size}`} className="bg-white border border-line rounded-full px-3 py-1">
-                                                <span className="font-semibold">{size === "base" ? "Base" : `#${size}`}</span> {Number(w).toFixed(3)}g
-                                                <span className="text-ink/40 ml-1">({selected.size_weight_counts?.[size] ?? 1} upd)</span>
+                                            <span key={`14-${size}`} className="glass-card-vibrant rounded-full px-3 py-1.5 border border-[#E5BDB0]">
+                                                <span className="font-bold text-[#1A2536]">{size === "base" ? "Base" : `#${size}`}</span>
+                                                <span className="text-[#1A2536]/70 ml-1">{Number(w).toFixed(3)}g</span>
+                                                <span className="text-[#1A2536]/40 ml-1 text-[10px]">({selected.size_weight_counts?.[size] ?? 1})</span>
                                             </span>
                                         ))}
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">18Kt Reference Weights</p>
+                                    <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">18Kt Reference Weights</p>
                                     <div className="flex flex-wrap gap-2 text-xs">
                                         {Object.entries(selected.size_weight_refs).map(([size, w]) => (
-                                            <span key={`18-${size}`} className="bg-white border border-line rounded-full px-3 py-1">
-                                                <span className="font-semibold">{size === "base" ? "Base" : `#${size}`}</span> {(Number(w) * 1.2).toFixed(3)}g
-                                                <span className="text-ink/40 ml-1">({selected.size_weight_counts?.[size] ?? 1} upd)</span>
+                                            <span key={`18-${size}`} className="glass-card-vibrant rounded-full px-3 py-1.5 border border-[#E5BDB0]">
+                                                <span className="font-bold text-[#1A2536]">{size === "base" ? "Base" : `#${size}`}</span>
+                                                <span className="text-[#1A2536]/70 ml-1">{(Number(w) * 1.2).toFixed(3)}g</span>
+                                                <span className="text-[#1A2536]/40 ml-1 text-[10px]">({selected.size_weight_counts?.[size] ?? 1})</span>
                                             </span>
                                         ))}
                                     </div>
@@ -374,20 +419,20 @@ export default function InventoryPage() {
                         )}
 
                         {selected.media && selected.media.length > 0 && (
-                            <div className="mb-4">
-                                <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-2">
+                            <div className="mb-6">
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">
                                     Media ({selected.media.length})
                                 </p>
                                 <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                                     {selected.media.map((m, i) => (
-                                        <div key={i} className="aspect-square rounded-lg overflow-hidden bg-cream relative group">
+                                        <div key={i} className="aspect-square rounded-xl overflow-hidden bg-[#1A2536]/[0.03] relative group border border-[#E5BDB0]/40">
                                             {m.kind === "video" ? (
                                                 <video src={m.url} className="w-full h-full object-cover" muted />
                                             ) : (
                                                 <img src={m.url} alt={`Media ${i + 1}`} className="w-full h-full object-cover" />
                                             )}
-                                            <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">
-                                                {m.kind === "video" ? "▶ Video" : "Image"}
+                                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                                {m.kind === "video" ? "▶" : "◆"}
                                             </span>
                                         </div>
                                     ))}
@@ -396,113 +441,131 @@ export default function InventoryPage() {
                         )}
 
                         {selected.description && (
-                            <div className="text-sm text-ink/70 leading-relaxed">
+                            <div className="text-sm text-[#1A2536]/70 leading-relaxed border-t border-[#E5BDB0]/40 pt-4">
                                 {selected.description}
                             </div>
                         )}
                     </div>
 
-                    <div className="bg-white rounded-xl border border-line shadow-card overflow-hidden">
-                        <div className="px-6 py-4 border-b border-line bg-cream flex items-center justify-between">
-                            <h3 className="font-semibold">Products ({selected.products.length})</h3>
+                    {/* Products Table */}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
+                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between">
+                            <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">
+                                Products <span className="text-[#B86B5A]">({selected.products.length})</span>
+                            </h3>
                             <Link
                                 href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
-                                className="text-xs text-gold-dark font-semibold hover:text-ink"
+                                className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
                             >
-                                + Add Product to this Design
+                                + Add Product
                             </Link>
                         </div>
-                        <table className="w-full">
-                            <thead className="bg-cream/50">
-                                <tr>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Item Code</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Hallmark</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Variant</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Grade</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Dia (Ct)</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Weight</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Price</th>
-                                    <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.16em] font-semibold">Status</th>
-                                    <th className="px-6 py-3"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selected.products.map((p) => {
-                                    const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-800" };
-                                    return (
-                                                                                <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-line hover:bg-cream/30 cursor-pointer">
-                                            <td className="px-6 py-4 font-mono text-sm text-gold-dark font-semibold">{p.item_code}</td>
-                                            <td className="px-6 py-4 text-sm">{p.hallmark_number || '—'}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                {p.karat} {p.gold_color}
-                                                {p.ring_size && ` · Size ${p.ring_size}`}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm">{p.diamond_grade}</td>
-                                            <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_diamond_weight).toFixed(2)}</td>
-                                            <td className="px-6 py-4 text-sm text-ink/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
-                                            <td className="px-6 py-4 font-semibold">{inr(p.price)}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${st.cls}`}>{st.label}</span>
-                                                {p.sold_in_order_number && <p className="text-[10px] text-ink/50 mt-1">→ {p.sold_in_order_number}</p>}
-                                            </td>
-                                            <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex items-center justify-end gap-3">
-                                                    {p.status === "in_stock" ? (
-                                                        <button onClick={() => markSoldOffline(p.id)} className="text-sm text-gold-dark hover:text-ink font-semibold">Mark Sold</button>
-                                                    ) : (
-                                                        <button onClick={() => returnToStock(p.id)} className="text-sm text-green-600 hover:text-ink font-semibold">Return to Stock</button>
-                                                    )}
-                                                    {p.status === "in_stock" && (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); deleteProduct(p.id, p.item_code); }}
-                                                            className="text-sm text-red-600 hover:text-red-800 font-semibold"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-[#1A2536]/[0.03]">
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Item Code</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Hallmark</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Variant</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Grade</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Dia (Ct)</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Weight</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Price</th>
+                                        <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Status</th>
+                                        <th className="px-6 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selected.products.map((p) => {
+                                        const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
+                                        return (
+                                            <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                                <td className="px-6 py-4 font-mono text-sm font-bold text-[#B86B5A]">{p.item_code}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || '—'}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">
+                                                    {p.karat} {p.gold_color}
+                                                    {p.ring_size && ` · Size ${p.ring_size}`}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.diamond_grade}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{Number(p.actual_diamond_weight).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{Number(p.actual_net_weight).toFixed(3)}g</td>
+                                                <td className="px-6 py-4 font-extrabold text-[#1A2536]">{inr(p.price)}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${st.cls}`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}></span>
+                                                        {st.label}
+                                                    </span>
+                                                    {p.sold_in_order_number && <p className="text-[10px] text-[#1A2536]/50 mt-1 font-mono">→ {p.sold_in_order_number}</p>}
+                                                </td>
+                                                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {p.status === "in_stock" ? (
+                                                            <button onClick={() => markSoldOffline(p.id)} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                                                Mark Sold
+                                                            </button>
+                                                        ) : (
+                                                            <button onClick={() => returnToStock(p.id)} className="text-xs text-emerald-600 font-bold hover:underline">
+                                                                Return
+                                                            </button>
+                                                        )}
+                                                        {p.status === "in_stock" && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); deleteProduct(p.id, p.item_code); }}
+                                                                className="text-xs text-red-600 font-bold hover:underline"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             ) : (
-                <div>
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <input type="checkbox"
-                            checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
-                            onChange={() => setCheckedDesigns(
-                                products.every((d) => checkedDesigns.includes(d.id))
-                                    ? []
-                                    : products.map((d) => d.id)
-                            )}
-                            className="w-4 h-4" />
-                        <span className="text-sm text-ink/60">Select all designs</span>
+                <div className="space-y-4">
+                    {/* Bulk action bar for designs */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="checkbox"
+                                checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                                onChange={() => setCheckedDesigns(
+                                    products.every((d) => checkedDesigns.includes(d.id))
+                                        ? []
+                                        : products.map((d) => d.id)
+                                )}
+                                className="w-4 h-4 accent-[#B86B5A]" 
+                            />
+                            <span className="text-sm text-[#1A2536]/60">Select all</span>
+                        </div>
                         {checkedDesigns.length > 0 && (
-                            <div className="flex items-center gap-2 ml-auto bg-ink text-white rounded-lg px-4 py-2">
-                                <span className="text-sm font-semibold mr-2">{checkedDesigns.length} selected</span>
-                                <button onClick={() => runDesignBulk("activate")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Activate</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => runDesignBulk("deactivate")} disabled={bulkBusy} className="text-xs font-semibold hover:text-gold-dark disabled:opacity-40">Deactivate</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => runDesignBulk("delete")} disabled={bulkBusy} className="text-xs font-semibold text-red-300 hover:text-red-400 disabled:opacity-40">Delete</button>
-                                <span className="text-white/30">|</span>
-                                <button onClick={() => setCheckedDesigns([])} className="text-xs text-white/60 hover:text-white">Clear</button>
+                            <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                                <span className="text-xs font-bold text-[#1A2536]">{checkedDesigns.length} selected</span>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("activate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Activate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("deactivate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Deactivate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => setCheckedDesigns([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
                             </div>
                         )}
                     </div>
 
                     {bulkResult && (
-                        <div className="mb-4 rounded-xl border border-line bg-cream p-4 text-sm">
-                            <p className="font-semibold">
+                        <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-4 text-sm">
+                            <p className="font-bold text-[#1A2536]">
                                 Done: {bulkResult.processed.length} processed
                                 {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
                             </p>
                             {bulkResult.skipped.length > 0 && (
-                                <ul className="mt-2 text-xs text-ink/60 space-y-1 max-h-32 overflow-y-auto">
+                                <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
                                     {bulkResult.skipped.map((s) => (
                                         <li key={s.id}>• {s.item_code}: {s.reason}</li>
                                     ))}
@@ -511,38 +574,50 @@ export default function InventoryPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {products.map((d) => (
-                            <div key={d.id} onClick={() => viewDesign(d.id)} className="relative bg-white rounded-xl border border-line shadow-card hover:shadow-hero cursor-pointer transition-shadow overflow-hidden">
-                                <div className="absolute top-3 left-3 z-10 bg-white/90 rounded p-1" onClick={(e) => e.stopPropagation()}>
-                                    <input type="checkbox" checked={checkedDesigns.includes(d.id)} onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])} className="w-4 h-4" />
+                            <div key={d.id} onClick={() => viewDesign(d.id)} className="relative glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] cursor-pointer transition-all hover:shadow-xl overflow-hidden group">
+                                <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-full p-1.5" onClick={(e) => e.stopPropagation()}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={checkedDesigns.includes(d.id)} 
+                                        onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])} 
+                                        className="w-4 h-4 accent-[#B86B5A]" 
+                                    />
                                 </div>
-                                <div className="aspect-[4/3] bg-cream">
+                                {!d.is_active && (
+                                    <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider">
+                                        Inactive
+                                    </div>
+                                )}
+                                <div className="aspect-[4/3] bg-[#1A2536]/[0.03] overflow-hidden">
                                     {d.media?.length > 0 ? (
                                         d.media[0].kind === "video"
-                                            ? <video src={d.media[0].url} className="w-full h-full object-cover" muted />
-                                            : <img src={d.media[0].url} alt={d.name} className="w-full h-full object-cover" />
+                                            ? <video src={d.media[0].url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted />
+                                            : <img src={d.media[0].url} alt={d.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-ink/30 text-xs uppercase tracking-[0.2em]">No media</div>
+                                        <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No media</div>
                                     )}
                                 </div>
-                                <div className="p-6">
-                                    <h3 className="font-serif text-xl mb-2">{d.name}</h3>
-                                    <p className="text-sm text-ink/60 mb-4">
+                                <div className="p-5">
+                                    <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536] mb-1 group-hover:text-[#B86B5A] transition-colors">{d.name}</h3>
+                                    <p className="text-xs text-[#1A2536]/60 mb-4 font-mono">
                                         {d.design_code} · {d.category_name}
-                                        {!d.is_active && <span className="ml-2 text-red-500 text-xs font-semibold">INACTIVE</span>}
                                     </p>
                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">Products</p>
-                                            <p className="font-semibold">{d.instance_count}</p>
+                                            <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">Products</p>
+                                            <p className="text-lg font-extrabold text-[#1A2536]">{d.instance_count}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-[0.16em] text-ink/60">In Stock</p>
-                                            <p className="font-semibold text-green-600">{d.in_stock_count}</p>
+                                            <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">In Stock</p>
+                                            <p className="text-lg font-extrabold text-emerald-600">{d.in_stock_count}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm font-semibold">From {inr(d.base_price)}</p>
+                                    <div className="border-t border-[#E5BDB0]/40 pt-3">
+                                        <p className="text-xs text-[#1A2536]/60">From</p>
+                                        <p className="text-lg font-extrabold text-[#B86B5A]">{inr(d.base_price)}</p>
+                                    </div>
                                 </div>
                             </div>
                         ))}
