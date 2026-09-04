@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -12,11 +13,13 @@ export default function ProductCard({ product }) {
                 {/* Image Container */}
                 <div className="relative overflow-hidden aspect-square bg-white">
                     {img ? (
-                        <img
+                        <Image
                             src={img.url}
                             alt={product.name}
+                            fill
                             loading="lazy"
-                            className="w-full h-full object-cover"
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
+                            className="object-cover"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No image</div>
