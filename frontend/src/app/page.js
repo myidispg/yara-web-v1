@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
+import { generateSEO } from '@/lib/seo';
+
+export const metadata = generateSEO({
+    title: 'Everyday Natural Diamond Jewellery',
+    description: 'Certified natural diamond jewellery in hallmarked solid gold. Shop rings, earrings, necklaces & more.',
+});
 
 const IMG = {
     hero: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=2200&q=80",
@@ -47,15 +53,15 @@ export default async function Home() {
                 {/* Ambient Background Spheres */}
                 <div className="absolute top-10 left-10 w-96 h-96 bg-[#E5BDB0]/40 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#D4AF37]/25 rounded-full blur-3xl pointer-events-none"></div>
-                
+
                 <div className="relative rounded-[36px] overflow-hidden h-[72vh] min-h-[580px] max-h-[680px] flex items-center justify-start bg-[#1A2536] border-2 border-[#E5BDB0]/40 shadow-2xl">
-                    <img 
-                        src={IMG.hero} 
-                        alt="YA-RA Natural Diamond Jewellery Collection" 
+                    <img
+                        src={IMG.hero}
+                        alt="YA-RA Natural Diamond Jewellery Collection"
                         className="absolute inset-0 w-full h-full object-cover object-[75%_center] scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#1A2536]/85 via-[#1A2536]/40 to-transparent"></div>
-                    
+
                     {/* Glass Card */}
                     <div className="relative z-10 w-full max-w-lg mx-6 sm:mx-12 lg:mx-16 glass-card-navy p-8 sm:p-12 rounded-[32px] border border-white/20 text-white space-y-6">
                         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5BDB0]/20 border border-[#E5BDB0]/40 text-xs font-bold tracking-widest text-[#E5BDB0]">
@@ -71,7 +77,7 @@ export default async function Home() {
                             Handcrafted solid 14KT & 18KT gold studded exclusively with earth-mined VVS diamonds. No lab-grown, no silver.
                         </p>
                         <div className="flex flex-wrap items-center gap-4 pt-2">
-                            <Link 
+                            <Link
                                 href="/category/rings"
                                 className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#B86B5A] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center gap-2 group"
                             >
@@ -94,13 +100,13 @@ export default async function Home() {
                         { icon: "🔄", title: "Lifetime Buyback", sub: "80%-90% Guaranteed Value", color: "#10B981" },
                         { icon: "🚚", title: "Insured Delivery", sub: "100% Transit Protection", color: "#1A2536" },
                     ].map((item, idx) => (
-                        <div key={idx} className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 hover:shadow-xl transition-all" style={{borderLeftColor: item.color}}>
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{backgroundColor: `${item.color}15`}}>
+                        <div key={idx} className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 hover:shadow-xl transition-all" style={{ borderLeftColor: item.color }}>
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: `${item.color}15` }}>
                                 {item.icon}
                             </div>
                             <div>
                                 <h4 className="font-bold text-sm text-[#1A2536]">{item.title}</h4>
-                                <p className="text-xs font-semibold" style={{color: item.color}}>{item.sub}</p>
+                                <p className="text-xs font-semibold" style={{ color: item.color }}>{item.sub}</p>
                             </div>
                         </div>
                     ))}
@@ -120,14 +126,14 @@ export default async function Home() {
                         100% NATURAL DIAMONDS • 14KT & 18KT GOLD
                     </p>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
                             <div className={`relative h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}>
-                                <img 
-                                    src={c.img} 
-                                    alt={c.title} 
+                                <img
+                                    src={c.img}
+                                    alt={c.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div>
@@ -157,7 +163,7 @@ export default async function Home() {
                         View All Products →
                     </Link>
                 </div>
-                
+
                 {products.length ? (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                         {products.map((p) => <ProductCard key={p.id ?? p.slug} product={p} />)}
@@ -186,7 +192,7 @@ export default async function Home() {
                                 Handpicked precious color stone accents paired with earth-mined natural diamonds. Set in hallmarked 18Kt solid yellow and rose gold settings.
                             </p>
                             <div className="flex flex-wrap items-center gap-4 pt-2">
-                                <Link 
+                                <Link
                                     href="/category/color-stone"
                                     className="px-8 py-4 bg-gradient-to-r from-[#E5BDB0] to-[#B86B5A] hover:opacity-95 text-[#1A2536] font-bold text-xs uppercase tracking-widest rounded-full transition-all shadow-xl"
                                 >
@@ -196,9 +202,9 @@ export default async function Home() {
                         </div>
                         <div className="lg:col-span-5 relative flex justify-center">
                             <div className="w-72 sm:w-80 h-96 shape-asymmetric overflow-hidden border-4 border-[#E5BDB0] shadow-2xl relative">
-                                <img 
-                                    src={IMG.color1} 
-                                    alt="Color stone jewelry" 
+                                <img
+                                    src={IMG.color1}
+                                    alt="Color stone jewelry"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -219,7 +225,7 @@ export default async function Home() {
                             Every YA-RA® diamond is certified by renowned third party laboratories like SGL & IGI so you purchase with absolute trust.
                         </p>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
                         {FOUR_CS.map(([n, t, h, b]) => (
                             <div key={n} className="border-t-2 border-[#E5BDB0] pt-5">

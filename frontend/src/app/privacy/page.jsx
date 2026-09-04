@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+export const metadata = generateSEO({
   title: "Privacy Policy | YA-RA Jewels",
   description: "How we collect, use, and protect your personal information.",
-};
+});
 
 export default function PrivacyPage() {
   return (

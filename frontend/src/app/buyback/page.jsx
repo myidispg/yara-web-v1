@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
-  title: "Lifetime Buyback Guarantee | YA-RA Jewels",
+export const metadata = generateSEO({
+  title: "Buyback Guarantee | YA-RA Jewels",
   description: "Our commitment to lifetime value for your jewellery.",
-};
+});
 
 export default function BuybackPage() {
   return (

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
-  title: "Policies & Guarantees | YA-RA Jewels",
+export const metadata = generateSEO({
+  title: 'Policies & Certifications | YA-RA Jewels',
   description: "Our commitment to transparency, privacy, and lifetime value.",
-};
+});
+
 
 export default function PoliciesPage() {
   const policies = [

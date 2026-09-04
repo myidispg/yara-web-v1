@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+export const metadata = generateSEO({
   title: "About Us | YA-RA Jewels",
   description: "Learn about YA-RA's commitment to certified natural diamonds and handcrafted excellence.",
-};
+});
 
 export default function AboutPage() {
   return (
