@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
+import SafeImage from "@/components/SafeImage";
 
 export const metadata = generateSEO({
     title: 'Everyday Natural Diamond Jewellery',
@@ -56,7 +57,7 @@ export default async function Home() {
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#D4AF37]/25 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative rounded-[36px] overflow-hidden h-[72vh] min-h-[580px] max-h-[680px] flex items-center justify-start bg-[#1A2536] border-2 border-[#E5BDB0]/40 shadow-2xl">
-                    <Image
+                    <SafeImage
                         src={IMG.hero}
                         alt="YA-RA Natural Diamond Jewellery Collection"
                         fill
@@ -135,7 +136,7 @@ export default async function Home() {
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
                             <div className={`relative h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}>
-                                <Image
+                                <SafeImage
                                     src={c.img}
                                     alt={c.title}
                                     fill
@@ -208,9 +209,9 @@ export default async function Home() {
                         </div>
                         <div className="lg:col-span-5 relative flex justify-center">
                             <div className="w-72 sm:w-80 h-96 shape-asymmetric overflow-hidden border-4 border-[#E5BDB0] shadow-2xl relative">
-                                                               <Image 
-                                    src={IMG.color1} 
-                                    alt="Color stone jewelry" 
+                                <SafeImage
+                                    src={IMG.color1}
+                                    alt="Color stone jewelry"
                                     fill
                                     sizes="(max-width: 640px) 80vw, 320px"
                                     className="object-cover"
