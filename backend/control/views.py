@@ -41,8 +41,46 @@ from .serializers import (
     StaffInvoiceSerializer
 )
 
-OPEN_STATUSES = ['placed', 'confirmed']
+from PIL import Image
+from io import BytesIO
 
+def optimize_uploaded_image(file):
+    """
+    Resize image to max 1200px wide and convert to WebP.
+    Returns optimized file or original if processing fails.
+    """
+    try:
+        # Open image
+        img = Image.open(file)
+        
+        # Convert RGBA to RGB if needed (WebP supports RGBA, but let's be safe)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if width > 1200px
+        max_width = 1200
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Save to WebP with quality 85 (good balance of size/quality)
+        output = BytesIO()
+        img.save(output, format='WEBP', quality=85, optimize=True)
+        output.seek(0)
+        
+        # Create a new file-like object with .webp extension
+        from django.core.files.base import ContentFile
+        base_name = file.name.rsplit('.', 1)[0]
+        return ContentFile(output.read(), name=f"{base_name}.webp")
+        
+    except Exception as e:
+        # If anything fails, return original file
+        print(f"Image optimization failed, using original: {e}")
+        file.seek(0)
+        return file
+
+OPEN_STATUSES = ['placed', 'confirmed']
 
 class DashboardView(APIView):
     permission_classes = [IsStaff]
@@ -313,6 +351,9 @@ class DesignViewSet(viewsets.ModelViewSet):
             ext = f.name.rsplit('.', 1)[-1].lower()
             if ext in ('jpg', 'jpeg', 'png', 'webp'):
                 kind = 'image'
+                # Optimize image: resize to 1200px wide + convert to WebP
+                f = optimize_uploaded_image(f)
+                ext = 'webp'  # Update extension after optimization
             elif ext in ('mp4', 'webm', 'mov'):
                 kind = 'video'
             else:
