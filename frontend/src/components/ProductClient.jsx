@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import ImageFallback from "@/components/ImageFallback";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -17,14 +18,7 @@ const SWATCH = {
     White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
 };
 const RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
-
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop";
 const BLUR_DATA = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q==";
-
-const handleImgError = (e) => {
-    e.currentTarget.onerror = null;
-    e.currentTarget.src = FALLBACK_IMG;
-};
 
 const ChevronIcon = ({ open }) => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${open ? "rotate-180" : ""}`}>
@@ -39,19 +33,6 @@ const BreakRow = ({ label, value }) =>
             <span className="font-semibold text-[#1A2536]">{inr(value)}</span>
         </div>
     );
-
-// Fallback component for failed image loads
-const ImageFallback = ({ onClick, className, aspectClass = "aspect-square" }) => (
-    <div
-        onClick={onClick}
-        className={`relative ${aspectClass} w-full overflow-hidden bg-gradient-to-br from-[#FAF9F6] to-[#E5BDB0]/30 border border-[#E5BDB0]/50 flex flex-col items-center justify-center cursor-zoom-in group`}
-    >
-        <svg className="w-12 h-12 text-[#1A2536]/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <span className="text-[10px] uppercase tracking-[0.16em] text-[#1A2536]/40 font-bold">Image unavailable</span>
-    </div>
-);
 
 export default function ProductClient({ product }) {
     const router = useRouter();
@@ -69,8 +50,6 @@ export default function ProductClient({ product }) {
     const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
     const carouselRef = useRef(null);
     const zoomContainerRef = useRef(null);
-
-    // Track failed images by URL
     const [failedImages, setFailedImages] = useState(new Set());
 
     // Pincode checker state
@@ -284,7 +263,6 @@ export default function ProductClient({ product }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 <span className="text-sm uppercase tracking-[0.16em] text-[#1A2536]/60 font-bold">Image unavailable</span>
-                                <span className="text-xs text-[#1A2536]/40 mt-1">This image could not be loaded</span>
                             </div>
                         ) : (
                             <Image
@@ -365,7 +343,7 @@ export default function ProductClient({ product }) {
                                         {m.kind === "video" ? (
                                             <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
                                         ) : failedImages.has(m.url) ? (
-                                            <ImageFallback onClick={() => setZoomedImage(m)} aspectClass="h-[380px] md:h-[460px]" />
+                                            <ImageFallback onClick={() => setZoomedImage(m)} heightClass="h-[380px] md:h-[460px]" />
                                         ) : (
                                             <Image
                                                 src={m.url}
@@ -556,7 +534,7 @@ export default function ProductClient({ product }) {
                                 </svg>
                             </div>
                             <div className="flex-1">
-                                <h3 className="text font-bold text-[#1A2536] mb-1">Check Delivery Availability</h3>
+                                <h3 className="text-sm font-bold text-[#1A2536] mb-1">Check Delivery Availability</h3>
                                 <p className="text-[11px] text-[#1A2536]/60">Enter your pincode for estimated delivery date</p>
                             </div>
                         </div>
