@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
@@ -55,10 +56,13 @@ export default async function Home() {
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#D4AF37]/25 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative rounded-[36px] overflow-hidden h-[72vh] min-h-[580px] max-h-[680px] flex items-center justify-start bg-[#1A2536] border-2 border-[#E5BDB0]/40 shadow-2xl">
-                    <img
+                    <Image
                         src={IMG.hero}
                         alt="YA-RA Natural Diamond Jewellery Collection"
-                        className="absolute inset-0 w-full h-full object-cover object-[75%_center] scale-105"
+                        fill
+                        priority
+                        sizes="(max-width: 1280px) 100vw, 1280px"
+                        className="object-cover object-[75%_center] scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#1A2536]/85 via-[#1A2536]/40 to-transparent"></div>
 
@@ -131,10 +135,12 @@ export default async function Home() {
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
                             <div className={`relative h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}>
-                                <img
+                                <Image
                                     src={c.img}
                                     alt={c.title}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                    className="object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div>
                                 <div className="absolute bottom-6 left-6 right-6 text-white text-center">
@@ -202,10 +208,12 @@ export default async function Home() {
                         </div>
                         <div className="lg:col-span-5 relative flex justify-center">
                             <div className="w-72 sm:w-80 h-96 shape-asymmetric overflow-hidden border-4 border-[#E5BDB0] shadow-2xl relative">
-                                <img
-                                    src={IMG.color1}
-                                    alt="Color stone jewelry"
-                                    className="w-full h-full object-cover"
+                                                               <Image 
+                                    src={IMG.color1} 
+                                    alt="Color stone jewelry" 
+                                    fill
+                                    sizes="(max-width: 640px) 80vw, 320px"
+                                    className="object-cover"
                                 />
                             </div>
                         </div>
