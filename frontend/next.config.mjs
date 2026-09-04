@@ -8,6 +8,7 @@ const nextConfig = {
       // When you deploy with a CDN, add it here, e.g.:
       // { protocol: 'https', hostname: 'cdn.yarajewels.com', pathname: '/**' },
     ],
+    dangerouslyAllowLocalIP: true,
   },
 };
 
