@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import api from "@/api/client";
 import ProductCard from "@/components/ProductCard";
+import SafeImage from "@/components/SafeImage";
 
 const TITLES = {
     rings: ["Natural Diamond & Gold Rings", "Explore handcrafted natural diamond rings set in 14Kt and 18Kt Solid Gold."],
@@ -248,7 +249,7 @@ export default function CategoryPage() {
         if (banner) {
             cells.push(
                 <div key={`banner-${banner.position}`} className="relative shape-asymmetric overflow-hidden shadow-xl border-2 border-[#E5BDB0] aspect-square">
-                    <Image 
+                                        <SafeImage 
                         src={banner.image} 
                         alt={banner.title} 
                         fill

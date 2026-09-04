@@ -206,14 +206,14 @@ export default function InventoryPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
-                        <button 
-                            onClick={() => { setView("designs"); setSelected(null); }} 
+                        <button
+                            onClick={() => { setView("designs"); setSelected(null); }}
                             className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${view === "designs" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
                         >
                             Designs
                         </button>
-                        <button 
-                            onClick={() => { setView("products"); setSelected(null); }} 
+                        <button
+                            onClick={() => { setView("products"); setSelected(null); }}
                             className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${view === "products" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
                         >
                             All Products
@@ -236,9 +236,9 @@ export default function InventoryPage() {
                 <div className="space-y-4">
                     {/* Bulk action bar */}
                     <div className="flex flex-wrap items-center gap-3">
-                        <select 
-                            value={statusFilter} 
-                            onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }} 
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }}
                             className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536]"
                         >
                             <option value="">All statuses</option>
@@ -429,7 +429,15 @@ export default function InventoryPage() {
                                             {m.kind === "video" ? (
                                                 <video src={m.url} className="w-full h-full object-cover" muted />
                                             ) : (
-                                                <img src={m.url} alt={`Media ${i + 1}`} className="w-full h-full object-cover" />
+                                                <img
+                                                    src={m.url}
+                                                    alt={`Media ${i + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px] uppercase tracking-[0.2em]">Unavailable</div>';
+                                                    }}
+                                                />
                                             )}
                                             <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
                                                 {m.kind === "video" ? "▶" : "◆"}
@@ -531,7 +539,7 @@ export default function InventoryPage() {
                     {/* Bulk action bar for designs */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
-                            <input 
+                            <input
                                 type="checkbox"
                                 checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
                                 onChange={() => setCheckedDesigns(
@@ -539,7 +547,7 @@ export default function InventoryPage() {
                                         ? []
                                         : products.map((d) => d.id)
                                 )}
-                                className="w-4 h-4 accent-[#B86B5A]" 
+                                className="w-4 h-4 accent-[#B86B5A]"
                             />
                             <span className="text-sm text-[#1A2536]/60">Select all</span>
                         </div>
@@ -578,11 +586,11 @@ export default function InventoryPage() {
                         {products.map((d) => (
                             <div key={d.id} onClick={() => viewDesign(d.id)} className="relative glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] cursor-pointer transition-all hover:shadow-xl overflow-hidden group">
                                 <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-full p-1.5" onClick={(e) => e.stopPropagation()}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={checkedDesigns.includes(d.id)} 
-                                        onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])} 
-                                        className="w-4 h-4 accent-[#B86B5A]" 
+                                    <input
+                                        type="checkbox"
+                                        checked={checkedDesigns.includes(d.id)}
+                                        onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
+                                        className="w-4 h-4 accent-[#B86B5A]"
                                     />
                                 </div>
                                 {!d.is_active && (
@@ -594,7 +602,15 @@ export default function InventoryPage() {
                                     {d.media?.length > 0 ? (
                                         d.media[0].kind === "video"
                                             ? <video src={d.media[0].url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted />
-                                            : <img src={d.media[0].url} alt={d.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            : <img
+                                                src={d.media[0].url}
+                                                alt={d.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                onError={(e) => {
+                                                    e.currentTarget.onerror = null;
+                                                    e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No image</div>';
+                                                }}
+                                            />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No media</div>
                                     )}
