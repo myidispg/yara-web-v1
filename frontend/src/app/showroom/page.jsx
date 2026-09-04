@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+
+export const metadata = generateSEO({
   title: "Visit Our Showroom | YA-RA Jewels",
-  description: "Experience our collection in person at our Jaipur flagship store.",
-};
+  description: 'Experience YA-RA Jewels in person. Visit our showroom to see our collection.',
+});
 
 export default function ShowroomPage() {
   return (

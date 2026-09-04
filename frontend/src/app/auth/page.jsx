@@ -82,6 +82,7 @@ export default function AuthPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
+            <meta name="robots" content="noindex, nofollow" />
             <div className="flex-1 grid lg:grid-cols-[55fr_45fr]">
                 {/* Left Branding Panel */}
                 <div className="relative hidden lg:block bg-[#1A2536] overflow-hidden">
