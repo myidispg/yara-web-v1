@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import api from "@/api/client";
@@ -239,15 +240,22 @@ export default function CategoryPage() {
         </div>
     );
 
-    const cells = [];
+        const cells = [];
     let p = 0;
     while (p < items.length) {
         const pos = cells.length;
         const banner = BANNERS.find((b) => b.position === pos);
         if (banner) {
             cells.push(
-                <div key={`banner-${banner.position}`} className="relative shape-asymmetric overflow-hidden shadow-xl border-2 border-[#E5BDB0]">
-                    <img src={banner.image} alt={banner.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                <div key={`banner-${banner.position}`} className="relative shape-asymmetric overflow-hidden shadow-xl border-2 border-[#E5BDB0] aspect-square">
+                    <Image 
+                        src={banner.image} 
+                        alt={banner.title} 
+                        fill
+                        loading="lazy"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover" 
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-[#1A2536]/20 to-transparent" />
                     <div className="relative aspect-square flex flex-col justify-end p-6 text-white">
                         <span className="font-cursive text-2xl text-[#E5BDB0] block -mb-1">crafted for you</span>
