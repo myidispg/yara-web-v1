@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/client";
-import ImageFallback from "@/components/ImageFallback";
+import SafeImage from "@/components/SafeImage";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -240,22 +240,14 @@ export default function Navbar() {
                                             onClick={closeSearch}
                                             className="flex items-center gap-4 py-3 px-2 hover:bg-[#E5BDB0]/10 rounded-lg transition-colors"
                                         >
-                                            {p.media?.[0]?.url ? (
-                                                <img
-                                                    src={p.media[0].url}
+                                            <div className="relative w-12 h-12 shrink-0 overflow-hidden rounded-md border border-[#E5BDB0]/40 bg-white">
+                                                <SafeImage
+                                                    src={p.media?.[0]?.url ?? ""}
                                                     alt={p.name}
-                                                    onError={(e) => {
-                                                        e.currentTarget.onerror = null;
-                                                        e.currentTarget.style.display = "none";
-                                                        e.currentTarget.nextSibling.style.display = "flex";
-                                                    }}
-                                                    className="w-12 h-12 object-cover bg-white rounded-md border border-[#E5BDB0]/40"
+                                                    fill
+                                                    sizes="48px"
+                                                    className="object-cover"
                                                 />
-                                            ) : null}
-                                            <div style={{ display: p.media?.[0]?.url ? "none" : "flex" }} className="w-12 h-12 rounded-md border border-[#E5BDB0]/40 bg-gradient-to-br from-[#FAF9F6] to-[#E5BDB0]/30 items-center justify-center shrink-0">
-                                                <svg className="w-5 h-5 text-[#1A2536]/25" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
                                             </div>
                                             <span className="flex-1">
                                                 <span className="block font-serif-luxury text-base text-[#1A2536]">{p.name}</span>
