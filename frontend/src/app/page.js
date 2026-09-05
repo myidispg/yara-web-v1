@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';

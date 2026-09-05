@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import ImageFallback from "@/components/ImageFallback";
+import SafeImage from "@/components/SafeImage";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -59,24 +59,14 @@ export default function CartPage() {
                             <div key={i.key} className="glass-card-vibrant p-5 rounded-3xl border border-[#E5BDB0]">
                                 {/* Mobile Layout: Stacked */}
                                 <div className="sm:hidden space-y-4">
-                                    <Link href={`/product/${i.slug}`} className="block">
-                                        {i.image ? (
-                                            <img
-                                                src={i.image}
-                                                alt={i.name}
-                                                onError={(e) => {
-                                                    e.currentTarget.onerror = null;
-                                                    e.currentTarget.style.display = "none";
-                                                    e.currentTarget.nextSibling.style.display = "flex";
-                                                }}
-                                                className="w-full h-64 object-cover rounded-2xl border border-[#E5BDB0]/40"
-                                            />
-                                        ) : null}
-                                        <div style={{ display: i.image ? "none" : "flex" }} className="w-full h-64 rounded-2xl border border-[#E5BDB0]/40 bg-gradient-to-br from-[#FAF9F6] to-[#E5BDB0]/30 items-center justify-center">
-                                            <svg className="w-10 h-10 text-[#1A2536]/25" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
+                                    <Link href={`/product/${i.slug}`} className="block relative w-full h-64 overflow-hidden rounded-2xl border border-[#E5BDB0]/40">
+                                        <SafeImage
+                                            src={i.image}
+                                            alt={i.name}
+                                            fill
+                                            sizes="(max-width: 640px) 100vw, 50vw"
+                                            className="object-cover"
+                                        />
                                     </Link>
                                     <div className="space-y-2">
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
@@ -125,24 +115,14 @@ export default function CartPage() {
 
                                 {/* Desktop Layout: Horizontal */}
                                 <div className="hidden sm:flex gap-5 items-center">
-                                    <Link href={`/product/${i.slug}`} className="shrink-0">
-                                        {i.image ? (
-                                            <img
-                                                src={i.image}
-                                                alt={i.name}
-                                                onError={(e) => {
-                                                    e.currentTarget.onerror = null;
-                                                    e.currentTarget.style.display = "none";
-                                                    e.currentTarget.nextSibling.style.display = "flex";
-                                                }}
-                                                className="w-28 h-28 object-cover rounded-2xl border border-[#E5BDB0]/40"
-                                            />
-                                        ) : null}
-                                        <div style={{ display: i.image ? "none" : "flex" }} className="w-28 h-28 rounded-2xl border border-[#E5BDB0]/40 bg-gradient-to-br from-[#FAF9F6] to-[#E5BDB0]/30 items-center justify-center shrink-0">
-                                            <svg className="w-8 h-8 text-[#1A2536]/25" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
+                                    <Link href={`/product/${i.slug}`} className="shrink-0 relative w-28 h-28 overflow-hidden rounded-2xl border border-[#E5BDB0]/40">
+                                        <SafeImage
+                                            src={i.image}
+                                            alt={i.name}
+                                            fill
+                                            sizes="112px"
+                                            className="object-cover"
+                                        />
                                     </Link>
 
                                     <div className="flex-1 min-w-0 space-y-1.5">
