@@ -13,6 +13,7 @@ media/
 staticfiles/
 /static/root/
 .env
+.env.production
 .venv
 venv/
 ENV/
