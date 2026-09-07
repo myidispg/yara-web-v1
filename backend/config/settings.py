@@ -4,13 +4,16 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SECURITY: DEBUG defaults to False, must be explicitly enabled
+DEBUG = os.getenv("DEBUG", "0") == "1"
+
 # SECURITY: SECRET_KEY must be set in production
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is required")
-
-# SECURITY: DEBUG defaults to False, must be explicitly enabled
-DEBUG = os.getenv("DEBUG", "0") == "1"
+    if DEBUG:
+        SECRET_KEY = "dev-only-secret-key-for-local-development"
+    else:
+        raise ValueError("SECRET_KEY environment variable is required in production")
 
 # SECURITY: No fallback in production - must be explicitly configured
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
@@ -153,12 +156,12 @@ SIMPLE_JWT = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     origin.strip() 
-    for origin in os.getenv("CORS_ORIGINS", "").split(",") 
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") 
     if origin.strip()
 ]
 
 if not CORS_ALLOWED_ORIGINS and not DEBUG:
-    raise ValueError("CORS_ORIGINS must be set in production")
+    raise ValueError("CORS_ORIGINS environment variable is required in production")
 
 CORS_ALLOW_CREDENTIALS = True
 
