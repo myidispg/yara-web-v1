@@ -1,8 +1,10 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 # SECURITY: DEBUG defaults to False, must be explicitly enabled
 DEBUG = os.getenv("DEBUG", "0") == "1"
