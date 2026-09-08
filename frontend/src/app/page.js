@@ -3,10 +3,11 @@ import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
 import SafeImage from "@/components/SafeImage";
+import HeroCarousel from "@/components/HeroCarousel";
 
 export const metadata = generateSEO({
-    title: 'Everyday Natural Diamond Jewellery',
-    description: 'Certified natural diamond jewellery in hallmarked solid gold. Shop rings, earrings, necklaces & more.',
+    title: 'Buy your daily wear jewellery at YA-RA',
+    description: 'Certified natural diamond jewellery in hallmarked solid gold for everyday.',
 });
 
 const IMG = {
@@ -50,9 +51,9 @@ export default async function Home() {
     return (
         <div className="bg-white">
             {/* HERO SECTION */}
-            <section className="relative pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            {/* <section className="relative pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"> */}
                 {/* Ambient Background Spheres */}
-                <div className="absolute top-10 left-10 w-96 h-96 bg-[#E5BDB0]/40 rounded-full blur-3xl pointer-events-none"></div>
+                {/* <div className="absolute top-10 left-10 w-96 h-96 bg-[#E5BDB0]/40 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#D4AF37]/25 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative rounded-[36px] overflow-hidden h-[72vh] min-h-[580px] max-h-[680px] flex items-center justify-start bg-[#1A2536] border-2 border-[#E5BDB0]/40 shadow-2xl">
@@ -64,10 +65,10 @@ export default async function Home() {
                         sizes="(max-width: 1280px) 100vw, 1280px"
                         className="object-cover object-[75%_center] scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#1A2536]/85 via-[#1A2536]/40 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#1A2536]/85 via-[#1A2536]/40 to-transparent"></div> */}
 
                     {/* Glass Card */}
-                    <div className="relative z-10 w-full max-w-lg mx-6 sm:mx-12 lg:mx-16 glass-card-navy p-8 sm:p-12 rounded-[32px] border border-white/20 text-white space-y-6">
+                    {/* <div className="relative z-10 w-full max-w-lg mx-6 sm:mx-12 lg:mx-16 glass-card-navy p-8 sm:p-12 rounded-[32px] border border-white/20 text-white space-y-6">
                         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5BDB0]/20 border border-[#E5BDB0]/40 text-xs font-bold tracking-widest text-[#E5BDB0]">
                             ✨ 100% NATURAL DIAMONDS • SOLID GOLD
                         </div>
@@ -93,7 +94,10 @@ export default async function Home() {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section> */}
+
+            {/* HERO CAROUSEL */}
+            <HeroCarousel />
 
             {/* TRUST BADGES */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
