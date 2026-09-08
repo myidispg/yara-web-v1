@@ -72,17 +72,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database - no fallbacks in production
+# Database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
+        "NAME": os.getenv("DB_NAME", "yara_db"),
+        "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
+
+# Validate database credentials in production
+if not DEBUG:
+    if not os.getenv("DB_PASSWORD"):
+        raise ValueError("DB_PASSWORD environment variable is required in production")
 
 # Validate database credentials in production
 if not DEBUG:
