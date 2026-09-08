@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+export const metadata = generateSEO({
   title: "Diamond Certification | YA-RA Jewels",
-  description: "Learn about our certification partners IGI, GIA, and SGL.",
-};
+  description: 'Every YA-RA diamond is IGI, SGL or GIA certified. Learn about our grading standards and authentication process.',
+});
 
 export default function CertificationPage() {
   return (

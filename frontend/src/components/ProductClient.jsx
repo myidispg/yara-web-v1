@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import ImageFallback from "@/components/ImageFallback";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -16,12 +18,7 @@ const SWATCH = {
     White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
 };
 const RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
-
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop";
-const handleImgError = (e) => {
-    e.currentTarget.onerror = null;
-    e.currentTarget.src = FALLBACK_IMG;
-};
+const BLUR_DATA = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q==";
 
 const ChevronIcon = ({ open }) => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${open ? "rotate-180" : ""}`}>
@@ -53,11 +50,16 @@ export default function ProductClient({ product }) {
     const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
     const carouselRef = useRef(null);
     const zoomContainerRef = useRef(null);
+    const [failedImages, setFailedImages] = useState(new Set());
 
     // Pincode checker state
     const [pincode, setPincode] = useState("");
     const [pincodeResult, setPincodeResult] = useState(null);
     const [checkingPincode, setCheckingPincode] = useState(false);
+
+    const handleImageError = (url) => {
+        setFailedImages(prev => new Set([...prev, url]));
+    };
 
     useEffect(() => {
         document.title = `${product.name} | YA-RA Jewels`;
@@ -197,7 +199,6 @@ export default function ProductClient({ product }) {
         setTimeout(() => {
             const pin = parseInt(pincode);
 
-            // NCR delivery zones — exact PIN ranges
             const isDelhi = pin >= 110001 && pin <= 110096;
             const isGurugram = pin >= 122001 && pin <= 122022;
             const isFaridabad = pin >= 121001 && pin <= 121014;
@@ -256,13 +257,26 @@ export default function ProductClient({ product }) {
                         onMouseMove={handleZoomMouseMove}
                         onWheel={handleZoomWheel}
                     >
-                        <img
-                            src={zoomedImage.url}
-                            alt="Zoomed view"
-                            onError={handleImgError}
-                            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl transition-transform duration-200"
-                            style={{ transform: `scale(${zoomLevel})`, transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`, cursor: zoomLevel > 1 ? "zoom-out" : "zoom-in" }}
-                        />
+                        {failedImages.has(zoomedImage.url) ? (
+                            <div className="max-w-[80vw] max-h-[80vh] w-[600px] h-[600px] bg-gradient-to-br from-[#FAF9F6] to-[#E5BDB0]/30 border-2 border-[#E5BDB0] rounded-2xl shadow-2xl flex flex-col items-center justify-center">
+                                <svg className="w-20 h-20 text-[#1A2536]/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-sm uppercase tracking-[0.16em] text-[#1A2536]/60 font-bold">Image unavailable</span>
+                            </div>
+                        ) : (
+                            <Image
+                                src={zoomedImage.url}
+                                alt="Zoomed view"
+                                width={1200}
+                                height={1200}
+                                placeholder="blur"
+                                blurDataURL={BLUR_DATA}
+                                onError={() => handleImageError(zoomedImage.url)}
+                                className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl transition-transform duration-200"
+                                style={{ transform: `scale(${zoomLevel})`, transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`, cursor: zoomLevel > 1 ? "zoom-out" : "zoom-in" }}
+                            />
+                        )}
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 glass-card-navy rounded-full px-4 py-2">
                             <button onClick={() => setZoomLevel((p) => Math.max(1, p - 0.5))} className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 rounded-full transition-colors">−</button>
                             <span className="text-white text-sm font-medium min-w-[40px] text-center">{Math.round(zoomLevel * 100)}%</span>
@@ -293,11 +307,23 @@ export default function ProductClient({ product }) {
                     {/* Desktop Grid */}
                     <div className="hidden lg:grid grid-cols-2 gap-1.5">
                         {desktopMedia.map((m, i) => (
-                            <div key={i} className="overflow-hidden bg-cream">
+                            <div key={i} className="relative overflow-hidden bg-cream aspect-square">
                                 {m.kind === "video" ? (
-                                    <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full aspect-square object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                    <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                ) : failedImages.has(m.url) ? (
+                                    <ImageFallback onClick={() => setZoomedImage(m)} />
                                 ) : (
-                                    <img src={m.url} alt={`${product.name} — media ${i + 1}`} onError={handleImgError} className="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02] cursor-zoom-in" onClick={() => setZoomedImage(m)} />
+                                    <Image
+                                        src={m.url}
+                                        alt={`${product.name} — media ${i + 1}`}
+                                        fill
+                                        placeholder="blur"
+                                        blurDataURL={BLUR_DATA}
+                                        sizes="(max-width: 1024px) 50vw, 33vw"
+                                        onError={() => handleImageError(m.url)}
+                                        className="object-cover transition-transform duration-500 hover:scale-[1.02] cursor-zoom-in"
+                                        onClick={() => setZoomedImage(m)}
+                                    />
                                 )}
                             </div>
                         ))}
@@ -313,11 +339,23 @@ export default function ProductClient({ product }) {
                         <div className="relative">
                             <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
                                 {media.map((m, i) => (
-                                    <div key={i} className="w-full shrink-0 snap-center">
+                                    <div key={i} className="w-full shrink-0 snap-center relative h-[380px] md:h-[460px]">
                                         {m.kind === "video" ? (
-                                            <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-[380px] md:h-[460px] object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                            <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                        ) : failedImages.has(m.url) ? (
+                                            <ImageFallback onClick={() => setZoomedImage(m)} heightClass="h-[380px] md:h-[460px]" />
                                         ) : (
-                                            <img src={m.url} alt={product.name} onError={handleImgError} className="w-full h-[380px] md:h-[460px] object-cover cursor-zoom-in" onClick={() => setZoomedImage(m)} />
+                                            <Image
+                                                src={m.url}
+                                                alt={product.name}
+                                                fill
+                                                placeholder="blur"
+                                                blurDataURL={BLUR_DATA}
+                                                sizes="100vw"
+                                                onError={() => handleImageError(m.url)}
+                                                className="object-cover cursor-zoom-in"
+                                                onClick={() => setZoomedImage(m)}
+                                            />
                                         )}
                                     </div>
                                 ))}
@@ -501,7 +539,7 @@ export default function ProductClient({ product }) {
                             </div>
                         </div>
 
-                        <div className="flex gap-2 mb-3">
+                        <div className="flex gap-2 mb-3" suppressHydrationWarning>
                             <input
                                 type="text"
                                 value={pincode}

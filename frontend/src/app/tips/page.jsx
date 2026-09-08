@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+export const metadata = generateSEO({
   title: "Jewellery Care Guide | YA-RA Jewels",
   description: "Tips for cleaning and maintaining your fine jewellery.",
-};
+});
 
 export default function TipsPage() {
   return (
@@ -27,7 +28,7 @@ export default function TipsPage() {
               <h3 className="font-bold text-[#1A2536] mb-2">Gentle Cleaning Solution</h3>
               <p>Mix a few drops of mild dish soap with warm water. Soak your jewellery for 15-20 minutes, then gently brush with a soft toothbrush. Rinse thoroughly and pat dry with a lint-free cloth.</p>
             </div>
-            
+
             <div className="border-l-4 border-[#B86B5A] pl-5">
               <h3 className="font-bold text-[#1A2536] mb-2">What to Avoid</h3>
               <p>Never use harsh chemicals, bleach, or abrasive cleaners. Avoid ultrasonic cleaners for pieces with fragile settings or color stones.</p>
@@ -82,7 +83,7 @@ export default function TipsPage() {
         <section className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
           <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-4">Professional Maintenance</h2>
           <p className="mb-6">
-            We recommend having your jewellery professionally cleaned and inspected every 6-12 months. 
+            We recommend having your jewellery professionally cleaned and inspected every 6-12 months.
             Our showroom offers complimentary cleaning and prong tightening services for all YA-RA pieces.
           </p>
           <Link href="/showroom" className="inline-block px-8 py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl">

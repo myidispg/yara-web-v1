@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import SafeImage from "@/components/SafeImage";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -41,6 +42,7 @@ export default function CartPage() {
 
     return (
         <div className="bg-white min-h-screen pb-20">
+            <meta name="robots" content="noindex, nofollow" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Header */}
                 <div className="mb-10">
@@ -57,8 +59,14 @@ export default function CartPage() {
                             <div key={i.key} className="glass-card-vibrant p-5 rounded-3xl border border-[#E5BDB0]">
                                 {/* Mobile Layout: Stacked */}
                                 <div className="sm:hidden space-y-4">
-                                    <Link href={`/product/${i.slug}`} className="block">
-                                        <img src={i.image} alt={i.name} className="w-full h-64 object-cover rounded-2xl border border-[#E5BDB0]/40" />
+                                    <Link href={`/product/${i.slug}`} className="block relative w-full h-64 overflow-hidden rounded-2xl border border-[#E5BDB0]/40">
+                                        <SafeImage
+                                            src={i.image}
+                                            alt={i.name}
+                                            fill
+                                            sizes="(max-width: 640px) 100vw, 50vw"
+                                            className="object-cover"
+                                        />
                                     </Link>
                                     <div className="space-y-2">
                                         <Link href={`/product/${i.slug}`} className="font-serif-luxury text-xl font-semibold text-[#1A2536] hover:underline decoration-[#1A2536] underline-offset-4 transition-all leading-tight block">
@@ -107,8 +115,14 @@ export default function CartPage() {
 
                                 {/* Desktop Layout: Horizontal */}
                                 <div className="hidden sm:flex gap-5 items-center">
-                                    <Link href={`/product/${i.slug}`} className="shrink-0">
-                                        <img src={i.image} alt={i.name} className="w-28 h-28 object-cover rounded-2xl border border-[#E5BDB0]/40" />
+                                    <Link href={`/product/${i.slug}`} className="shrink-0 relative w-28 h-28 overflow-hidden rounded-2xl border border-[#E5BDB0]/40">
+                                        <SafeImage
+                                            src={i.image}
+                                            alt={i.name}
+                                            fill
+                                            sizes="112px"
+                                            className="object-cover"
+                                        />
                                     </Link>
 
                                     <div className="flex-1 min-w-0 space-y-1.5">

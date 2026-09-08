@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/client";
+import SafeImage from "@/components/SafeImage";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -239,7 +240,15 @@ export default function Navbar() {
                                             onClick={closeSearch}
                                             className="flex items-center gap-4 py-3 px-2 hover:bg-[#E5BDB0]/10 rounded-lg transition-colors"
                                         >
-                                            <img src={p.media?.[0]?.url ?? ""} alt={p.name} className="w-12 h-12 object-cover bg-white rounded-md border border-[#E5BDB0]/40" />
+                                            <div className="relative w-12 h-12 shrink-0 overflow-hidden rounded-md border border-[#E5BDB0]/40 bg-white">
+                                                <SafeImage
+                                                    src={p.media?.[0]?.url ?? ""}
+                                                    alt={p.name}
+                                                    fill
+                                                    sizes="48px"
+                                                    className="object-cover"
+                                                />
+                                            </div>
                                             <span className="flex-1">
                                                 <span className="block font-serif-luxury text-base text-[#1A2536]">{p.name}</span>
                                                 <span className="block text-xs text-[#B86B5A] font-semibold">{p.category_name}</span>
