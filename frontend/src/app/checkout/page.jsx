@@ -277,6 +277,7 @@ export default function CheckoutPage() {
 
     return (
         <div className="bg-white min-h-screen pb-20">
+            <meta name="robots" content="noindex, nofollow" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-10">
                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">secure Indian checkout</span>

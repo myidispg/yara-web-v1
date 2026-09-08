@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { generateSEO } from '@/lib/seo';
 
-export const metadata = {
+export const metadata = generateSEO({
   title: "Ring Size Guide | YA-RA Jewels",
-  description: "How to measure your perfect ring size at home.",
-};
+  description: "How to measure your ring size at home.",
+});
 
 export default function SizeGuidePage() {
   return (
