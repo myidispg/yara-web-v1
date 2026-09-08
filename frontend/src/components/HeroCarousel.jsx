@@ -7,7 +7,7 @@ import Image from "next/image";
 // ── Slide config: swap these URLs/links with your real campaign images ──
 const SLIDES = [
   {
-    href: "/search",
+    href: "/shop",
     alt: "Natural diamond rings in solid gold",
     desktop: "/home/hero/Slide 1 Desktop resized.jpeg",
     mobile: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&h=1400&q=80",
