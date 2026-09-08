@@ -14,6 +14,7 @@ staticfiles/
 /static/root/
 .env
 .env.production
+.env.example
 .venv
 venv/
 ENV/
