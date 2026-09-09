@@ -15,8 +15,9 @@ export default function ProductCard({ product }) {
     const [failed, setFailed] = useState(false);
 
     return (
-        <Link href={`/product/${product.slug}`} className="group block">
-            <div className="glass-card-vibrant rounded-2xl overflow-hidden border border-[#1A2536]/10 hover:border-[#B86B5A] transition-all duration-500 hover:shadow-xl hover:scale-[1.03] flex flex-col">
+            <Link href={`/product/${product.slug}`} className="group block h-full">
+                <div className="glass-card-vibrant rounded-2xl overflow-hidden border border-[#1A2536]/10 transition-all duration-500 hover:shadow-xl hover:scale-[1.03] flex flex-col h-full">
+            {/* <div className="glass-card-vibrant rounded-2xl overflow-hidden border border-[#1A2536]/10  transition-all duration-500 hover:shadow-xl hover:scale-[1.03] flex flex-col"> */}
                 <div className="relative overflow-hidden aspect-square bg-white">
                     {!img || failed ? (
                         <ImageFallback />
@@ -35,8 +36,8 @@ export default function ProductCard({ product }) {
                     )}
                 </div>
 
-                <div className="pt-4 pb-4 px-4">
-                    <h3 className="font-serif-luxury font-bold text-[18px] leading-tight text-[#1A2536] line-clamp-2 mb-1.5">
+                <div className="pt-4 pb-4 px-4 min-h-[92px]">
+                    <h3 className="font-serif-luxury font-bold text-[18px] leading-tight text-[#1A2536] line-clamp-2 mb-1.5 min-h-[44px]">
                         {product.name}
                     </h3>
                     <p className="text-sm font-bold text-[#1A2536]">{inr(product.base_price)}</p>
