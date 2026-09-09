@@ -4,16 +4,13 @@
 
 3. Add Google Validation for sign up and login, OTP validation.
 
-
 5. Better zoom functionality is needed for the product media. 
 
-15. Create invoicing system and more importantly, a list of past all invoices.
-
-16. I wanted to delete a desing with existing products. So, it didn't allow me to delete that design until I deleted products. Make an option to delete products also. 
+16. I wanted to delete a design with existing products. So, it didn't allow me to delete that design until I deleted products. Make an option to delete products also. 
 
 17. When importing from csv, there should be an option to create designs also.
 
-18. Mantaign Date uploaded for each product and design 
+18. Mantain Date uploaded for each product and design 
 
 19. Filter, sort, grid view and list view for control panel. Select multiple products, designs and delete. 
 
@@ -34,6 +31,9 @@
     then from that product, i came back. It should remember my position and scroll down to that automatically.
 
 27. Update pin code check for delivery. 
+
+28. Allow searching for inventory by category in cPanel.
+
 
 Features suggested by Qwen:
 OTP verification (deferred)
