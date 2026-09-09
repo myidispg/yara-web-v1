@@ -9,34 +9,45 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is authenticated on mount
   useEffect(() => {
     (async () => {
-      if (localStorage.getItem("access")) {
-        try {
-          const { data } = await api.get("/auth/me/");
-          setUser(data);
-        } catch { /* token invalid — interceptor handles redirect */ }
+      try {
+        const { data } = await api.get("/auth/me/");
+        setUser(data);
+      } catch {
+        // Not authenticated or token expired
+        setUser(null);
       }
       setLoading(false);
     })();
   }, []);
 
   const login = async (identifier, password) => {
-    const { data } = await api.post("/auth/login/", { login: identifier, password });
-    localStorage.setItem("access", data.access);
-    localStorage.setItem("refresh", data.refresh);
-    const me = await api.get("/auth/me/");
-    setUser(me.data);
-  };
+    await api.post("/auth/login/", { login: identifier, password });
 
+    const { data } = await api.get("/auth/me/");
+    setUser(data);
+
+    // Check if we need to redirect to control panel
+    const urlParams = new URLSearchParams(window.location.search);
+    const next = urlParams.get('next');
+    if (next === '/control' || next?.startsWith('/control/')) {
+      // Force full page reload to avoid hook conflicts
+      window.location.href = next;
+    }
+  };
   const register = async (payload) => {
     await api.post("/auth/register/", payload);
     await login(payload.email, payload.password);
   };
 
-  const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
+  const logout = async () => {
+    try {
+      await api.logout(); // Clears cookies on backend
+    } catch {
+      // Ignore errors
+    }
     setUser(null);
   };
 
