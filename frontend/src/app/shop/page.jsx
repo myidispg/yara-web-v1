@@ -45,7 +45,14 @@ export default function ShopAllPage() {
     const sentinelRef = useRef(null);
     const seqRef = useRef(0);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const priceMax = params.get("priceMax");
+        if (priceMax) {
+            setSel((s) => ({ ...s, priceMax: Number(priceMax) }));
+        }
+        setMounted(true);
+    }, []);
 
     // Fetch all categories for the filter
     useEffect(() => {
@@ -94,7 +101,9 @@ export default function ShopAllPage() {
         if (seq === seqRef.current) { setLoading(false); setLoadingMore(false); }
     };
 
-    useEffect(() => { fetchPage(0, false); }, [selectedCategory, sel, sort, inStockOnly]);
+    useEffect(() => {
+        if (mounted) fetchPage(0, false);
+    }, [mounted, selectedCategory, sel, sort, inStockOnly]);
 
     useEffect(() => {
         if (!sentinelRef.current || !hasMore) return;

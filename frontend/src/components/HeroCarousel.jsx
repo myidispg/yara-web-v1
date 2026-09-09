@@ -8,14 +8,14 @@ import Image from "next/image";
 const SLIDES = [
   {
     href: "/shop",
-    alt: "Natural diamond rings in solid gold",
+    alt: "View all of YA-RA's designs",
     desktop: "/home/hero/Slide 1 Desktop resized.jpeg",
     mobile: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&h=1400&q=80",
     theme: "light",
   },
   {
-    href: "/category/earrings",
-    alt: "Certified natural diamond earrings",
+    href: "/shop?priceMax=30000",
+    alt: "Jewellery under 30,000/-",
     desktop: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=2400&q=80",
     mobile: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=1000&h=1400&q=80",
     theme: "dark",

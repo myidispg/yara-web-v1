@@ -228,3 +228,14 @@
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
 }
+
+/* Mobile: replace fancy category shapes with simple rounded corners */
+@media (max-width: 767px) {
+  .shape-arch,
+  .shape-asymmetric,
+  .shape-petal,
+  .shape-arch-inverted {
+    border-radius: 1.5rem !important;
+    clip-path: none !important;
+  }
+}

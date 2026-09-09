@@ -4,6 +4,8 @@ import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
 import SafeImage from "@/components/SafeImage";
 import HeroCarousel from "@/components/HeroCarousel";
+import ShopByPrice from "@/components/ShopByPrice";
+import ShopByCollection from "@/components/ShopByCollection";
 
 export const metadata = generateSEO({
     title: 'Buy your daily wear jewellery at YA-RA',
@@ -52,8 +54,8 @@ export default async function Home() {
         <div className="bg-white">
             {/* HERO SECTION */}
             {/* <section className="relative pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"> */}
-                {/* Ambient Background Spheres */}
-                {/* <div className="absolute top-10 left-10 w-96 h-96 bg-[#E5BDB0]/40 rounded-full blur-3xl pointer-events-none"></div>
+            {/* Ambient Background Spheres */}
+            {/* <div className="absolute top-10 left-10 w-96 h-96 bg-[#E5BDB0]/40 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#D4AF37]/25 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative rounded-[36px] overflow-hidden h-[72vh] min-h-[580px] max-h-[680px] flex items-center justify-start bg-[#1A2536] border-2 border-[#E5BDB0]/40 shadow-2xl">
@@ -67,8 +69,8 @@ export default async function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#1A2536]/85 via-[#1A2536]/40 to-transparent"></div> */}
 
-                    {/* Glass Card */}
-                    {/* <div className="relative z-10 w-full max-w-lg mx-6 sm:mx-12 lg:mx-16 glass-card-navy p-8 sm:p-12 rounded-[32px] border border-white/20 text-white space-y-6">
+            {/* Glass Card */}
+            {/* <div className="relative z-10 w-full max-w-lg mx-6 sm:mx-12 lg:mx-16 glass-card-navy p-8 sm:p-12 rounded-[32px] border border-white/20 text-white space-y-6">
                         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5BDB0]/20 border border-[#E5BDB0]/40 text-xs font-bold tracking-widest text-[#E5BDB0]">
                             ✨ 100% NATURAL DIAMONDS • SOLID GOLD
                         </div>
@@ -103,12 +105,13 @@ export default async function Home() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                     {[
-                        { icon: "💎", title: "100% Natural Diamonds", sub: "IGI & SGL Certified", color: "#B86B5A" },
+                        { icon: "💎", title: "100% Natural Diamonds", sub: "GIA, IGI & SGL Certified", color: "#B86B5A" },
                         { icon: "🛡️", title: "BIS Hallmarked Gold", sub: "14KT & 18KT Pure Gold", color: "#D4AF37" },
-                        { icon: "🔄", title: "Lifetime Buyback", sub: "80%-90% Guaranteed Value", color: "#10B981" },
-                        { icon: "🚚", title: "Insured Delivery", sub: "100% Transit Protection", color: "#1A2536" },
+                        { icon: "🔄", title: "Lifetime Buyback", sub: "Guaranteed exchange and returns", color: "#10B981" },
+                        // { icon: "🚚💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
+                        { icon: "💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
                     ].map((item, idx) => (
-                        <div key={idx} className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 hover:shadow-xl transition-all" style={{ borderLeftColor: item.color }}>
+                        <div key={idx} className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 transition-all" style={{ borderLeftColor: item.color }}>
                             <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: `${item.color}15` }}>
                                 {item.icon}
                             </div>
@@ -135,10 +138,11 @@ export default async function Home() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
-                            <div className={`relative h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}>
+                            {/* <div className={`relative h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}> */}
+                            <div className={`relative h-56 md:h-96 ${c.shape} overflow-hidden bg-white border-2 border-[#E5BDB0] shadow-md group-hover:shadow-2xl transition-all duration-500`}>
                                 <SafeImage
                                     src={c.img}
                                     alt={c.title}
@@ -159,18 +163,19 @@ export default async function Home() {
 
             {/* BEST SELLERS */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
-                    <div>
-                        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">bestselling pieces</span>
-                        <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
+                <div className="flex flex-row items-end justify-between gap-3 border-b border-[#E5BDB0]/60 pb-4">
+                    <div className="min-w-0">
+                        <span className="font-cursive text-xl sm:text-3xl text-[#B86B5A] block -mb-1">bestselling pieces</span>
+                        <h2 className="font-serif-luxury text-2xl sm:text-4xl lg:text-5xl font-normal text-[#1A2536] leading-tight">
                             Signature Designs
                         </h2>
                     </div>
                     <Link
-                        href="/category/rings"
-                        className="text-xs font-bold uppercase tracking-widest text-[#1A2536] border-b-2 border-[#B86B5A] pb-1.5 hover:text-[#B86B5A] transition-colors"
+                        href="/shop"
+                        className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-widest text-[#1A2536] border-b-2 border-[#B86B5A] pb-1 hover:text-[#B86B5A] transition-colors"
                     >
-                        View All Products →
+                        <span className="sm:hidden">View All →</span>
+                        <span className="hidden sm:inline">View All Products →</span>
                     </Link>
                 </div>
 
@@ -183,8 +188,14 @@ export default async function Home() {
                 )}
             </section>
 
+            {/* SHOP BY PRICE */}
+            <ShopByPrice />
+
+            {/* SHOP BY COLLECTION */}
+            <ShopByCollection />
+
             {/* COLOR STONE BANNER */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+            {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
                 <div className="relative rounded-[40px] overflow-hidden bg-gradient-to-r from-[#1A2536] via-[#223046] to-[#1A2536] text-white p-8 sm:p-14 border-2 border-[#E5BDB0]/40 shadow-2xl">
                     <div className="absolute right-0 top-0 w-96 h-96 bg-[#E5BDB0]/20 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
@@ -223,7 +234,7 @@ export default async function Home() {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* 4CS EDUCATION */}
             <section className="bg-[#1A2536] text-white py-20">
@@ -238,7 +249,7 @@ export default async function Home() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
                         {FOUR_CS.map(([n, t, h, b]) => (
                             <div key={n} className="border-t-2 border-[#E5BDB0] pt-5">
                                 <p className="font-serif-luxury italic text-3xl text-[#E5BDB0] mb-2">{n}. {t}</p>
