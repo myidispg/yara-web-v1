@@ -60,6 +60,12 @@ const controlApi = {
   updateCategory: (id, data) => api.patch(`/control/categories/${id}/`, data),
   deleteCategory: (id) => api.delete(`/control/categories/${id}/`),
 
+  // Tags
+  getTags: () => api.get("/control/tags/"),
+  createTag: (data) => api.post("/control/tags/", data),
+  updateTag: (id, data) => api.patch(`/control/tags/${id}/`, data),
+  deleteTag: (id) => api.delete(`/control/tags/${id}/`),
+
   // Customers
   getCustomers: (includeStaff = false) => {
     const params = includeStaff ? { include_staff: 'true' } : {};

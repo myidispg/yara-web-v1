@@ -5,7 +5,8 @@ from .views import (CategoryListView, CustomerViewSet, DashboardView, DesignView
                     OrderViewSet, ProductViewSet, RateCardView, GoldRateHistoryView, NotificationListView,
                     NotificationMarkAllReadView, NotificationMarkReadView, RateCardFetchNowView, 
                     AnalyticsSummaryView, AnalyticsTimeseriesView, CategoryViewSet, AuditLogListView,
-                    SearchTrackView, SearchAnalyticsView, GlobalSearchView, PricePreviewView, InvoiceViewSet)
+                    SearchTrackView, SearchAnalyticsView, GlobalSearchView, PricePreviewView, InvoiceViewSet,
+                    TagViewSet)
 
 router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='admin-orders')
@@ -14,6 +15,7 @@ router.register(r'instances', ProductViewSet, basename='admin-instances')
 router.register(r'customers', CustomerViewSet, basename='admin-customers')
 router.register(r'categories', CategoryViewSet, basename='admin-categories')
 router.register(r'invoices', InvoiceViewSet, basename='admin-invoices')
+router.register(r'tags', TagViewSet, basename='admin-tags')
 
 urlpatterns = [
     path('', include(router.urls)),

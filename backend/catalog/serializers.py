@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from decimal import Decimal
 
-from .models import Category, Design, ProductMedia, Product, RateCard
+from .models import Category, Design, ProductMedia, Product, RateCard, Tag
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -15,6 +15,17 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_subcategories(self, obj):
         children = obj.subcategories.filter(is_active=True).order_by('name')
         return CategorySerializer(children, many=True).data
+
+class TagSerializer(serializers.ModelSerializer):
+    group_display = serializers.CharField(source='get_group_display', read_only=True)
+    design_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Tag
+        fields = ['id', 'name', 'slug', 'group', 'group_display', 'is_active', 'design_count']
+
+    def get_design_count(self, obj):
+        return obj.designs.filter(is_active=True).count()
 
 class ProductMediaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,12 +88,13 @@ class DesignListSerializer(serializers.ModelSerializer):
     is_ring = serializers.BooleanField(source="category.is_ring_family", read_only=True)
     base_price = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
                   "category_slug", "base_net_weight_14kt", "total_diamond_weight",
-                  "base_price", "in_stock", "media", "is_ring",]
+                  "base_price", "in_stock", "media", "is_ring", "tags"]
 
     def get_base_price(self, obj):
         return design_from_price(obj)
@@ -99,6 +111,7 @@ class DesignDetailSerializer(serializers.ModelSerializer):
     is_ring = serializers.BooleanField(source="category.is_ring_family", read_only=True)
     base_price = serializers.SerializerMethodField()
     rate_card = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Design
@@ -108,7 +121,7 @@ class DesignDetailSerializer(serializers.ModelSerializer):
                   "diamond_weight_round_melle", "pointer_solitaire_weight",
                   "fancy_cut_weight", "color_stone_weight",
                   "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
-                  "base_price", "media", "products", "rate_card", "is_ring",]
+                  "base_price", "media", "products", "rate_card", "is_ring", "tags"]
 
     def get_base_price(self, obj):
         return design_from_price(obj)

@@ -2,10 +2,10 @@ import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
 const COLLECTIONS = [
-    { index: "01", name: "Solitaire Jewellery", slug: "solitaires", desc: "Single-stone brilliance for life's milestones", img: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80" },
-    { index: "02", name: "Tennis Bracelets", slug: "bracelets", desc: "Continuous lines of certified diamonds", img: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=800&q=80" },
-    { index: "03", name: "Daily Wear Earrings", slug: "earrings", desc: "Lightweight studs & huggies for every day", img: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80" },
-    { index: "04", name: "Cocktail Rings", slug: "rings", desc: "Bold centre stones that command attention", img: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=800&q=80" },
+    { index: "01", name: "Solitaire Jewellery", href: "/shop?tag=solitaire", desc: "Single-stone brilliance for life's milestones", img: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80" },
+    { index: "02", name: "Tennis Bracelets", href: "/shop?tag=tennis-bracelet", desc: "Continuous lines of certified diamonds", img: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=800&q=80" },
+    { index: "03", name: "Daily Wear Earrings", href: "/shop?tag=daily-wear&category=earrings", desc: "Lightweight studs & huggies for every day", img: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80" },
+    { index: "04", name: "Cocktail Rings", href: "/shop?tag=cocktail&category=rings", desc: "Bold centre stones that command attention", img: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=800&q=80" },
 ];
 
 export default function ShopByCollection() {
@@ -29,8 +29,8 @@ export default function ShopByCollection() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {COLLECTIONS.map((c) => (
                         <Link
-                            key={c.slug}
-                            href={`/category/${c.slug}`}
+                            key={c.index}
+                            href={c.href}
                             className="group block overflow-hidden rounded-3xl border border-[#E5BDB0] bg-white shadow-sm hover:shadow-xl transition-all duration-500"
                         >
                             {/* Image */}
