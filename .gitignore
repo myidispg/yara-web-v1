@@ -13,6 +13,8 @@ media/
 staticfiles/
 /static/root/
 .env
+.env.production
+.env.example
 .venv
 venv/
 ENV/
@@ -67,3 +69,6 @@ Thumbs.db
 # ==========================================
 Exports/
 frontend-vite/
+__pycache__/
+*.pyc
+Render Images Batch 1/

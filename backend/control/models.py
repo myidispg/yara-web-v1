@@ -33,3 +33,17 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.user} {self.action} {self.model_name} {self.object_id} at {self.timestamp}"
+
+
+class SearchLog(models.Model):
+    """One row per committed storefront search (retained 90 days)."""
+    term = models.CharField(max_length=100, db_index=True)
+    results_count = models.IntegerField(default=0)
+    searched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-searched_at']
+        indexes = [models.Index(fields=['term', 'searched_at'])]
+
+    def __str__(self):
+        return f"'{self.term}' → {self.results_count} results"

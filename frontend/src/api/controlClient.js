@@ -8,6 +8,7 @@ const controlApi = {
   getOrders: () => api.get("/control/orders/"),
   getOrder: (id) => api.get(`/control/orders/${id}/`),
   updateOrderStatus: (id, status) => api.post(`/control/orders/${id}/update_status/`, { status }),
+  mapProductToOrder: (orderId, itemId, productId) => api.post(`/control/orders/${orderId}/map_product/${itemId}/`, { product_id: productId }),
   cancelOrder: (id) => api.post(`/control/orders/${id}/cancel/`),
 
   // Designs (blueprints)
@@ -24,11 +25,19 @@ const controlApi = {
   },
   deleteDesign: (designId) => api.delete(`/control/products/${designId}/delete_design/`),
   deleteProduct: (productId) => api.delete(`/control/instances/${productId}/delete_product/`),
+  bulkDesignAction: (ids, action) => api.post(`/control/products/bulk-action/`, { ids, action }),
+  updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
+  deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
+  // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
 
   // Products (physical pieces)
-  getInstances: () => api.get("/control/instances/"),
+  getInstances: (params = {}) => api.get("/control/instances/", { params }),
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
+  getProductDetail: (id) => api.get(`/control/instances/${id}/`),
+  globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
+  previewPrice: (data) => api.post("/control/price-preview/", data),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),
@@ -52,7 +61,11 @@ const controlApi = {
   deleteCategory: (id) => api.delete(`/control/categories/${id}/`),
 
   // Customers
-  getCustomers: () => api.get("/control/customers/"),
+  getCustomers: (includeStaff = false) => {
+    const params = includeStaff ? { include_staff: 'true' } : {};
+    return api.get("/control/customers/", { params });
+  },
+  getCustomerFull: (id) => api.get(`/control/customers/${id}/full/`),
 
   // Import/Export
   importProducts: (file) => {
@@ -73,6 +86,16 @@ const controlApi = {
 
   // Audit
   getAuditLogs: (params = {}) => api.get("/control/audit-logs/", { params }),
+
+  // Search analytics
+  getSearchAnalytics: (days = 30) => api.get("/control/search-analytics/", { params: { days } }),
+
+  // Invoices
+  getInvoices: (params = {}) => api.get("/control/invoices/", { params }),
+  getInvoice: (id) => api.get(`/control/invoices/${id}/`),
+  downloadInvoice: (id) => api.get(`/control/invoices/${id}/pdf/`, { responseType: 'blob' }),
+  exportInvoices: (params = {}) => api.get("/control/invoices/export/", { params, responseType: 'blob' }),
+  exportInvoicePdfs: (params = {}) => api.get("/control/invoices/export_pdfs/", { params, responseType: 'blob' }),
 };
 
 export default controlApi;

@@ -19,8 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductMedia
-        fields = ["url", "kind", "sort_order"]
-
+        fields = ["id", "url", "kind", "sort_order"]
 
 class ProductSerializer(serializers.ModelSerializer):
     """The physical, sellable piece."""

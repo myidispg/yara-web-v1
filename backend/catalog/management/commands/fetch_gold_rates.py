@@ -91,6 +91,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f'Rates updated: 14Kt=₹{new_14kt}/g, 18Kt=₹{new_18kt}/g'
             ))
+            
+            # Async recalculate all product prices
+            from catalog.utils import recalculate_prices_async
+            recalculate_prices_async(rate_card=rc, user=None, reason="auto_fetch_gold_rate")
+            self.stdout.write(self.style.SUCCESS('Price recalculation started in background'))
         else:
             self.stdout.write(self.style.WARNING(
                 f'No update needed. Calculated: {calculated}, Current: {current_24kt}'
