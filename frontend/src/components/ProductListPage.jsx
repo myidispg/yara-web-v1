@@ -34,6 +34,8 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
     const [selectedCategory, setSelectedCategory] = useState("");
     const [subcategories, setSubcategories] = useState([]);
     const [selectedSub, setSelectedSub] = useState("");
+    const [tags, setTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
     const [sel, setSel] = useState({ karat: [], color: [], priceMax: 200000 });
     const [inStockOnly, setInStockOnly] = useState(false);
     const [sort, setSort] = useState("newest");
@@ -49,13 +51,22 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
 
     const isShopMode = mode === "shop";
 
-    // Initialize from URL params (for shop page price filter)
+    // Initialize from URL params (for shop page price/tag/category filters)
     useEffect(() => {
         if (isShopMode) {
             const params = new URLSearchParams(window.location.search);
             const priceMax = params.get("priceMax");
+            const tag = params.get("tag");
+            const category = params.get("category");
+            
             if (priceMax) {
                 setSel((s) => ({ ...s, priceMax: Number(priceMax) }));
+            }
+            if (tag) {
+                setSelectedTags([tag]);
+            }
+            if (category) {
+                setSelectedCategory(category);
             }
         }
         setMounted(true);
@@ -70,6 +81,13 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
         }
     }, [isShopMode]);
 
+    // Fetch tags for filtering
+    useEffect(() => {
+        api.get("/tags/")
+            .then(({ data }) => setTags(data?.results ?? data ?? []))
+            .catch(() => setTags([]));
+    }, []);
+
     // Fetch subcategories for category mode
     useEffect(() => {
         if (!isShopMode && slug) {
@@ -80,7 +98,7 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
     }, [isShopMode, slug]);
 
     const hasMore = items.length < total;
-    const activeCount = (isShopMode && selectedCategory ? 1 : 0) + sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0) + (!isShopMode && selectedSub ? 1 : 0) + (sel.priceMax < 200000 ? 1 : 0);
+    const activeCount = (isShopMode && selectedCategory ? 1 : 0) + sel.karat.length + sel.color.length + (inStockOnly ? 1 : 0) + (!isShopMode && selectedSub ? 1 : 0) + (sel.priceMax < 200000 ? 1 : 0) + selectedTags.length;
 
     const toggle = (group, value) =>
         setSel((s) => ({
@@ -93,20 +111,20 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
         setSel({ karat: [], color: [], priceMax: 200000 });
         setInStockOnly(false);
         if (!isShopMode) setSelectedSub("");
+        setSelectedTags([]);
     };
 
     const buildParams = (offset) => {
         const p = { limit: PAGE, offset, sort };
-        
+
         if (isShopMode) {
-            // Shop mode: optional category filter
             if (selectedCategory) p.category = selectedCategory;
         } else {
-            // Category mode: fixed category, optional subcategory
             p.category = slug;
             if (selectedSub) p.sub = selectedSub;
         }
-        
+
+        if (selectedTags.length) p.tags = selectedTags;
         if (sel.karat.length) p.purity = sel.karat;
         if (sel.color.length) p.color = sel.color;
         if (inStockOnly) p.in_stock = "1";
@@ -131,7 +149,7 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
 
     useEffect(() => {
         if (mounted) fetchPage(0, false);
-    }, [mounted, isShopMode ? selectedCategory : slug, selectedSub, sel, sort, inStockOnly]);
+    }, [mounted, isShopMode ? selectedCategory : slug, selectedSub, selectedTags, sel, sort, inStockOnly]);
 
     useEffect(() => {
         if (!sentinelRef.current || !hasMore) return;
@@ -226,6 +244,30 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
                                 {sub.name}
                             </button>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Tag Filter */}
+            {tags.length > 0 && (
+                <div>
+                    <h3 className="text-xs uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Collection / Style</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => {
+                            const active = selectedTags.includes(tag.slug);
+                            return (
+                                <button
+                                    key={tag.id}
+                                    onClick={() => setSelectedTags((t) => t.includes(tag.slug) ? t.filter(s => s !== tag.slug) : [...t, tag.slug])}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${active
+                                            ? "bg-[#B86B5A] text-white shadow-md"
+                                            : "bg-white text-[#1A2536] border border-[#E5BDB0] hover:border-[#B86B5A]"
+                                        }`}
+                                >
+                                    {tag.name}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}

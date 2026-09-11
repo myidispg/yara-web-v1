@@ -14,6 +14,7 @@ const navItems = [
   { label: "Invoices", href: "/control/invoices", icon: "▤" },
   { label: "Inventory", href: "/control/inventory", icon: "▥" },
   { label: "Categories", href: "/control/categories", icon: "▦" },
+  { label: "Tags", href: "/control/tags", icon: "▧" },
   { label: "Rate Card", href: "/control/rate-card", icon: "◇" },
   { label: "Customers", href: "/control/customers", icon: "◎" },
   { label: "Import/Export", href: "/control/import-export", icon: "⬡" },

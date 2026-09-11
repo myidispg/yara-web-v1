@@ -11,6 +11,7 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 
 from rest_framework.permissions import AllowAny
 from django.db.models import Max
@@ -21,7 +22,9 @@ from rest_framework.pagination import LimitOffsetPagination
 
 from accounts.models import User
 from accounts.permissions import IsStaff
-from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
+from catalog.models import (Category, Design, Product, ProductMedia, RateCard,
+                             GoldRateHistory, Notification, Tag)
+from catalog.serializers import TagSerializer
 from orders.models import Order, Invoice
 
 from .models import AuditLog
@@ -1231,3 +1234,20 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
         response = HttpResponse(buffer.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{filename}.zip"'
         return response
+
+class TagViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsStaff]
+    queryset = Tag.objects.all().order_by('group', 'name')
+    serializer_class = TagSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Don't delete tags that have designs — deactivate instead
+        if instance.designs.count() > 0:
+            raise ValidationError(
+                f"Cannot delete '{instance.name}': {instance.designs.count()} designs use this tag. "
+                f"Remove the tag from designs first, or deactivate it."
+            )
+        instance.delete()

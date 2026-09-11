@@ -7,8 +7,8 @@ from django.db.models import F, Min, Q, DecimalField
 from django.db.models.functions import Coalesce
 from django.db.models.expressions import ExpressionWrapper
 
-from .models import Category, Design, RateCard
-from .serializers import CategorySerializer, DesignDetailSerializer, DesignListSerializer
+from .models import Category, Design, RateCard, Tag
+from .serializers import CategorySerializer, DesignDetailSerializer, DesignListSerializer, TagSerializer
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -39,9 +39,14 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         
         return qs
 
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public tag list for storefront filtering."""
+    permission_classes = [AllowAny]
+    serializer_class = TagSerializer
+    queryset = Tag.objects.filter(is_active=True)
+
 class DesignPagination(LimitOffsetPagination):
     default_limit = 18
-
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """Storefront catalog — serves DESIGNS (URL stays /api/products/)."""
@@ -67,6 +72,17 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         elif cat:
             # Include parent + all its subcategories
             qs = qs.filter(Q(category__slug=cat) | Q(category__parent__slug=cat))
+
+        # Tag filtering
+        tag = p.get("tag")
+        if tag:
+            qs = qs.filter(tags__slug=tag)
+
+        # Multiple tags (comma-separated)
+        tags = p.getlist("tags")
+        if tags:
+            for t in tags:
+                qs = qs.filter(tags__slug=t)
 
         search = p.get("search")
         if search:

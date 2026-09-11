@@ -40,6 +40,31 @@ class Category(models.Model):
             return f"{self.parent.name} > {self.name}"
         return self.name
 
+class Tag(models.Model):
+    """Flexible labels applied to designs (solitaire, daily-wear, engagement, etc.)."""
+    GROUP_CHOICES = [
+        ('style', 'Style'),
+        ('occasion', 'Occasion'),
+        ('material', 'Material'),
+        ('collection', 'Collection'),
+    ]
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    group = models.CharField(max_length=20, choices=GROUP_CHOICES, default='style')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['group', 'name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_group_display()})"
+
 class Design(models.Model):
     """The blueprint. Always sellable — pieces without stock are Made-to-Order."""
     BASE_RING_SIZE = 12
@@ -67,6 +92,7 @@ class Design(models.Model):
     has_fancy_cut = models.BooleanField(default=False)
     has_color_stone = models.BooleanField(default=False)
 
+    tags = models.ManyToManyField(Tag, blank=True, related_name='designs')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
