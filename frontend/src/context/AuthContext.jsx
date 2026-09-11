@@ -26,17 +26,19 @@ export function AuthProvider({ children }) {
   const login = async (identifier, password) => {
     await api.post("/auth/login/", { login: identifier, password });
 
-    const { data } = await api.get("/auth/me/");
-    setUser(data);
-
     // Check if we need to redirect to control panel
     const urlParams = new URLSearchParams(window.location.search);
     const next = urlParams.get('next');
     if (next === '/control' || next?.startsWith('/control/')) {
       // Force full page reload to avoid hook conflicts
       window.location.href = next;
+    } else {
+      // For non-control panel redirects, just reload the page
+      // This will trigger the useEffect to fetch /auth/me/ with the new cookie
+      window.location.reload();
     }
   };
+
   const register = async (payload) => {
     await api.post("/auth/register/", payload);
     await login(payload.email, payload.password);
@@ -44,11 +46,12 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await api.logout(); // Clears cookies on backend
+      await api.logout();
     } catch {
       // Ignore errors
     }
     setUser(null);
+    window.location.href = "/";
   };
 
   return (
