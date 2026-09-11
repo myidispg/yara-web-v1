@@ -22,6 +22,7 @@ export default function InventoryPage() {
     const [products, setProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [view, setView] = useState("designs");
+    const [viewMode, setViewMode] = useState("grid"); // NEW: grid or list
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
@@ -219,6 +220,25 @@ export default function InventoryPage() {
                             All Products
                         </button>
                     </div>
+                    
+                    {/* NEW: Grid/List toggle for designs view */}
+                    {view === "designs" && !selected && (
+                        <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
+                            <button
+                                onClick={() => setViewMode("grid")}
+                                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${viewMode === "grid" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                            >
+                                Grid
+                            </button>
+                            <button
+                                onClick={() => setViewMode("list")}
+                                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${viewMode === "list" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                            >
+                                List
+                            </button>
+                        </div>
+                    )}
+                    
                     <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
                         <span className="text-sm font-bold text-[#1A2536]">{products.length}</span>
                         <span className="text-sm text-[#1A2536]/60 ml-1">designs</span>
@@ -534,7 +554,143 @@ export default function InventoryPage() {
                         </div>
                     </div>
                 </div>
+            ) : viewMode === "list" ? (
+                /* LIST VIEW */
+                <div className="space-y-4">
+                    {/* Bulk action bar for designs */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                                onChange={() => setCheckedDesigns(
+                                    products.every((d) => checkedDesigns.includes(d.id))
+                                        ? []
+                                        : products.map((d) => d.id)
+                                )}
+                                className="w-4 h-4 accent-[#B86B5A]"
+                            />
+                            <span className="text-sm text-[#1A2536]/60">Select all</span>
+                        </div>
+                        {checkedDesigns.length > 0 && (
+                            <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                                <span className="text-xs font-bold text-[#1A2536]">{checkedDesigns.length} selected</span>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("activate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Activate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("deactivate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Deactivate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => setCheckedDesigns([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {bulkResult && (
+                        <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-4 text-sm">
+                            <p className="font-bold text-[#1A2536]">
+                                Done: {bulkResult.processed.length} processed
+                                {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                            </p>
+                            {bulkResult.skipped.length > 0 && (
+                                <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.skipped.map((s) => (
+                                        <li key={s.id}>• {s.item_code}: {s.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">
+                                        <th className="px-4 py-3.5 w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                                                onChange={() => setCheckedDesigns(
+                                                    products.every((d) => checkedDesigns.includes(d.id))
+                                                        ? []
+                                                        : products.map((d) => d.id)
+                                                )}
+                                                className="w-4 h-4 accent-[#B86B5A]"
+                                            />
+                                        </th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Image</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Design</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Category</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Products</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">In Stock</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">From Price</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {products.map((d) => (
+                                        <tr key={d.id} onClick={() => viewDesign(d.id)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checkedDesigns.includes(d.id)}
+                                                    onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
+                                                    className="w-4 h-4 accent-[#B86B5A]"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#1A2536]/[0.03]">
+                                                    {d.media && d.media.length > 0 && d.media[0].kind === "image" ? (
+                                                        <img
+                                                            src={d.media[0].url}
+                                                            alt={d.name}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.onerror = null;
+                                                                e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-bold text-[#1A2536]">{d.name}</p>
+                                                <p className="text-xs text-[#1A2536]/60 font-mono mt-0.5">{d.design_code}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">{d.category_name}</td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-extrabold text-[#1A2536]">{d.instance_count}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-extrabold text-emerald-600">{d.in_stock_count}</p>
+                                            </td>
+                                            <td className="px-6 py-4 font-extrabold text-[#B86B5A]">{inr(d.base_price)}</td>
+                                            <td className="px-6 py-4">
+                                                {d.is_active ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Active
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             ) : (
+                /* GRID VIEW */
                 <div className="space-y-4">
                     {/* Bulk action bar for designs */}
                     <div className="flex flex-wrap items-center gap-3">
