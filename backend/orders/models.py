@@ -40,10 +40,19 @@ class Order(models.Model):
     order_number = models.CharField(max_length=20, unique=True, blank=True)
     status = models.CharField(max_length=12, choices=STATUS, default="placed")
     payment_method = models.CharField(max_length=12, choices=PAYMENT, default="upi")
+    transaction_id = models.CharField(max_length=64, blank=True)  # Add this line
     address = models.ForeignKey(Address, null=True, blank=True, related_name="+", on_delete=models.SET_NULL)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     shipping_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # Timeline timestamps
+    placed_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -56,7 +65,22 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.order_number:
             self.order_number = f"VR-{timezone.now():%y%m%d}-{secrets.token_hex(2).upper()}"
+        if not self.transaction_id:
+            self.transaction_id = f"TXN-{secrets.token_hex(12).upper()}"
         super().save(*args, **kwargs)
+
+    def get_timeline(self):
+        """Return a list of {status, timestamp} for the order's progression."""
+        timeline = [{"status": "placed", "timestamp": self.placed_at}]
+        if self.confirmed_at:
+            timeline.append({"status": "confirmed", "timestamp": self.confirmed_at})
+        if self.shipped_at:
+            timeline.append({"status": "shipped", "timestamp": self.shipped_at})
+        if self.delivered_at:
+            timeline.append({"status": "delivered", "timestamp": self.delivered_at})
+        if self.cancelled_at:
+            timeline.append({"status": "cancelled", "timestamp": self.cancelled_at})
+        return timeline
 
 
 class OrderItem(models.Model):
@@ -68,5 +92,44 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
 
+    is_mto_pending = models.BooleanField(default=False, help_text="MTO item awaiting product fulfillment")
+
     def __str__(self):
         return f"{self.quantity} × {self.product_name}"
+
+class Invoice(models.Model):
+    """Invoice generated when order is delivered. Snapshots all data at generation time."""
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="invoice")
+    invoice_number = models.CharField(max_length=20, unique=True)
+    pdf_file = models.FileField(upload_to="invoices/%Y/%m/")
+    generated_at = models.DateTimeField(auto_now_add=True)
+    
+    # Snapshot financials at invoice time
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Snapshot customer data at invoice time
+    customer_name = models.CharField(max_length=200)
+    customer_email = models.EmailField()
+    customer_phone = models.CharField(max_length=15, blank=True)
+    billing_address = models.TextField()
+    
+    class Meta:
+        ordering = ["-generated_at"]
+    
+    def __str__(self):
+        return self.invoice_number
+    
+    # def save(self, *args, **kwargs):
+    #     if not self.invoice_number:
+    #         # Generate unique invoice number: INV-YYYY-NNNNN
+    #         from datetime import datetime
+    #         year = datetime.now().year
+    #         # Count invoices from this year
+    #         year_count = Invoice.objects.filter(
+    #             generated_at__year=year
+    #         ).count() + 1
+    #         self.invoice_number = f"INV-{year}-{year_count:05d}"
+    #     super().save(*args, **kwargs)

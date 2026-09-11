@@ -4,7 +4,8 @@ from rest_framework import serializers
 
 from accounts.models import User
 from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, Invoice
+from catalog.serializers import ProductMediaSerializer
 
 from .models import AuditLog
 
@@ -20,16 +21,48 @@ class StaffUserSerializer(serializers.ModelSerializer):
 class StaffProductSerializer(serializers.ModelSerializer):
     """The physical piece."""
     sold_in_order_number = serializers.SerializerMethodField()
+    sold_in_order_id = serializers.SerializerMethodField()
+    sold_to_email = serializers.SerializerMethodField()
+    design_id = serializers.IntegerField(source='design.id', read_only=True)
+    design_code = serializers.CharField(source='design.design_code', read_only=True)
+    design_name = serializers.CharField(source='design.name', read_only=True)
+    category_name = serializers.CharField(source='design.category.name', read_only=True)
+    gold_value = serializers.SerializerMethodField()
+    diamond_value = serializers.SerializerMethodField()
+    making_charges = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = ['id', 'item_code', 'karat', 'gold_color', 'ring_size', 'diamond_grade',
                   'status', 'price', 'actual_net_weight', 'actual_diamond_weight',
                   'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_number',
-                  'sold_at', 'sold_in_order_number']
-
+                  'sold_at', 'sold_in_order_number', 'sold_in_order_id', 'sold_to_email',
+                  'created_at', 'design_id', 'design_code', 'design_name', 'category_name',
+                  'gold_value', 'diamond_value', 'making_charges', 'gst_amount']
+        
+        read_only_fields = []
+        
     def get_sold_in_order_number(self, obj):
         return obj.sold_in_order.order_number if obj.sold_in_order else None
+
+    def get_sold_in_order_id(self, obj):
+        return obj.sold_in_order.id if obj.sold_in_order else None
+
+    def get_sold_to_email(self, obj):
+        return obj.sold_to_user.email if obj.sold_to_user else None
+
+    def get_gold_value(self, obj):
+        return float(obj.gold_value)
+
+    def get_diamond_value(self, obj):
+        return float(obj.diamond_value)
+
+    def get_making_charges(self, obj):
+        return float(obj.making_charges)
+
+    def get_gst_amount(self, obj):
+        return float(obj.gst_amount)
 
 
 class StaffDesignSerializer(serializers.ModelSerializer):
@@ -37,16 +70,20 @@ class StaffDesignSerializer(serializers.ModelSerializer):
     category_slug = serializers.CharField(source='category.slug', read_only=True)
     is_ring = serializers.BooleanField(source='category.is_ring_family', read_only=True)
     products = StaffProductSerializer(many=True, read_only=True)
+    media = ProductMediaSerializer(many=True, read_only=True)
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Design
-        fields = ['id', 'design_code', 'slug', 'name', 'category_name', 'base_net_weight_14kt',
-                  'size_weight_refs', 'size_weight_counts', 'total_diamond_weight',
-                  'products', 'instance_count', 'in_stock_count', 'base_price', 'category_slug',
-                  'is_ring']
+        fields = ['id', 'design_code', 'slug', 'name', 'description', 'category',
+                  'category_name', 'category_slug', 'is_ring', 'is_active',
+                  'base_net_weight_14kt', 'size_weight_refs', 'size_weight_counts',
+                  'total_diamond_weight', 'diamond_weight_round_melle',
+                  'pointer_solitaire_weight', 'fancy_cut_weight', 'color_stone_weight',
+                  'products', 'instance_count', 'in_stock_count', 'base_price',
+                  'created_at', 'media']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()
@@ -66,6 +103,15 @@ class StaffDesignSerializer(serializers.ModelSerializer):
 
     def get_in_stock_count(self, obj):
         return obj.products.filter(status='in_stock').count()
+
+class DesignUpdateSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+
+    class Meta:
+        model = Design
+        fields = ['name', 'design_code', 'description', 'category', 'is_active',
+                  'diamond_weight_round_melle', 'pointer_solitaire_weight',
+                  'fancy_cut_weight', 'color_stone_weight']
 
 
 class StaffCategorySerializer(serializers.ModelSerializer):
@@ -89,10 +135,10 @@ class RateCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCard
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
-                  'making_charges_percentage', 'gst_percentage', 'updated_at',
-                  'auto_fetch_enabled', 'increment_percentage', 'change_threshold_type',
-                  'change_threshold_percentage', 'change_threshold_amount', 'last_auto_run_at', 
-                  'auto_fetch_interval_minutes']
+                  'making_charges_percentage', 'making_fixed_per_gram', 'making_pct_24kt', 
+                  'gst_percentage', 'updated_at', 'auto_fetch_enabled', 'increment_percentage', 
+                  'change_threshold_type', 'change_threshold_percentage', 'change_threshold_amount', 
+                  'last_auto_run_at', 'auto_fetch_interval_minutes']
 
 
 class GoldRateHistorySerializer(serializers.ModelSerializer):
@@ -109,10 +155,23 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class StaffOrderItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
+    design_slug = serializers.CharField(source='instance.design.slug', read_only=True)
+    design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
+    design_code = serializers.CharField(source='instance.design.design_code', read_only=True)
+    design_name = serializers.CharField(source='instance.design.name', read_only=True)
+    is_mto_pending = serializers.BooleanField(read_only=True)
+    item_code = serializers.CharField(source='instance.item_code', read_only=True)
+    hallmark_number = serializers.CharField(source='instance.hallmark_number', read_only=True)
+    report_number = serializers.CharField(source='instance.report_number', read_only=True)
+    karat = serializers.CharField(source='instance.karat', read_only=True)
+    gold_color = serializers.CharField(source='instance.gold_color', read_only=True)
+    diamond_grade = serializers.CharField(source='instance.diamond_grade', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 'total_price', 'instance']
+        fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
+                  'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name',
+                  'is_mto_pending', 'item_code', 'hallmark_number', 'report_number', 'karat', 'gold_color', 'diamond_grade']
 
     def get_total_price(self, obj):
         return float(obj.line_total) if obj.line_total else float(obj.unit_price) * int(obj.quantity)
@@ -121,15 +180,23 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
 class StaffOrderSerializer(serializers.ModelSerializer):
     items = StaffOrderItemSerializer(many=True, read_only=True)
     customer_email = serializers.CharField(source="user.email")
+    customer_id = serializers.IntegerField(source="user.id", read_only=True)
     customer_name = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     address = serializers.SerializerMethodField()
+    timeline = serializers.SerializerMethodField()
+    invoice_number = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
+    subtotal_excl_tax = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = ['id', 'order_number', 'customer_email', 'customer_name', 'customer_phone',
-                  'status', 'payment_method', 'subtotal', 'shipping_fee', 'total',
-                  'created_at', 'items', 'address']
+                  'customer_id', 'status', 'payment_method', 'transaction_id', 'subtotal', 
+                  'subtotal_excl_tax', 'gst_amount', 'shipping_fee', 'total', 'created_at', 
+                  'items', 'address', 'timeline', 'placed_at', 'confirmed_at', 'shipped_at', 
+                  'delivered_at', 'cancelled_at', 'invoice_number', 'invoice_id']
 
     def get_customer_name(self, obj):
         full = f"{obj.user.first_name} {obj.user.last_name}".strip()
@@ -148,6 +215,30 @@ class StaffOrderSerializer(serializers.ModelSerializer):
             return None
         return {"full_name": a.full_name, "phone": a.phone, "line1": a.line1,
                 "line2": a.line2 or "", "city": a.city, "state": a.state, "pincode": a.pincode}
+    
+    def get_timeline(self, obj):
+        return obj.get_timeline()
+    
+    def get_invoice_number(self, obj):
+        if hasattr(obj, 'invoice') and obj.invoice:
+            return obj.invoice.invoice_number
+        return None
+    
+    def get_invoice_id(self, obj):
+        if hasattr(obj, 'invoice') and obj.invoice:
+            return obj.invoice.id
+        return None
+    
+    def get_subtotal_excl_tax(self, obj):
+        """Calculate base amount (excluding 3% GST)."""
+        from decimal import Decimal
+        return round(obj.subtotal / Decimal('1.03'), 2)
+
+    def get_gst_amount(self, obj):
+        """Calculate GST amount (3% inclusive)."""
+        from decimal import Decimal
+        base = obj.subtotal / Decimal('1.03')
+        return round(obj.subtotal - base, 2)
 
 
 # ── Creation (wizard / add product) ───────────────────────────────────
@@ -178,18 +269,34 @@ def create_product_for_design(design, inst, rc):
     else:
         item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
                      f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+    
+    # Calculate price with new making formula
+    gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
+    grade_rate = float(rc.rate_for_grade(grade))
+    
+    gold_value = net * gold_rate
+    diamond_value = dia * grade_rate
+    
+    # NEW: Making = (fixed per gram + % of 24Kt gold) × net weight
+    gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+    making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+    making = making_per_gram * net
+    
+    gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+    price = round(gold_value + diamond_value + making + gst, 2)
         
     product = Product.objects.create(
         design=design, item_code=item_code, karat=karat, gold_color=inst['gold_color'],
         ring_size=size, diamond_grade=grade, status='in_stock',
-        price=price_for(net, dia, karat, grade, rc),
+        price=price,
         actual_net_weight=net, actual_diamond_weight=dia,
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
         report_lab=inst.get('report_lab', ''), 
         report_number=inst.get('report_number', ''),
         hallmark_number=inst.get('hallmark_number', '')
-        )
+    )
 
+    # PRESERVED: Weight recording logic
     net_14kt = net / 1.2 if karat == "18Kt" else net
     if design.is_ring and size:
         design.record_actual_weight(size, net_14kt)
@@ -331,3 +438,22 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'deleted': 'deleted',
         }.get(obj.action, obj.action)
         return f"{actor} {verb} {obj.model_name} '{obj.object_repr}'"
+
+class StaffInvoiceSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    order_status = serializers.CharField(source='order.status', read_only=True)
+    order = serializers.IntegerField(source='order.id', read_only=True)
+    customer_email = serializers.EmailField()
+    pdf_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_number', 'order', 'order_number', 'order_status', 
+                  'customer_name', 'customer_email', 'customer_phone',
+                  'subtotal', 'gst_amount', 'gst_percentage', 'total', 
+                  'generated_at', 'pdf_url']
+    
+    def get_pdf_url(self, obj):
+        if obj.pdf_file:
+            return obj.pdf_file.url
+        return None

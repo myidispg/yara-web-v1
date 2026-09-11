@@ -40,14 +40,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
-
+    addresses = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "name", "email", "phone", "date_joined", "is_staff"]
-        read_only_fields = ["email", "phone"]
+        fields = ["id", "first_name", "last_name", "name", "email", "phone", 
+                  "gender", "date_of_birth", "date_joined", "is_staff", "addresses"]
+        read_only_fields = ["email", "phone", "date_joined", "is_staff"]
 
     def get_name(self, obj):
         return obj.get_full_name() or obj.email
+    
+    def get_addresses(self, obj):
+        from orders.serializers import AddressSerializer
+        addresses = obj.addresses.all().order_by('-is_default', '-id')
+        return AddressSerializer(addresses, many=True).data
 
 class LoginSerializer(TokenObtainPairSerializer):
     """Accepts {"login": "<email or phone>", "password": "..."} and issues JWTs."""

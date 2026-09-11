@@ -4,7 +4,7 @@ import csv
 from django.http import HttpResponse
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, F, Min
 from django.utils import timezone
 
 from rest_framework import viewsets, status, serializers
@@ -12,10 +12,17 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from rest_framework.permissions import AllowAny
+from django.db.models import Max
+from django.db.models.functions import TruncDate
+from .models import AuditLog, SearchLog
+
+from rest_framework.pagination import LimitOffsetPagination
+
 from accounts.models import User
 from accounts.permissions import IsStaff
 from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
-from orders.models import Order
+from orders.models import Order, Invoice
 
 from .models import AuditLog
 from .serializers import AuditLogSerializer
@@ -30,11 +37,50 @@ from .serializers import (
     DesignCreateSerializer, ProductInputSerializer, RateCardSerializer,
     StaffCategorySerializer, StaffDesignSerializer, StaffOrderSerializer,
     StaffProductSerializer, StaffUserSerializer, create_product_for_design, 
-    GoldRateHistorySerializer, NotificationSerializer
+    GoldRateHistorySerializer, NotificationSerializer, DesignUpdateSerializer,
+    StaffInvoiceSerializer
 )
 
-OPEN_STATUSES = ['placed', 'confirmed']
+from PIL import Image
+from io import BytesIO
 
+def optimize_uploaded_image(file):
+    """
+    Resize image to max 1200px wide and convert to WebP.
+    Returns optimized file or original if processing fails.
+    """
+    try:
+        # Open image
+        img = Image.open(file)
+        
+        # Convert RGBA to RGB if needed (WebP supports RGBA, but let's be safe)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if width > 1200px
+        max_width = 1200
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Save to WebP with quality 85 (good balance of size/quality)
+        output = BytesIO()
+        img.save(output, format='WEBP', quality=85, optimize=True)
+        output.seek(0)
+        
+        # Create a new file-like object with .webp extension
+        from django.core.files.base import ContentFile
+        base_name = file.name.rsplit('.', 1)[0]
+        return ContentFile(output.read(), name=f"{base_name}.webp")
+        
+    except Exception as e:
+        # If anything fails, return original file
+        print(f"Image optimization failed, using original: {e}")
+        file.seek(0)
+        return file
+
+OPEN_STATUSES = ['placed', 'confirmed']
 
 class DashboardView(APIView):
     permission_classes = [IsStaff]
@@ -75,6 +121,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def update_status(self, request, pk=None):
+        from django.utils import timezone
+        from orders.utils import generate_invoice_for_order
+        import logging
+        logger = logging.getLogger(__name__)
+        
         order = self.get_object()
         new_status = request.data.get('status')
         valid = {'placed': ['confirmed', 'cancelled'], 'confirmed': ['shipped', 'cancelled'],
@@ -84,10 +135,34 @@ class OrderViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         old = order.status
         order.status = new_status
+        
+        # Set timestamps
+        now = timezone.now()
+        if new_status == 'confirmed' and not order.confirmed_at:
+            order.confirmed_at = now
+            logger.info(f"Setting confirmed_at for order {order.id}")
+        elif new_status == 'shipped' and not order.shipped_at:
+            order.shipped_at = now
+            logger.info(f"Setting shipped_at for order {order.id}")
+        elif new_status == 'delivered' and not order.delivered_at:
+            order.delivered_at = now
+            logger.info(f"Setting delivered_at for order {order.id}")
+            # Auto-generate invoice on delivery
+            try:
+                invoice = generate_invoice_for_order(order)
+                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
+            except Exception as e:
+                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
+        elif new_status == 'cancelled' and not order.cancelled_at:
+            order.cancelled_at = now
+            logger.info(f"Setting cancelled_at for order {order.id}")
+        
         order.save()
         if new_status == 'cancelled' and old != 'cancelled':
             self._restock(order)
-        return Response({'status': 'success', 'new_status': new_status})
+        
+        # Return full order object (not just status)
+        return Response(self.get_serializer(order).data)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -128,6 +203,121 @@ class OrderViewSet(viewsets.ModelViewSet):
                 item.instance.sold_in_order = None
                 item.instance.save()
 
+    @action(detail=False, methods=['get'], url_path='mto_pending')
+    def mto_pending(self, request):
+        """Get all orders with MTO items pending fulfillment."""
+        from orders.models import OrderItem
+        
+        # Find orders with MTO items
+        mto_items = OrderItem.objects.filter(
+            is_mto_pending=True
+        ).select_related('order', 'order__user', 'instance').order_by('-order__created_at')
+        
+        # Group by order
+        orders_dict = {}
+        for item in mto_items:
+            order = item.order
+            if order.id not in orders_dict:
+                orders_dict[order.id] = {
+                    'order': order,
+                    'mto_items': []
+                }
+            orders_dict[order.id]['mto_items'].append(item)
+        
+        # Serialize
+        result = []
+        for order_id, data in orders_dict.items():
+            order = data['order']
+            result.append({
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'customer_name': f"{order.user.first_name} {order.user.last_name}".strip() or order.user.email,
+                'customer_email': order.user.email,
+                'created_at': order.created_at.isoformat(),
+                'status': order.status,
+                'mto_items': [
+                    {
+                        'item_id': item.id,
+                        'product_name': item.product_name,
+                        'variant_label': item.variant_label,
+                        'design_id': item.instance.design.id if item.instance else None,
+                        'design_code': item.instance.design.design_code if item.instance else None,
+                    }
+                    for item in data['mto_items']
+                ]
+            })
+        
+        return Response(result)
+
+    @action(detail=True, methods=['post'], url_path='map_product/(?P<item_id>[0-9]+)')
+    def map_product(self, request, pk=None, item_id=None):
+        """Map a real product to an MTO OrderItem."""
+        from orders.models import OrderItem, Invoice
+        from orders.utils import generate_invoice_for_order
+        from catalog.models import Product
+        from django.utils import timezone
+        
+        order = self.get_object()
+        product_id = request.data.get('product_id')
+        
+        if not product_id:
+            return Response({'error': 'product_id is required'}, status=400)
+        
+        try:
+            item = OrderItem.objects.get(id=item_id, order=order)
+            
+            if not item.is_mto_pending:
+                return Response({'error': 'This item is not pending MTO fulfillment'}, status=400)
+            
+            product = Product.objects.get(id=product_id)
+            original_product = item.instance
+            
+            # Verify it matches the order requirements
+            if (product.design != original_product.design or 
+                product.karat != original_product.karat or 
+                product.gold_color != original_product.gold_color):
+                return Response({'error': 'Product does not match order specifications'}, status=400)
+            
+            # Update the OrderItem to point to the real product FIRST
+            item.instance = product
+            item.is_mto_pending = False
+            item.save()
+            
+            # Now that the OrderItem is safely linked to the real product, 
+            # delete the dummy MTO placeholder from the database completely
+            original_product.delete()
+            
+            # Mark the real product as sold
+            product.status = 'sold'
+            product.sold_to_user = order.user
+            product.sold_in_order = order
+            product.sold_at = timezone.now()
+            product.save()
+            
+            # If order has an invoice, regenerate it with the new product details
+            try:
+                old_invoice = order.invoice
+                if old_invoice.pdf_file:
+                    old_invoice.pdf_file.delete()
+                old_invoice.delete()
+            except Invoice.DoesNotExist:
+                pass
+            
+            # Generate new invoice if order is already delivered
+            if order.status == 'delivered':
+                generate_invoice_for_order(order)
+            
+            # Return updated order
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
+            
+        except OrderItem.DoesNotExist:
+            return Response({'error': 'Order item not found'}, status=404)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
 
 class DesignViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
@@ -136,8 +326,10 @@ class DesignViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return DesignCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return DesignUpdateSerializer
         return StaffDesignSerializer
-
+    
     @action(detail=True, methods=['post'])
     def add_instance(self, request, pk=None):
         design = self.get_object()
@@ -159,6 +351,9 @@ class DesignViewSet(viewsets.ModelViewSet):
             ext = f.name.rsplit('.', 1)[-1].lower()
             if ext in ('jpg', 'jpeg', 'png', 'webp'):
                 kind = 'image'
+                # Optimize image: resize to 1200px wide + convert to WebP
+                f = optimize_uploaded_image(f)
+                ext = 'webp'  # Update extension after optimization
             elif ext in ('mp4', 'webm', 'mov'):
                 kind = 'video'
             else:
@@ -187,6 +382,41 @@ class DesignViewSet(viewsets.ModelViewSet):
         design.delete()
         return Response({'status': 'deleted'})
 
+    @action(detail=True, methods=['delete'], url_path='media/(?P<media_id>[0-9]+)')
+    def delete_media(self, request, pk=None, media_id=None):
+        design = self.get_object()
+        media = design.media.filter(id=media_id).first()
+        if not media:
+            return Response({'error': 'Media not found'}, status=status.HTTP_404_NOT_FOUND)
+        media.delete()
+        return Response({'status': 'deleted'})
+
+    @action(detail=False, methods=['post'], url_path='bulk-action')
+    def bulk_action(self, request):
+        ids = request.data.get('ids') or []
+        action_name = request.data.get('action')
+        if not isinstance(ids, list) or not ids:
+            return Response({'error': 'Provide a list of design ids.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if action_name not in ('activate', 'deactivate', 'delete'):
+            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        designs = list(Design.objects.filter(id__in=ids))
+        processed, skipped = [], []
+        for d in designs:
+            if action_name in ('activate', 'deactivate'):
+                d.is_active = (action_name == 'activate')
+                d.save(update_fields=['is_active'])
+                processed.append(d.design_code)
+            else:  # delete
+                if d.products.exists():
+                    skipped.append({'id': d.id, 'item_code': d.design_code,
+                                    'reason': f'has {d.products.count()} product(s) — delete products first'})
+                    continue
+                processed.append(d.design_code)
+                d.delete()
+        return Response({'processed': processed, 'skipped': skipped})
+
     # Import/Export CSV
     @action(detail=False, methods=['get'], url_path='import-template')
     def import_template(self, request):
@@ -195,7 +425,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['design_code', 'design_name', 'item_code', 'karat', 'gold_color', 'ring_size',
                     'diamond_grade', 'actual_net_weight', 'actual_melle', 'actual_pointer',
-                    'actual_fancy', 'actual_color_stone', 'cert_lab', 'cert_number', 'hallmark_number'])
+                    'actual_fancy', 'actual_color_stone', 'report_lab', 'report_number', 'hallmark_number'])
         w.writerow(['RG-001', 'Aura Diamond Ring', 'YRA-RG001-001', '18Kt', 'Yellow', '12', 'IJ/SI',
                     '3.500', '0.10', '0.50', '0.00', '0.00', 'IGI', '12345', 'HMK-001'])
         return response
@@ -267,10 +497,10 @@ class DesignViewSet(viewsets.ModelViewSet):
             if melle + pointer + fancy > 50:
                 errs.append('Total diamond weight must be <= 50 Ct')
 
-            cl = (row.get('cert_lab') or '').strip()
-            cn = (row.get('cert_number') or '').strip()
+            cl = (row.get('report_lab') or '').strip()
+            cn = (row.get('report_number') or '').strip()
             if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
-                errs.append(f'Cert {cl} #{cn} already exists')
+                errs.append(f'Report {cl} #{cn} already exists')
             hm = (row.get('hallmark_number') or '').strip()
             if hm and Product.objects.filter(hallmark_number=hm).exists():
                 errs.append(f'Hallmark "{hm}" already exists')
@@ -318,7 +548,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
                     'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
-                    'cert_lab', 'cert_number', 'hallmark_number', 'price', 'status'])
+                    'report_lab', 'report_number', 'hallmark_number', 'price', 'status'])
         qs = Product.objects.select_related('design', 'design__category').all()
         ids = request.query_params.get('ids')
         if ids:
@@ -335,7 +565,40 @@ class DesignViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffProductSerializer
-    queryset = Product.objects.all()
+
+    def get_queryset(self):
+        qs = Product.objects.all()
+        # Optional filter: only return products for a specific design
+        design_id = self.request.query_params.get('design_id')
+        if design_id:
+            qs = qs.filter(design_id=design_id)
+        # Optional filter: only return in-stock products
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
+    
+    def perform_update(self, serializer):
+        """Recalculate price based on current karat + grade + weights."""
+        instance = serializer.instance
+        # Use new values from the update if provided, else current values
+        new_karat = serializer.validated_data.get('karat', instance.karat)
+        new_grade = serializer.validated_data.get('diamond_grade', instance.diamond_grade)
+        new_net_weight = serializer.validated_data.get('actual_net_weight', instance.actual_net_weight)
+        new_diamond_weight = serializer.validated_data.get('actual_diamond_weight', instance.actual_diamond_weight)
+        new_color_stone_weight = serializer.validated_data.get('actual_color_stone_weight', instance.actual_color_stone_weight)
+        
+        new_price = Product.calculate_price(
+            net_weight=new_net_weight,
+            diamond_weight=new_diamond_weight,
+            karat=new_karat,
+            diamond_grade=new_grade,
+        )
+        serializer.save(price=new_price)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs.setdefault('partial', True)
+        return self.update(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'])
     def mark_sold_offline(self, request, pk=None):
@@ -442,6 +705,8 @@ class RateCardView(APIView):
         return Response(RateCardSerializer(RateCard.get()).data)
 
     def put(self, request):
+        from catalog.utils import recalculate_all_prices, recalculate_prices_async
+        
         rc = RateCard.get()
         ser = RateCardSerializer(rc, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
@@ -449,7 +714,23 @@ class RateCardView(APIView):
         if rc.default_grade not in rc.grade_choices():
             return Response({'error': f'default_grade must be a band with a rate'},
                             status=status.HTTP_400_BAD_REQUEST)
-        return Response(RateCardSerializer(rc).data)
+        
+        # Determine update mode
+        update_mode = request.data.get('update_mode', 'none')  # 'sync', 'async', 'none'
+        result = {'status': 'saved', 'products_updated': 0, 'mode': update_mode}
+        
+        if update_mode == 'sync':
+            # Synchronous: recalculate in this request
+            count = recalculate_all_prices(rate_card=rc, user=request.user, reason="rate_card_manual_sync")
+            result['products_updated'] = count
+        elif update_mode == 'async':
+            # Asynchronous: spawn background thread
+            recalculate_prices_async(rate_card=rc, user=request.user, reason="rate_card_manual_async")
+            result['status'] = 'saved_async_started'
+            result['message'] = 'Price recalculation started in background'
+        # else 'none': just save rate card, no recalc
+        
+        return Response(result)
 
 class RateCardFetchNowView(APIView):
     permission_classes = [IsStaff]
@@ -476,8 +757,34 @@ class CategoryListView(APIView):
 class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffUserSerializer
-    queryset = User.objects.filter(is_staff=False).order_by('-date_joined')
+    
+    def get_queryset(self):
+        qs = User.objects.filter(is_staff=False)
+        
+        # Add search functionality
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(phone__icontains=search)
+            )
+        
+        return qs.order_by('-date_joined')
 
+    def get_queryset(self):
+        # Allow fetching any user (staff or not) for detail actions like 'full'
+        if self.action in ('retrieve', 'full'):
+            return User.objects.all().order_by('-date_joined')
+        
+        # For list action, check if staff should be included
+        include_staff = self.request.query_params.get('include_staff') == 'true'
+        if include_staff:
+            return User.objects.all().order_by('-date_joined')
+        return User.objects.filter(is_staff=False).order_by('-date_joined')
+        
     # Import/Export customers
     @action(detail=False, methods=['get'], url_path='export-customers')
     def export_customers(self, request):
@@ -492,6 +799,18 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
             w.writerow([u.email, u.first_name, u.last_name, getattr(u, 'phone', ''),
                         u.date_joined.isoformat(), agg['c'] or 0, float(agg['s'] or 0)])
         return response
+
+    @action(detail=True, methods=['get'])
+    def full(self, request, pk=None):
+        user = self.get_object()
+        orders = user.orders.order_by('-created_at')
+        active = orders.exclude(status='cancelled')
+        return Response({
+            'customer': StaffUserSerializer(user).data,
+            'orders': StaffOrderSerializer(orders, many=True).data,
+            'total_orders': active.count(),
+            'total_spent': float(active.aggregate(s=Sum('total'))['s'] or 0),
+        })
 
 
 class GoldRateHistoryView(APIView):
@@ -651,3 +970,264 @@ class AuditLogListView(APIView):
             qs = qs[:200]
 
         return Response(AuditLogSerializer(qs, many=True).data)
+
+class SearchTrackView(APIView):
+    """Public endpoint: storefront records a committed search."""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        import re
+        term = re.sub(r'\s+', ' ', (request.data.get('q') or '')).strip().lower()[:100]
+        if len(term) < 2:
+            return Response({'status': 'ignored'})
+        try:
+            results = max(int(request.data.get('results') or 0), 0)
+        except (TypeError, ValueError):
+            results = 0
+        SearchLog.objects.create(term=term, results_count=results)
+        # Retention: keep only last 90 days
+        SearchLog.objects.filter(searched_at__lt=timezone.now() - timedelta(days=90)).delete()
+        return Response({'status': 'ok'})
+
+
+class SearchAnalyticsView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        try:
+            days = int(request.query_params.get('days', 30))
+        except (TypeError, ValueError):
+            days = 30
+        cutoff = timezone.now() - timedelta(days=days)
+        qs = SearchLog.objects.filter(searched_at__gte=cutoff)
+
+        total = qs.count()
+        zero = qs.filter(results_count=0).count()
+
+        top = (qs.values('term')
+               .annotate(count=Count('id'), last=Max('searched_at'))
+               .order_by('-count')[:20])
+
+        zero_terms = (qs.filter(results_count=0)
+                      .values('term')
+                      .annotate(count=Count('id'), last=Max('searched_at'))
+                      .order_by('-count')[:20])
+
+        # Daily volume with gap-filling
+        daily_qs = (qs.annotate(d=TruncDate('searched_at'))
+                    .values('d')
+                    .annotate(count=Count('id'))
+                    .order_by('d'))
+        daily_map = {row['d']: row['count'] for row in daily_qs}
+        daily = []
+        from datetime import date, timedelta as td
+        current = (timezone.now() - td(days=days - 1)).date()
+        today = timezone.now().date()
+        while current <= today:
+            daily.append({'date': current.isoformat(), 'count': daily_map.get(current, 0)})
+            current += td(days=1)
+
+        return Response({
+            'total_searches': total,
+            'unique_terms': qs.values('term').distinct().count(),
+            'zero_result_searches': zero,
+            'top_terms': [{'term': t['term'], 'count': t['count'],
+                           'last': t['last'].isoformat()} for t in top],
+            'zero_terms': [{'term': t['term'], 'count': t['count'],
+                            'last': t['last'].isoformat()} for t in zero_terms],
+            'daily': daily,
+        })
+
+class GlobalSearchView(APIView):
+    permission_classes = [IsStaff]
+
+    def get(self, request):
+        q = (request.query_params.get('q') or '').strip()
+        if len(q) < 2:
+            return Response({'designs': [], 'products': [], 'orders': [], 'customers': [], 'invoices': []})
+
+        designs = Design.objects.filter(
+            Q(design_code__icontains=q) | Q(name__icontains=q)
+        ).select_related('category')[:10]
+
+        products = Product.objects.filter(
+            Q(item_code__icontains=q) |
+            Q(hallmark_number__icontains=q) |
+            Q(report_number__icontains=q)
+        ).select_related('design', 'design__category')[:10]
+
+        orders = Order.objects.filter(
+            Q(order_number__icontains=q)
+        ).select_related('user')[:10]
+
+        customers = User.objects.filter(
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(phone__icontains=q)
+        )[:10]
+
+        invoices = Invoice.objects.filter(
+            Q(invoice_number__icontains=q) |
+            Q(order__order_number__icontains=q)
+        ).select_related('order', 'order__user')[:10]
+
+        return Response({
+            'designs': StaffDesignSerializer(designs, many=True).data,
+            'products': StaffProductSerializer(products, many=True).data,
+            'orders': StaffOrderSerializer(orders, many=True).data,
+            'customers': StaffUserSerializer(customers, many=True).data,
+            'invoices': StaffInvoiceSerializer(invoices, many=True).data,
+        })
+
+class PricePreviewView(APIView):
+    """Returns calculated price for a given product with hypothetical changes."""
+    permission_classes = [IsStaff]
+
+    def post(self, request):
+        product_id = request.data.get('product_id')
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=404)
+        
+        karat = request.data.get('karat', product.karat)
+        grade = request.data.get('diamond_grade', product.diamond_grade)
+        
+        price = Product.calculate_price(
+            net_weight=product.actual_net_weight,
+            diamond_weight=product.actual_diamond_weight,
+            karat=karat,
+            diamond_grade=grade,
+        )
+        return Response({'price': price})
+
+class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only viewset for invoices (staff only)."""
+    permission_classes = [IsStaff]
+    serializer_class = StaffInvoiceSerializer
+
+    def get_queryset(self):
+        qs = Invoice.objects.all().select_related('order', 'order__user').order_by('-generated_at')
+        
+        # Filter by year
+        year = self.request.query_params.get('year')
+        if year:
+            qs = qs.filter(generated_at__year=int(year))
+        
+        # Filter by month
+        month = self.request.query_params.get('month')
+        if month:
+            qs = qs.filter(generated_at__month=int(month))
+        
+        # Search by invoice number or order number
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(invoice_number__icontains=search) |
+                Q(order__order_number__icontains=search) |
+                Q(customer_name__icontains=search)
+            )
+        
+        return qs
+
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Serve the invoice PDF."""
+        from django.http import FileResponse
+        invoice = self.get_object()
+        if not invoice.pdf_file:
+            return Response({'error': 'No PDF available'}, status=404)
+        
+        try:
+            return FileResponse(
+                invoice.pdf_file.open('rb'),
+                content_type='application/pdf',
+                as_attachment=True,
+                filename=f"{invoice.invoice_number}.pdf"
+            )
+        except Exception as e:
+            return Response({'error': f'Failed to serve PDF: {str(e)}'}, status=500)
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_invoices(self, request):
+        """Export invoices as CSV with optional year/month filters."""
+        import csv
+        from django.http import HttpResponse
+        
+        qs = self.get_queryset()
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        w = csv.writer(response)
+        
+        # Headers
+        w.writerow([
+            'invoice_number', 'order_number', 'customer_name', 'customer_email',
+            'subtotal_excl_tax', 'gst_amount', 'gst_percentage', 'total',
+            'generated_at', 'order_status'
+        ])
+        
+        for inv in qs:
+            w.writerow([
+                inv.invoice_number,
+                inv.order.order_number,
+                inv.customer_name,
+                inv.customer_email,
+                float(inv.subtotal),
+                float(inv.gst_amount),
+                float(inv.gst_percentage),
+                float(inv.total),
+                inv.generated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                inv.order.status
+            ])
+        
+        return response
+
+    @action(detail=False, methods=['get'], url_path='export_pdfs')
+    def export_pdfs(self, request):
+        """Export all filtered invoices as PDF files in a ZIP archive, organized by year/month."""
+        import zipfile
+        import io
+        from django.http import HttpResponse
+        import calendar
+        
+        qs = self.get_queryset()
+        invoices_with_pdfs = [inv for inv in qs if inv.pdf_file]
+        
+        if not invoices_with_pdfs:
+            return Response({'error': 'No invoices found for the selected filters. Nothing to export.'}, status=400)
+        
+        # Create ZIP in memory with folder structure
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for inv in invoices_with_pdfs:
+                try:
+                    # Build folder path: Year/MonthName/
+                    invoice_date = inv.generated_at
+                    year_str = str(invoice_date.year)
+                    month_str = calendar.month_name[invoice_date.month]  # e.g., "August"
+                    folder_path = f"{year_str}/{month_str}/"
+                    
+                    # Read PDF and add to ZIP with folder path
+                    pdf_content = inv.pdf_file.read()
+                    zip_file.writestr(f"{folder_path}{inv.invoice_number}.pdf", pdf_content)
+                    inv.pdf_file.close()
+                except Exception as e:
+                    continue
+        
+        buffer.seek(0)
+        
+        # Build filename based on filters
+        year = request.query_params.get('year', '')
+        month = request.query_params.get('month', '')
+        filename = "invoices"
+        if year:
+            filename += f"_{year}"
+        if month:
+            filename += f"_month{month}"
+        
+        response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{filename}.zip"'
+        return response
