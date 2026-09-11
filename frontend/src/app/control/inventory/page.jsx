@@ -22,13 +22,14 @@ export default function InventoryPage() {
     const [products, setProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [view, setView] = useState("designs");
-    const [viewMode, setViewMode] = useState("grid"); // NEW: grid or list
+    const [viewMode, setViewMode] = useState("list"); // Default to list view
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
     const [checked, setChecked] = useState([]);
     const [checkedDesigns, setCheckedDesigns] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState("");
     const [bulkBusy, setBulkBusy] = useState(false);
     const [bulkResult, setBulkResult] = useState(null);
 
@@ -220,7 +221,7 @@ export default function InventoryPage() {
                             All Products
                         </button>
                     </div>
-                    
+
                     {/* NEW: Grid/List toggle for designs view */}
                     {view === "designs" && !selected && (
                         <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
@@ -238,9 +239,28 @@ export default function InventoryPage() {
                             </button>
                         </div>
                     )}
-                    
+
+                    {/* Category Filter */}
+                    {view === "designs" && !selected && (
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536]"
+                        >
+                            <option value="">All Categories</option>
+                            {[...new Set(products.map(p => p.category_name))].sort().map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    )}
+
                     <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
-                        <span className="text-sm font-bold text-[#1A2536]">{products.length}</span>
+                        <span className="text-sm font-bold text-[#1A2536]">
+                            {categoryFilter
+                                ? products.filter(p => p.category_name === categoryFilter).length
+                                : products.length
+                            }
+                        </span>
                         <span className="text-sm text-[#1A2536]/60 ml-1">designs</span>
                     </div>
                     <Link href="/control/inventory/new?mode=product" className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
@@ -630,60 +650,62 @@ export default function InventoryPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {products.map((d) => (
-                                        <tr key={d.id} onClick={() => viewDesign(d.id)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
-                                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={checkedDesigns.includes(d.id)}
-                                                    onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
-                                                    className="w-4 h-4 accent-[#B86B5A]"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#1A2536]/[0.03]">
-                                                    {d.media && d.media.length > 0 && d.media[0].kind === "image" ? (
-                                                        <img
-                                                            src={d.media[0].url}
-                                                            alt={d.name}
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => {
-                                                                e.currentTarget.onerror = null;
-                                                                e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>';
-                                                            }}
-                                                        />
+                                    {products
+                                        .filter(d => !categoryFilter || d.category_name === categoryFilter)
+                                        .map((d) => (
+                                            <tr key={d.id} onClick={() => viewDesign(d.id)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checkedDesigns.includes(d.id)}
+                                                        onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
+                                                        className="w-4 h-4 accent-[#B86B5A]"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#1A2536]/[0.03]">
+                                                        {d.media && d.media.length > 0 && d.media[0].kind === "image" ? (
+                                                            <img
+                                                                src={d.media[0].url}
+                                                                alt={d.name}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.onerror = null;
+                                                                    e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-bold text-[#1A2536]">{d.name}</p>
+                                                    <p className="text-xs text-[#1A2536]/60 font-mono mt-0.5">{d.design_code}</p>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{d.category_name}</td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-extrabold text-[#1A2536]">{d.instance_count}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-extrabold text-emerald-600">{d.in_stock_count}</p>
+                                                </td>
+                                                <td className="px-6 py-4 font-extrabold text-[#B86B5A]">{inr(d.base_price)}</td>
+                                                <td className="px-6 py-4">
+                                                    {d.is_active ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                            Active
+                                                        </span>
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                            Inactive
+                                                        </span>
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-[#1A2536]">{d.name}</p>
-                                                <p className="text-xs text-[#1A2536]/60 font-mono mt-0.5">{d.design_code}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">{d.category_name}</td>
-                                            <td className="px-6 py-4">
-                                                <p className="font-extrabold text-[#1A2536]">{d.instance_count}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="font-extrabold text-emerald-600">{d.in_stock_count}</p>
-                                            </td>
-                                            <td className="px-6 py-4 font-extrabold text-[#B86B5A]">{inr(d.base_price)}</td>
-                                            <td className="px-6 py-4">
-                                                {d.is_active ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                        Active
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                                        Inactive
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
@@ -739,60 +761,62 @@ export default function InventoryPage() {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {products.map((d) => (
-                            <div key={d.id} onClick={() => viewDesign(d.id)} className="relative glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] cursor-pointer transition-all hover:shadow-xl overflow-hidden group">
-                                <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-full p-1.5" onClick={(e) => e.stopPropagation()}>
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedDesigns.includes(d.id)}
-                                        onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
-                                        className="w-4 h-4 accent-[#B86B5A]"
-                                    />
-                                </div>
-                                {!d.is_active && (
-                                    <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider">
-                                        Inactive
+                        {products
+                            .filter(d => !categoryFilter || d.category_name === categoryFilter)
+                            .map((d) => (
+                                <div key={d.id} onClick={() => viewDesign(d.id)} className="relative glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] cursor-pointer transition-all hover:shadow-xl overflow-hidden group">
+                                    <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-full p-1.5" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={checkedDesigns.includes(d.id)}
+                                            onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
+                                            className="w-4 h-4 accent-[#B86B5A]"
+                                        />
                                     </div>
-                                )}
-                                <div className="aspect-[4/3] bg-[#1A2536]/[0.03] overflow-hidden">
-                                    {d.media?.length > 0 ? (
-                                        d.media[0].kind === "video"
-                                            ? <video src={d.media[0].url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted />
-                                            : <img
-                                                src={d.media[0].url}
-                                                alt={d.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                onError={(e) => {
-                                                    e.currentTarget.onerror = null;
-                                                    e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No image</div>';
-                                                }}
-                                            />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No media</div>
+                                    {!d.is_active && (
+                                        <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider">
+                                            Inactive
+                                        </div>
                                     )}
-                                </div>
-                                <div className="p-5">
-                                    <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536] mb-1 group-hover:text-[#B86B5A] transition-colors">{d.name}</h3>
-                                    <p className="text-xs text-[#1A2536]/60 mb-4 font-mono">
-                                        {d.design_code} · {d.category_name}
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">Products</p>
-                                            <p className="text-lg font-extrabold text-[#1A2536]">{d.instance_count}</p>
+                                    <div className="aspect-[4/3] bg-[#1A2536]/[0.03] overflow-hidden">
+                                        {d.media?.length > 0 ? (
+                                            d.media[0].kind === "video"
+                                                ? <video src={d.media[0].url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted />
+                                                : <img
+                                                    src={d.media[0].url}
+                                                    alt={d.name}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    onError={(e) => {
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No image</div>';
+                                                    }}
+                                                />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-xs uppercase tracking-[0.2em]">No media</div>
+                                        )}
+                                    </div>
+                                    <div className="p-5">
+                                        <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536] mb-1 group-hover:text-[#B86B5A] transition-colors">{d.name}</h3>
+                                        <p className="text-xs text-[#1A2536]/60 mb-4 font-mono">
+                                            {d.design_code} · {d.category_name}
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">Products</p>
+                                                <p className="text-lg font-extrabold text-[#1A2536]">{d.instance_count}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">In Stock</p>
+                                                <p className="text-lg font-extrabold text-emerald-600">{d.in_stock_count}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60">In Stock</p>
-                                            <p className="text-lg font-extrabold text-emerald-600">{d.in_stock_count}</p>
+                                        <div className="border-t border-[#E5BDB0]/40 pt-3">
+                                            <p className="text-xs text-[#1A2536]/60">From</p>
+                                            <p className="text-lg font-extrabold text-[#B86B5A]">{inr(d.base_price)}</p>
                                         </div>
                                     </div>
-                                    <div className="border-t border-[#E5BDB0]/40 pt-3">
-                                        <p className="text-xs text-[#1A2536]/60">From</p>
-                                        <p className="text-lg font-extrabold text-[#B86B5A]">{inr(d.base_price)}</p>
-                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
             )}
