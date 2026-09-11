@@ -406,29 +406,83 @@ class DesignViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-action')
     def bulk_action(self, request):
-        ids = request.data.get('ids') or []
-        action_name = request.data.get('action')
-        if not isinstance(ids, list) or not ids:
-            return Response({'error': 'Provide a list of design ids.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if action_name not in ('activate', 'deactivate', 'delete'):
-            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        designs = list(Design.objects.filter(id__in=ids))
-        processed, skipped = [], []
-        for d in designs:
-            if action_name in ('activate', 'deactivate'):
-                d.is_active = (action_name == 'activate')
-                d.save(update_fields=['is_active'])
-                processed.append(d.design_code)
-            else:  # delete
-                if d.products.exists():
-                    skipped.append({'id': d.id, 'item_code': d.design_code,
-                                    'reason': f'has {d.products.count()} product(s) — delete products first'})
-                    continue
-                processed.append(d.design_code)
-                d.delete()
-        return Response({'processed': processed, 'skipped': skipped})
+        from django.db import transaction
+        from django.db.models import ProtectedError
+        from catalog.models import Design
+        
+        ids = request.data.get('ids', [])
+        action = request.data.get('action')
+        cascade = request.data.get('cascade', False)
+        
+        if not ids or not action:
+            return Response({'error': 'ids and action required'}, status=400)
+        
+        designs = Design.objects.filter(id__in=ids)
+        processed = []
+        skipped = []
+        protected_products = []
+        
+        if action == 'delete':
+            with transaction.atomic():
+                for design in designs:
+                    product_count = design.products.count()
+                    
+                    if product_count == 0:
+                        # No products, safe to delete
+                        design.delete()
+                        processed.append(design.id)
+                    elif not cascade:
+                        # Has products but cascade not requested
+                        skipped.append({
+                            'id': design.id,
+                            'item_code': design.design_code,
+                            'reason': f'Has {product_count} product(s). Select "Delete All" to include products.'
+                        })
+                    else:
+                        # Cascade requested - try to delete all products first
+                        products = list(design.products.all())
+                        delete_failed = False
+                        
+                        for product in products:
+                            try:
+                                product.delete()
+                            except ProtectedError:
+                                protected_products.append({
+                                    'item_code': product.item_code,
+                                    'design_code': design.design_code,
+                                    'reason': 'Product is part of an order and cannot be deleted'
+                                })
+                                delete_failed = True
+                        
+                        if delete_failed:
+                            # Some products couldn't be deleted, skip the design too
+                            skipped.append({
+                                'id': design.id,
+                                'item_code': design.design_code,
+                                'reason': f'Cannot delete design: {len([p for p in protected_products if p["design_code"] == design.design_code])} product(s) are part of orders'
+                            })
+                        else:
+                            # All products deleted successfully, now delete the design
+                            design.delete()
+                            processed.append(design.id)
+        elif action == 'activate':
+            for design in designs:
+                design.is_active = True
+                design.save(update_fields=['is_active'])
+                processed.append(design.id)
+        elif action == 'deactivate':
+            for design in designs:
+                design.is_active = False
+                design.save(update_fields=['is_active'])
+                processed.append(design.id)
+        else:
+            return Response({'error': f'Unknown action: {action}'}, status=400)
+        
+        response_data = {'processed': processed, 'skipped': skipped}
+        if protected_products:
+            response_data['protected_products'] = protected_products
+        
+        return Response(response_data)
 
     # Import/Export CSV
     @action(detail=False, methods=['get'], url_path='import-template')
