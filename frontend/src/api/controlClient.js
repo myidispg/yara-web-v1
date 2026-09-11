@@ -25,12 +25,13 @@ const controlApi = {
   },
   deleteDesign: (designId) => api.delete(`/control/products/${designId}/delete_design/`),
   deleteProduct: (productId) => api.delete(`/control/instances/${productId}/delete_product/`),
-  bulkDesignAction: (ids, action) => api.post(`/control/products/bulk-action/`, { ids, action }),
+  bulkDesignAction: (ids, action, cascade = false) =>
+    api.post("/control/products/bulk-action/", { ids, action, cascade }),
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
   // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
   updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
-    // Designs (blueprints)
+  // Designs (blueprints)
   getProducts: () => api.get("/control/products/"),
   getProductsSummary: () => api.get("/control/products/summary/"),  // NEW
   getProduct: (id) => api.get(`/control/products/${id}/`),

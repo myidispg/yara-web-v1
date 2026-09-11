@@ -22,7 +22,7 @@ export default function InventoryPage() {
     const [products, setProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [view, setView] = useState("designs");
-    const [viewMode, setViewMode] = useState("list"); // Default to list view
+    const [viewMode, setViewMode] = useState("list");
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
@@ -30,12 +30,17 @@ export default function InventoryPage() {
     const [checkedDesigns, setCheckedDesigns] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("");
+    const [categories, setCategories] = useState([]);
     const [bulkBusy, setBulkBusy] = useState(false);
     const [bulkResult, setBulkResult] = useState(null);
+
+    const [designChecked, setDesignChecked] = useState([]);
+    const [deleteModal, setDeleteModal] = useState(null);
 
     useEffect(() => {
         loadDesigns();
         loadFlat();
+        loadCategories();
     }, []);
 
     useEffect(() => {
@@ -66,10 +71,20 @@ export default function InventoryPage() {
         }
     };
 
+    const loadCategories = async () => {
+        try {
+            const { data } = await controlApi.getCategories();
+            setCategories(data.results || data);
+        } catch (err) {
+            console.error("Failed to load categories:", err);
+        }
+    };
+
     const viewDesign = async (id) => {
         try {
             const { data } = await controlApi.getProduct(id);
             setSelected(data);
+            setDesignChecked([]);
         } catch (err) {
             console.error("Failed to load design:", err);
         }
@@ -171,17 +186,25 @@ export default function InventoryPage() {
         }
     };
 
-    const runDesignBulk = async (actionName) => {
-        const labels = {
-            activate: `Activate ${checkedDesigns.length} design(s) (show on storefront)?`,
-            deactivate: `Deactivate ${checkedDesigns.length} design(s) (hide from storefront)?`,
-            delete: `Permanently DELETE ${checkedDesigns.length} design(s)? Designs with products will be skipped.`,
-        };
-        if (!confirm(labels[actionName])) return;
+    const openDeleteModal = () => {
+        const designsWithProducts = checkedDesigns
+            .map(id => products.find(d => d.id === id))
+            .filter(d => d && d.instance_count > 0);
+        const totalProducts = designsWithProducts.reduce((sum, d) => sum + d.instance_count, 0);
+
+        setDeleteModal({
+            designsWithProducts: designsWithProducts.length,
+            totalProducts,
+            hasProducts: designsWithProducts.length > 0,
+        });
+    };
+
+    const confirmDelete = async (cascade) => {
+        setDeleteModal(null);
         setBulkBusy(true);
         setBulkResult(null);
         try {
-            const { data } = await controlApi.bulkDesignAction(checkedDesigns, actionName);
+            const { data } = await controlApi.bulkDesignAction(checkedDesigns, 'delete', cascade);
             setBulkResult(data);
             setCheckedDesigns([]);
             await loadDesigns();
@@ -189,6 +212,79 @@ export default function InventoryPage() {
             alert(err.response?.data?.error || "Bulk action failed");
         } finally {
             setBulkBusy(false);
+        }
+    };
+
+    const confirmActivateDeactivate = async (actionName) => {
+        const labels = {
+            activate: `Activate ${checkedDesigns.length} design(s) (show on storefront)?`,
+            deactivate: `Deactivate ${checkedDesigns.length} design(s) (hide from storefront)?`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        setBulkResult(null);
+        try {
+            const { data } = await controlApi.bulkDesignAction(checkedDesigns, actionName, false);
+            setBulkResult(data);
+            setCheckedDesigns([]);
+            await loadDesigns();
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const runDesignBulk = async (actionName) => {
+        if (actionName === 'delete') {
+            openDeleteModal();
+        } else {
+            confirmActivateDeactivate(actionName);
+        }
+    };
+
+    const designAllChecked = selected &&
+        selected.products.length > 0 &&
+        selected.products.every((p) => designChecked.includes(p.id));
+
+    const toggleDesignCheck = (id) =>
+        setDesignChecked((c) => c.includes(id) ? c.filter((x) => x !== id) : [...c, id]);
+
+    const toggleDesignAll = () =>
+        setDesignChecked(designAllChecked ? [] : (selected?.products || []).map((p) => p.id));
+
+    const runDesignProductBulk = async (actionName) => {
+        const labels = {
+            mark_sold_offline: `Mark ${designChecked.length} product(s) as SOLD OFFLINE?`,
+            return_to_stock: `Return ${designChecked.length} product(s) to stock?`,
+            delete: `Permanently DELETE ${designChecked.length} product(s) from this design?`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        try {
+            const { data } = await controlApi.bulkProductAction(designChecked, actionName);
+            setBulkResult(data);
+            setDesignChecked([]);
+            await viewDesign(selected.id);
+            await loadFlat();
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const exportDesignSelected = async () => {
+        try {
+            const { data } = await controlApi.exportSelectedProducts(designChecked);
+            const url = URL.createObjectURL(data);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `products-${selected.design_code}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert("Export failed");
         }
     };
 
@@ -222,7 +318,6 @@ export default function InventoryPage() {
                         </button>
                     </div>
 
-                    {/* NEW: Grid/List toggle for designs view */}
                     {view === "designs" && !selected && (
                         <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
                             <button
@@ -248,8 +343,8 @@ export default function InventoryPage() {
                             className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536]"
                         >
                             <option value="">All Categories</option>
-                            {[...new Set(products.map(p => p.category_name))].sort().map((cat) => (
-                                <option key={cat} value={cat}>{cat}</option>
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.name}>{cat.name}</option>
                             ))}
                         </select>
                     )}
@@ -274,7 +369,6 @@ export default function InventoryPage() {
 
             {view === "products" ? (
                 <div className="space-y-4">
-                    {/* Bulk action bar */}
                     <div className="flex flex-wrap items-center gap-3">
                         <select
                             value={statusFilter}
@@ -380,14 +474,13 @@ export default function InventoryPage() {
                 </div>
             ) : selected ? (
                 <div className="space-y-6">
-                    <button onClick={() => setSelected(null)} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                    <button onClick={() => { setSelected(null); setDesignChecked([]); }} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                         Back to Inventory
                     </button>
 
-                    {/* Design Header Card */}
                     <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                         <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
                             <div>
@@ -495,23 +588,47 @@ export default function InventoryPage() {
                         )}
                     </div>
 
-                    {/* Products Table */}
                     <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
-                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between">
+                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between flex-wrap gap-3">
                             <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">
                                 Products <span className="text-[#B86B5A]">({selected.products.length})</span>
                             </h3>
-                            <Link
-                                href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
-                                className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
-                            >
-                                + Add Product
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                {designChecked.length > 0 && (
+                                    <div className="flex items-center gap-2 glass-card-vibrant rounded-full px-4 py-2 border border-[#E5BDB0]">
+                                        <span className="text-xs font-bold text-[#1A2536]">{designChecked.length} selected</span>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("mark_sold_offline")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Mark Sold</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("return_to_stock")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Return</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={exportDesignSelected} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Export</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => setDesignChecked([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
+                                    </div>
+                                )}
+                                <Link
+                                    href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
+                                    className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
+                                >
+                                    + Add Product
+                                </Link>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="bg-[#1A2536]/[0.03]">
+                                        <th className="px-4 py-3 w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={designAllChecked}
+                                                onChange={toggleDesignAll}
+                                                className="w-4 h-4 accent-[#B86B5A]"
+                                            />
+                                        </th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Item Code</th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Hallmark</th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Variant</th>
@@ -528,6 +645,14 @@ export default function InventoryPage() {
                                         const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
                                         return (
                                             <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={designChecked.includes(p.id)}
+                                                        onChange={() => toggleDesignCheck(p.id)}
+                                                        className="w-4 h-4 accent-[#B86B5A]"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 font-mono text-sm font-bold text-[#B86B5A]">{p.item_code}</td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || '—'}</td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">
@@ -575,9 +700,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
             ) : viewMode === "list" ? (
-                /* LIST VIEW */
                 <div className="space-y-4">
-                    {/* Bulk action bar for designs */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
                             <input
@@ -712,9 +835,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
             ) : (
-                /* GRID VIEW */
                 <div className="space-y-4">
-                    {/* Bulk action bar for designs */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
                             <input
@@ -817,6 +938,62 @@ export default function InventoryPage() {
                                     </div>
                                 </div>
                             ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Design Modal */}
+            {deleteModal && (
+                <div className="fixed inset-0 z-50 bg-[#1A2536]/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDeleteModal(null)}>
+                    <div onClick={(e) => e.stopPropagation()} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 w-full max-w-md space-y-6 shadow-2xl">
+                        <div>
+                            <span className="font-cursive text-2xl text-red-500 block -mb-1">confirm deletion</span>
+                            <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">
+                                Delete {checkedDesigns.length} Design{checkedDesigns.length !== 1 ? "s" : ""}?
+                            </h2>
+                        </div>
+
+                        {deleteModal.hasProducts ? (
+                            <div className="space-y-4">
+                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                                    <p className="text-sm font-bold text-amber-800 mb-1">⚠️ Some designs contain products</p>
+                                    <p className="text-xs text-amber-700">
+                                        {deleteModal.designsWithProducts} design{deleteModal.designsWithProducts !== 1 ? "s" : ""} contain a total of {deleteModal.totalProducts} product{deleteModal.totalProducts !== 1 ? "s" : ""}.
+                                    </p>
+                                </div>
+                                <p className="text-sm text-[#1A2536]/70">How would you like to proceed?</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-[#1A2536]/70">
+                                This will permanently delete {checkedDesigns.length} design{checkedDesigns.length !== 1 ? "s" : ""}. This action cannot be undone.
+                            </p>
+                        )}
+
+                        <div className="flex flex-col gap-3">
+                            {deleteModal.hasProducts && (
+                                <button
+                                    onClick={() => confirmDelete(true)}
+                                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow"
+                                >
+                                    Delete All ({deleteModal.totalProducts} products included)
+                                </button>
+                            )}
+                            <button
+                                onClick={() => confirmDelete(false)}
+                                className={`w-full py-3 border-2 border-red-500 text-red-600 hover:bg-red-50 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${deleteModal.hasProducts ? "" : "bg-red-600 hover:bg-red-700 text-white border-red-600"}`}
+                            >
+                                {deleteModal.hasProducts
+                                    ? `Delete Designs Only (skip ${deleteModal.designsWithProducts} with products)`
+                                    : "Delete"
+                                }
+                            </button>
+                            <button
+                                onClick={() => setDeleteModal(null)}
+                                className="w-full py-3 border-2 border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536]/[0.03] text-xs font-bold uppercase tracking-wider rounded-full transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
