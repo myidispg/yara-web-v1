@@ -30,6 +30,10 @@ const controlApi = {
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
   // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
   updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+    // Designs (blueprints)
+  getProducts: () => api.get("/control/products/"),
+  getProductsSummary: () => api.get("/control/products/summary/"),  // NEW
+  getProduct: (id) => api.get(`/control/products/${id}/`),
 
   // Products (physical pieces)
   getInstances: (params = {}) => api.get("/control/instances/", { params }),

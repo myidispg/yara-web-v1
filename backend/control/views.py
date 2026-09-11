@@ -343,6 +343,16 @@ class DesignViewSet(viewsets.ModelViewSet):
                          'item_code': product.item_code, 'price': float(product.price)},
                         status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Lightweight list for categories page — no nested products."""
+        from .serializers import DesignSummarySerializer
+        queryset = Design.objects.all().select_related('category').prefetch_related(
+            'media', 'products'
+        ).order_by('-id')
+        serializer = DesignSummarySerializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'])
     def upload_media(self, request, pk=None):
         design = self.get_object()

@@ -64,6 +64,26 @@ class StaffProductSerializer(serializers.ModelSerializer):
     def get_gst_amount(self, obj):
         return float(obj.gst_amount)
 
+class DesignSummarySerializer(serializers.ModelSerializer):
+    """Lightweight serializer for lists/categories — no nested products."""
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    instance_count = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Design
+        fields = ['id', 'name', 'design_code', 'category_slug', 'category_name',
+                  'instance_count', 'thumbnail', 'is_active']
+
+    def get_instance_count(self, obj):
+        return obj.products.count()
+
+    def get_thumbnail(self, obj):
+        first_image = obj.media.filter(kind='image').order_by('sort_order').first()
+        if first_image:
+            return {'url': first_image.url, 'kind': first_image.kind}
+        return None
 
 class StaffDesignSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name')

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import controlApi from "@/api/controlClient";
+import api from "@/api/client";
 
 const inputCls = "w-full border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536] transition-colors";
 const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-2";
@@ -21,10 +22,12 @@ export default function CategoriesPage() {
         try {
             const [catRes, desRes] = await Promise.all([
                 controlApi.getCategories(),
-                controlApi.getProducts()
+                controlApi.getProductsSummary()  // ← Changed from getProducts
             ]);
-            setCategories(catRes.data.results || catRes.data);
-            setDesigns(desRes.data.results || desRes.data);
+            const cats = catRes.data.results || catRes.data;
+            const dess = desRes.data;  // ← Changed from desRes.data.results
+            setCategories(cats);
+            setDesigns(dess);
         } catch (e) {
             console.error("Failed to load:", e);
         } finally {
@@ -86,8 +89,13 @@ export default function CategoriesPage() {
         setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
     };
 
-    const getCategoryDesigns = (categorySlug) => {
-        return designs.filter(d => d.category_slug === categorySlug);
+    // Get all designs for a category AND its subcategories
+    const getCategoryDesigns = (category) => {
+        const categorySlugs = [category.slug];
+        if (category.subcategories) {
+            category.subcategories.forEach(sub => categorySlugs.push(sub.slug));
+        }
+        return designs.filter(d => categorySlugs.includes(d.category_slug));
     };
 
     if (loading) return (
@@ -110,24 +118,24 @@ export default function CategoriesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {categories.map((cat) => {
-                    const categoryDesigns = getCategoryDesigns(cat.slug);
+                {categories.filter(c => !c.parent).map((cat) => {
+                    const categoryDesigns = getCategoryDesigns(cat);
                     const isExpanded = expandedCategory === cat.id;
-                    
+
                     return (
                         <div key={cat.id} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6">
                             <div className="flex items-start justify-between mb-5">
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536] mb-1">{cat.name}</h3>
                                     <p className="text-xs text-[#1A2536]/60 font-mono">
-                                        /{cat.slug} · {cat.product_count} design{cat.product_count !== 1 ? "s" : ""}
+                                        /{cat.slug} · {categoryDesigns.length} design{categoryDesigns.length !== 1 ? "s" : ""}
                                         {!cat.is_active && <span className="ml-2 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-bold uppercase border border-red-200">Inactive</span>}
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    {cat.product_count > 0 && (
-                                        <button 
-                                            onClick={() => toggleExpand(cat.id)} 
+                                    {categoryDesigns.length > 0 && (
+                                        <button
+                                            onClick={() => toggleExpand(cat.id)}
                                             className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
                                         >
                                             {isExpanded ? "Hide" : "Show"} Designs
@@ -149,15 +157,15 @@ export default function CategoriesPage() {
                                         Designs in this category
                                     </p>
                                     {categoryDesigns.map((design) => (
-                                        <Link 
-                                            key={design.id} 
-                                            href={`/control/inventory/${design.id}`}
+                                        <Link
+                                            key={design.id}
+                                            href={`/control/inventory?design=${design.id}`}
                                             className="flex items-center gap-3 p-3 bg-[#1A2536]/[0.02] hover:bg-[#1A2536]/[0.05] rounded-xl transition-colors border border-[#E5BDB0]/40"
                                         >
                                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#1A2536]/[0.03] flex-shrink-0">
-                                                {design.media && design.media.length > 0 && design.media[0].kind === "image" ? (
-                                                    <img 
-                                                        src={design.media[0].url} 
+                                                {design.thumbnail ? (
+                                                    <img
+                                                        src={design.thumbnail.url}
                                                         alt={design.name}
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
@@ -180,24 +188,24 @@ export default function CategoriesPage() {
                             )}
 
                             <div className="space-y-2">
-                                {cat.subcategories.map((sub) => {
-                                    const subDesigns = getCategoryDesigns(sub.slug);
+                                {cat.subcategories?.map((sub) => {
+                                    const subDesigns = designs.filter(d => d.category_slug === sub.slug);
                                     const isSubExpanded = expandedCategory === sub.id;
-                                    
+
                                     return (
                                         <div key={sub.id} className="glass-card-vibrant rounded-xl border border-[#E5BDB0]/60 px-4 py-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-bold text-[#1A2536]">↳ {sub.name}</p>
                                                     <p className="text-[10px] text-[#1A2536]/50 font-mono mt-0.5">
-                                                        /{sub.slug} · {sub.product_count} design{sub.product_count !== 1 ? "s" : ""}
+                                                        /{sub.slug} · {subDesigns.length} design{subDesigns.length !== 1 ? "s" : ""}
                                                         {!sub.is_active && <span className="ml-2 px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 text-[9px] font-bold uppercase border border-red-200">Inactive</span>}
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-3">
-                                                    {sub.product_count > 0 && (
-                                                        <button 
-                                                            onClick={() => toggleExpand(sub.id)} 
+                                                    {subDesigns.length > 0 && (
+                                                        <button
+                                                            onClick={() => toggleExpand(sub.id)}
                                                             className="text-[10px] text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
                                                         >
                                                             {isSubExpanded ? "Hide" : "Show"}
@@ -211,20 +219,20 @@ export default function CategoriesPage() {
                                                     </button>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Expanded subcategory designs */}
                                             {isSubExpanded && subDesigns.length > 0 && (
                                                 <div className="mt-3 pt-3 border-t border-[#E5BDB0]/40 space-y-2">
                                                     {subDesigns.map((design) => (
-                                                        <Link 
-                                                            key={design.id} 
-                                                            href={`/control/inventory/${design.id}`}
+                                                        <Link
+                                                            key={design.id}
+                                                            href={`/control/inventory?design=${design.id}`}
                                                             className="flex items-center gap-3 p-2 bg-[#1A2536]/[0.02] hover:bg-[#1A2536]/[0.05] rounded-lg transition-colors"
                                                         >
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#1A2536]/[0.03] flex-shrink-0">
-                                                                {design.media && design.media.length > 0 && design.media[0].kind === "image" ? (
-                                                                    <img 
-                                                                        src={design.media[0].url} 
+                                                                {design.thumbnail ? (
+                                                                    <img
+                                                                        src={design.thumbnail.url}
                                                                         alt={design.name}
                                                                         className="w-full h-full object-cover"
                                                                         onError={(e) => {
