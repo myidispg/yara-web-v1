@@ -12,7 +12,8 @@ const controlApi = {
   cancelOrder: (id) => api.post(`/control/orders/${id}/cancel/`),
 
   // Designs (blueprints)
-  getProducts: () => api.get("/control/products/"),
+  getProducts: (offset = 0, limit = 24) => api.get(`/control/products/?offset=${offset}&limit=${limit}`),
+  getProductsSummary: () => api.get("/control/products/summary/"),
   getProduct: (id) => api.get(`/control/products/${id}/`),
   createDesign: (data) => api.post("/control/products/", data),
   addInstance: (designId, data) => api.post(`/control/products/${designId}/add_instance/`, data),
@@ -29,18 +30,13 @@ const controlApi = {
     api.post("/control/products/bulk-action/", { ids, action, cascade }),
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
-  // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
-  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
-  // Designs (blueprints)
-  getProducts: () => api.get("/control/products/"),
-  getProductsSummary: () => api.get("/control/products/summary/"),  // NEW
-  getProduct: (id) => api.get(`/control/products/${id}/`),
 
   // Products (physical pieces)
   getInstances: (params = {}) => api.get("/control/instances/", { params }),
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
   getProductDetail: (id) => api.get(`/control/instances/${id}/`),
+  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
   globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
   previewPrice: (data) => api.post("/control/price-preview/", data),
 
