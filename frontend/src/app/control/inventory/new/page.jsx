@@ -36,7 +36,8 @@ export default function NewPage() {
         item_code: "",
         karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
         actual_net_weight: "", actual_diamond_weight: "",
-        report_lab: "IGI", report_number: "", hallmark_number: "",
+        report_lab: "IGI", report_number: "",
+        hallmark_numbers: [""],
     });
 
     useEffect(() => {
@@ -60,7 +61,6 @@ export default function NewPage() {
                 setDesigns(dsData);
                 setProductForm((f) => ({ ...f, diamond_grade: rcData.default_grade || "IJ/SI" }));
 
-                // Check for design_id parameter and auto-select if it exists
                 const params = new URLSearchParams(window.location.search);
                 const dId = params.get("design_id");
                 if (dId) {
@@ -69,7 +69,7 @@ export default function NewPage() {
                         setPreselectedDesignId(dId);
                         setExistingDesignId(dId);
                         setUseNewDesign(false);
-                        setMode("product"); // Auto-set mode to product when design_id is present
+                        setMode("product");
                     }
                 }
             } catch (e) { console.error(e); }
@@ -166,10 +166,36 @@ export default function NewPage() {
         }
         if (step === 1) {
             if (mode === "design") return refsValid;
+            if (!productForm.item_code.trim()) return false;
             if (ringContext && !productForm.ring_size) return false;
             return true;
         }
         return true;
+    };
+
+    // HUID helper functions
+    const addHuid = () => {
+        if (productForm.hallmark_numbers.length < 3) {
+            setProductForm({
+                ...productForm,
+                hallmark_numbers: [...productForm.hallmark_numbers, ""]
+            });
+        }
+    };
+
+    const removeHuid = (index) => {
+        if (productForm.hallmark_numbers.length > 1) {
+            setProductForm({
+                ...productForm,
+                hallmark_numbers: productForm.hallmark_numbers.filter((_, i) => i !== index)
+            });
+        }
+    };
+
+    const updateHuid = (index, value) => {
+        const updated = [...productForm.hallmark_numbers];
+        updated[index] = value;
+        setProductForm({ ...productForm, hallmark_numbers: updated });
     };
 
     const MAX_FILE = 50 * 1024 * 1024;
@@ -184,6 +210,10 @@ export default function NewPage() {
     };
 
     const submit = async () => {
+        if (!productForm.item_code.trim()) {
+            setError("Product Code is required.");
+            return;
+        }
         const problem = fileProblem();
         if (problem) { setError(problem); return; }
         setSubmitting(true);
@@ -212,7 +242,7 @@ export default function NewPage() {
                 if (files.length && useNewDesign) await uploadFiles(designId);
                 const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
                 await controlApi.addInstance(designId, {
-                    item_code: productForm.item_code,
+                    item_code: productForm.item_code.trim(),
                     karat: productForm.karat,
                     gold_color: productForm.gold_color,
                     ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
@@ -222,7 +252,7 @@ export default function NewPage() {
                     actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
                     report_lab: productForm.report_lab,
                     report_number: productForm.report_number,
-                    hallmark_number: productForm.hallmark_number,
+                    hallmark_numbers: productForm.hallmark_numbers.filter(h => h.trim()),
                 });
             } catch (innerErr) {
                 if (createdNew) await controlApi.deleteDesign(designId).catch(() => { });
@@ -292,7 +322,7 @@ export default function NewPage() {
                 </div>
                 <div>
                     <label className={labelCls}>Design Code *</label>
-                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., RG-031" maxLength={50} className={inputCls} />
+                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., LR1234" maxLength={50} className={inputCls} />
                 </div>
             </div>
             <div>
@@ -357,6 +387,10 @@ export default function NewPage() {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
+                        <label className={labelCls}>Product Code *</label>
+                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="Enter unique product code" maxLength={100} className={inputCls} required />
+                    </div>
+                    <div>
                         <label className={labelCls}>Karat</label>
                         <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
                             <option>14Kt</option><option>18Kt</option>
@@ -413,14 +447,56 @@ export default function NewPage() {
                         <label className={labelCls}>Diamond Report Number</label>
                         <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} maxLength={100} className={inputCls} />
                     </div>
-                    <div>
-                        <label className={labelCls}>Product Code (item_code)</label>
-                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="blank = auto-generate" maxLength={100} className={inputCls} />
+                </div>
+
+                {/* HUID Numbers Section */}
+                <div className="mt-6">
+                    <label className={labelCls}>
+                        HUID Number{productForm.hallmark_numbers.length > 1 ? "s" : ""} (max 3)
+                    </label>
+                    <div className="space-y-2">
+                        {productForm.hallmark_numbers.map((huid, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                                <input
+                                    value={huid}
+                                    onChange={(e) => updateHuid(index, e.target.value)}
+                                    className={`${inputCls} flex-1`}
+                                    placeholder={`HUID ${index + 1}`}
+                                    maxLength={10}
+                                />
+                                {productForm.hallmark_numbers.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeHuid(index)}
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl border border-red-300 text-red-500 hover:bg-red-50 hover:border-red-500 transition-all flex-shrink-0"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                    <div>
-                        <label className={labelCls}>Hallmark Number</label>
-                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} maxLength={100} className={inputCls} />
+                    <div className="flex items-center justify-between mt-2">
+                        <button
+                            type="button"
+                            onClick={addHuid}
+                            disabled={productForm.hallmark_numbers.length >= 3}
+                            className="text-xs text-[#B86B5A] font-bold hover:underline disabled:text-[#1A2536]/30 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add HUID
+                        </button>
+                        <p className="text-[10px] text-[#1A2536]/50">
+                            {productForm.hallmark_numbers.filter(h => h.trim()).length}/3 entered
+                        </p>
                     </div>
+                    <p className="text-[10px] text-[#1A2536]/50 mt-1">
+                        Some products may have multiple hallmark numbers. Maximum 3 allowed.
+                    </p>
                 </div>
             </div>
             <div className="glass-card-vibrant rounded-2xl border border-[#B86B5A]/30 bg-gradient-to-br from-[#B86B5A]/5 to-transparent p-6 flex items-center justify-between">
@@ -470,6 +546,7 @@ export default function NewPage() {
 
     const isReviewStep = step === steps.length - 1;
     const isMediaStep = !isReviewStep && step === 2 && (mode === "design" || useNewDesign);
+    const filledHuids = productForm.hallmark_numbers.filter(h => h.trim());
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -480,13 +557,11 @@ export default function NewPage() {
                 Back to Inventory
             </button>
 
-            {/* Header */}
             <div>
                 <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">create new</span>
                 <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">{mode === "design" ? "Add Design" : "Add Product"}</h1>
             </div>
 
-            {/* Progress Steps */}
             <div className="flex flex-wrap items-center gap-2">
                 {steps.map((s, i) => (
                     <button
@@ -505,7 +580,6 @@ export default function NewPage() {
                 ))}
             </div>
 
-            {/* Form Card */}
             <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                 {step === 0 && (mode === "design" ? designFields : (
                     <div className="space-y-6">
@@ -577,18 +651,23 @@ export default function NewPage() {
                             <div>
                                 <p className={labelCls}>Summary</p>
                                 {mode === "product" && (
-                                    <p className="text-[#1A2536]/70 text-xs">
-                                        {productForm.karat} {productForm.gold_color}
-                                        {ringContext && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}
-                                    </p>
-                                )}
-                                {mode === "product" && (
-                                    <p className="text-[#1A2536]/70 text-xs mt-1">
-                                        Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
-                                        dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy) > 0
-                                            ? sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2)
-                                            : "refs"} Ct
-                                    </p>
+                                    <>
+                                        <p className="text-[#1A2536]/70 text-xs">
+                                            <span className="font-bold text-[#1A2536]">{productForm.item_code}</span> · {productForm.karat} {productForm.gold_color}
+                                            {ringContext && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}
+                                        </p>
+                                        <p className="text-[#1A2536]/70 text-xs mt-1">
+                                            Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
+                                            dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy) > 0
+                                                ? sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2)
+                                                : "refs"} Ct
+                                        </p>
+                                        {filledHuids.length > 0 && (
+                                            <p className="text-[#1A2536]/70 text-xs mt-1">
+                                                HUID{filledHuids.length > 1 ? "s" : ""}: {filledHuids.join(", ")}
+                                            </p>
+                                        )}
+                                    </>
                                 )}
                                 {(mode === "design" || useNewDesign) && <p className="text-[#1A2536]/70 text-xs mt-1">Media files: {files.length}</p>}
                             </div>

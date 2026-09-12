@@ -36,7 +36,7 @@ class StaffProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'item_code', 'karat', 'gold_color', 'ring_size', 'diamond_grade',
                   'status', 'price', 'actual_net_weight', 'actual_diamond_weight',
-                  'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_number',
+                  'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_numbers',
                   'sold_at', 'sold_in_order_number', 'sold_in_order_id', 'sold_to_email',
                   'created_at', 'design_id', 'design_code', 'design_name', 'category_name',
                   'gold_value', 'diamond_value', 'making_charges', 'gst_amount']
@@ -282,13 +282,10 @@ def create_product_for_design(design, inst, rc):
     if grade not in rc.grade_choices():
         grade = rc.default_grade
 
-    # Use user-provided item_code or auto-generate
-    user_item_code = (inst.get('item_code') or '').strip()
-    if user_item_code:
-        item_code = user_item_code
-    else:
-        item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
-                     f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+    # Item code is now REQUIRED - no auto-generation
+    item_code = (inst.get('item_code') or '').strip()
+    if not item_code:
+        raise ValueError("Product code (item_code) is required.")
     
     # Calculate price with new making formula
     gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
@@ -297,7 +294,7 @@ def create_product_for_design(design, inst, rc):
     gold_value = net * gold_rate
     diamond_value = dia * grade_rate
     
-    # NEW: Making = (fixed per gram + % of 24Kt gold) × net weight
+    # Making = (fixed per gram + % of 24Kt gold) × net weight
     gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
     making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
     making = making_per_gram * net
@@ -313,10 +310,10 @@ def create_product_for_design(design, inst, rc):
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
         report_lab=inst.get('report_lab', ''), 
         report_number=inst.get('report_number', ''),
-        hallmark_number=inst.get('hallmark_number', '')
+        hallmark_numbers=inst.get('hallmark_numbers', [])  # Changed to hallmark_numbers (list)
     )
 
-    # PRESERVED: Weight recording logic
+    # Weight recording logic
     net_14kt = net / 1.2 if karat == "18Kt" else net
     if design.is_ring and size:
         design.record_actual_weight(size, net_14kt)
@@ -331,7 +328,7 @@ class MediaInputSerializer(serializers.Serializer):
 
 
 class ProductInputSerializer(serializers.Serializer):
-    item_code = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    item_code = serializers.CharField(max_length=100, required=True)  # Changed to required=True
     karat = serializers.ChoiceField(choices=['14Kt', '18Kt'])
     gold_color = serializers.ChoiceField(choices=['Yellow', 'Rose', 'White'])
     ring_size = serializers.CharField(max_length=10, required=False, allow_null=True, allow_blank=True)
@@ -341,23 +338,38 @@ class ProductInputSerializer(serializers.Serializer):
     actual_color_stone_weight = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
     report_lab = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
     report_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
-    hallmark_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    hallmark_numbers = serializers.ListField(
+        child=serializers.CharField(max_length=10, allow_blank=True),
+        required=False,
+        default=list
+    )
 
     def validate_item_code(self, value):
-        if value and Product.objects.filter(item_code=value).exists():
+        if not value or not value.strip():
+            raise serializers.ValidationError("Product code is required.")
+        if Product.objects.filter(item_code=value).exists():
             raise serializers.ValidationError("This product code already exists in the database.")
-        return value
+        return value.strip()
+
+    def validate_hallmark_numbers(self, value):
+        # Filter out empty strings
+        cleaned = [h.strip() for h in value if h and h.strip()]
+        if len(cleaned) > 3:
+            raise serializers.ValidationError("Maximum 3 HUID numbers are allowed per product.")
+        # Check for duplicates within the list
+        if len(cleaned) != len(set(cleaned)):
+            raise serializers.ValidationError("Duplicate HUID numbers found.")
+        # Check if any HUID already exists on another product
+        for huid in cleaned:
+            if Product.objects.filter(hallmark_numbers__contains=[huid]).exists():
+                raise serializers.ValidationError(f"HUID '{huid}' already exists on another product.")
+        return cleaned
 
     def validate_ring_size(self, value):
         if value in (None, ""):
             return value
         if str(value) not in RING_SIZES:
             raise serializers.ValidationError(f"Ring size must be one of: {', '.join(RING_SIZES)}.")
-        return value
-
-    def validate_hallmark_number(self, value):
-        if value and Product.objects.filter(hallmark_number=value).exists():
-            raise serializers.ValidationError("This hallmark number already exists on another product.")
         return value
 
     def validate(self, data):

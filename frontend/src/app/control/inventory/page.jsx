@@ -90,11 +90,15 @@ export default function InventoryPage() {
         }
     };
 
-    const viewDesign = async (id) => {
+    const viewDesign = async (id, pushUrl = true) => {
         try {
             const { data } = await controlApi.getProduct(id);
             setSelected(data);
             setDesignChecked([]);
+            // Push URL state so browser back button works
+            if (pushUrl) {
+                router.push(`/control/inventory?design=${id}`, { scroll: false });
+            }
         } catch (err) {
             console.error("Failed to load design:", err);
         }
@@ -103,7 +107,22 @@ export default function InventoryPage() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const designId = params.get("design");
-        if (designId) viewDesign(designId);
+        if (designId) viewDesign(designId, false); // Don't push URL on initial load
+
+        // Handle browser back button
+        const handlePopState = () => {
+            const newParams = new URLSearchParams(window.location.search);
+            const newDesignId = newParams.get("design");
+            if (!newDesignId) {
+                setSelected(null);
+                setDesignChecked([]);
+            } else {
+                viewDesign(newDesignId, false);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     const markSoldOffline = async (productId) => {
@@ -503,7 +522,11 @@ export default function InventoryPage() {
                 </div>
             ) : selected ? (
                 <div className="space-y-6">
-                    <button onClick={() => { setSelected(null); setDesignChecked([]); }} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                    <button onClick={() => {
+                        setSelected(null);
+                        setDesignChecked([]);
+                        router.push('/control/inventory', { scroll: false });
+                    }} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
