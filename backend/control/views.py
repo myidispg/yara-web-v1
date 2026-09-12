@@ -756,14 +756,23 @@ class ProductViewSet(viewsets.ModelViewSet):
                 p.save()
                 processed.append(p.item_code)
             else:  # delete
+                # Check if product was ever part of an order
+                from orders.models import OrderItem
+                has_order_history = OrderItem.objects.filter(instance=p).exists()
+                
+                if has_order_history:
+                    skipped.append({'id': p.id, 'item_code': p.item_code,
+                                    'reason': 'cannot delete — product was part of an order (preserved for history)'})
+                    continue
+                
                 if p.status != 'in_stock':
                     skipped.append({'id': p.id, 'item_code': p.item_code,
                                     'reason': f'cannot delete status "{p.status}" — return to stock first'})
                     continue
+                
                 processed.append(p.item_code)
                 p.delete()
         return Response({'processed': processed, 'skipped': skipped})
-
 
 class RateCardView(APIView):
     permission_classes = [IsStaff]
