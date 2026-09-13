@@ -24,6 +24,7 @@ export default function ControlProductPage() {
     const router = useRouter();
     const [p, setP] = useState(null);
     const [design, setDesign] = useState(null);
+    const [rateCard, setRateCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showEdit, setShowEdit] = useState(false);
     const [editForm, setEditForm] = useState(null);
@@ -34,10 +35,12 @@ export default function ControlProductPage() {
         try {
             const { data } = await controlApi.getProductDetail(id);
             setP(data);
-            if (data.design) {
-                const d = await controlApi.getProduct(data.design);
+            if (data.design_id) {
+                const d = await controlApi.getProduct(data.design_id);
                 setDesign(d.data || d);
             }
+            const rc = await controlApi.getRateCard();
+            setRateCard(rc.data);
         } catch (e) {
             console.error("Failed to load product:", e);
         } finally {
@@ -80,16 +83,53 @@ export default function ControlProductPage() {
             actual_color_stone_weight: p.actual_color_stone_weight || "",
             report_lab: p.report_lab || "",
             report_number: p.report_number || "",
-            hallmark_number: p.hallmark_number || "",
+            hallmark_numbers: p.hallmark_numbers?.length ? [...p.hallmark_numbers] : [""],
             status: p.status,
+            // Design fields
+            melle_weight: design?.diamond_weight_round_melle || "",
+            pointer_weights: design?.pointer_weights?.length ? [...design.pointer_weights] : [""],
+            fancy_weights: design?.fancy_weights?.length ? [...design.fancy_weights] : [""],
+            color_stone_weights: design?.color_stone_weights?.length ? [...design.color_stone_weights] : [""],
         });
         setShowEdit(true);
+    };
+
+    // Array helpers
+    const addHuid = () => {
+        if (editForm.hallmark_numbers.length < 3) {
+            setEditForm({ ...editForm, hallmark_numbers: [...editForm.hallmark_numbers, ""] });
+        }
+    };
+    const removeHuid = (i) => {
+        if (editForm.hallmark_numbers.length > 1) {
+            setEditForm({ ...editForm, hallmark_numbers: editForm.hallmark_numbers.filter((_, idx) => idx !== i) });
+        }
+    };
+    const updateHuid = (i, val) => {
+        const updated = [...editForm.hallmark_numbers];
+        updated[i] = val;
+        setEditForm({ ...editForm, hallmark_numbers: updated });
+    };
+
+    const addField = (field) => {
+        setEditForm({ ...editForm, [field]: [...editForm[field], ""] });
+    };
+    const removeField = (field, i) => {
+        if (editForm[field].length > 1) {
+            setEditForm({ ...editForm, [field]: editForm[field].filter((_, idx) => idx !== i) });
+        }
+    };
+    const updateField = (field, i, val) => {
+        const updated = [...editForm[field]];
+        updated[i] = val;
+        setEditForm({ ...editForm, [field]: updated });
     };
 
     const saveEdit = async () => {
         setSaving(true);
         try {
-            const payload = {
+            // Update product
+            await controlApi.updateProduct(p.id, {
                 item_code: editForm.item_code.trim(),
                 karat: editForm.karat,
                 gold_color: editForm.gold_color,
@@ -100,10 +140,24 @@ export default function ControlProductPage() {
                 actual_color_stone_weight: parseFloat(editForm.actual_color_stone_weight) || 0,
                 report_lab: editForm.report_lab.trim(),
                 report_number: editForm.report_number.trim(),
-                hallmark_number: editForm.hallmark_number.trim(),
+                hallmark_numbers: editForm.hallmark_numbers.filter(h => h.trim()),
                 status: editForm.status,
-            };
-            await controlApi.updateProduct(p.id, payload);
+            });
+
+            // Update design diamond weights
+            if (design) {
+                await controlApi.updateDesign(design.id, {
+                    name: design.name,
+                    design_code: design.design_code,
+                    category: design.category,
+                    is_active: design.is_active,
+                    diamond_weight_round_melle: parseFloat(editForm.melle_weight) || 0,
+                    pointer_weights: editForm.pointer_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    fancy_weights: editForm.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    color_stone_weights: editForm.color_stone_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                });
+            }
+
             setShowEdit(false);
             await load();
         } catch (err) {
@@ -140,6 +194,7 @@ export default function ControlProductPage() {
 
     const st = STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-700" };
     const isRing = design?.is_ring || false;
+    const huids = p.hallmark_numbers || [];
 
     const Row = ({ label, value }) => (
         <div className="flex justify-between gap-4 text-sm py-1.5">
@@ -184,7 +239,11 @@ export default function ControlProductPage() {
                     <Row label="Gold Colour" value={p.gold_color} />
                     <Row label="Ring Size" value={p.ring_size || "—"} />
                     <Row label="Diamond Grade" value={p.diamond_grade} />
-                    <Row label="Hallmark (HUID)" value={p.hallmark_number || "—"} />
+                    <Row label="Hallmark (HUID)" value={
+                        huids.length > 0
+                            ? <div className="text-right">{huids.map((h, i) => <div key={i} className="text-xs font-mono">{h}</div>)}</div>
+                            : "—"
+                    } />
                     <Row label="Diamond Report" value={p.report_number ? `${p.report_lab} #${p.report_number}` : "—"} />
                 </div>
 
@@ -243,13 +302,15 @@ export default function ControlProductPage() {
                         <h2 className="font-serif text-2xl mb-6">Edit {p.item_code}</h2>
 
                         <div className="space-y-6">
+                            {/* Product Fields */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code</label>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code *</label>
                                     <input
                                         value={editForm.item_code}
                                         onChange={(e) => setEditForm({ ...editForm, item_code: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                        required
                                     />
                                 </div>
                                 <div>
@@ -326,7 +387,11 @@ export default function ControlProductPage() {
 
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Grade</label>
-                                <input value={editForm.diamond_grade} onChange={(e) => setEditForm({ ...editForm, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IJ/SI" />
+                                <select value={editForm.diamond_grade} onChange={(e) => setEditForm({ ...editForm, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    {rateCard && Object.entries(rateCard.diamond_rates || {})
+                                        .filter(([, v]) => v)
+                                        .map(([k]) => <option key={k} value={k}>{k}</option>)}
+                                </select>
                             </div>
 
                             <div>
@@ -340,7 +405,9 @@ export default function ControlProductPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Lab</label>
-                                    <input value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IGI, GIA" />
+                                    <select value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        <option>IGI</option><option>GIA</option><option>SGL</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Number</label>
@@ -348,9 +415,120 @@ export default function ControlProductPage() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Hallmark (HUID)</label>
-                                <input value={editForm.hallmark_number} onChange={(e) => setEditForm({ ...editForm, hallmark_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., HMK-001" />
+                            {/* Multiple HUIDs */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">HUID Numbers (max 3)</label>
+                                {editForm.hallmark_numbers.map((h, i) => (
+                                    <div key={i} className="flex gap-2">
+                                        <input
+                                            value={h}
+                                            onChange={(e) => updateHuid(i, e.target.value)}
+                                            className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                            placeholder={`HUID ${i + 1}`}
+                                        />
+                                        {editForm.hallmark_numbers.length > 1 && (
+                                            <button type="button" onClick={() => removeHuid(i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                {editForm.hallmark_numbers.length < 3 && (
+                                    <button type="button" onClick={addHuid} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add HUID
+                                    </button>
+                                )}
+                                <p className="text-[10px] text-ink/50">
+                                    {editForm.hallmark_numbers.filter(h => h.trim()).length}/3 entered
+                                </p>
+                            </div>
+
+                            {/* Design Diamond Weights */}
+                            <div className="border-t border-line pt-6">
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-4">Design Diamond Weights (blueprint)</p>
+                                
+                                <div className="mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Round Melle (Ct)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editForm.melle_weight}
+                                        onChange={(e) => setEditForm({ ...editForm, melle_weight: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-2 mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Pointer / Solitaire Weights (Ct)</label>
+                                    {editForm.pointer_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('pointer_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Pointer ${i + 1}`}
+                                            />
+                                            {editForm.pointer_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('pointer_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('pointer_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Pointer
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2 mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Fancy Cut Weights (Ct)</label>
+                                    {editForm.fancy_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('fancy_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Fancy ${i + 1}`}
+                                            />
+                                            {editForm.fancy_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('fancy_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('fancy_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Fancy Cut
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Color Stone Weights (Ct)</label>
+                                    {editForm.color_stone_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('color_stone_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Color Stone ${i + 1}`}
+                                            />
+                                            {editForm.color_stone_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('color_stone_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('color_stone_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Color Stone
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
