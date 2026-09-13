@@ -74,7 +74,6 @@ class Design(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     name = models.CharField(max_length=255)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="designs")
-    description = models.TextField(blank=True)
 
     # Reference gold weight in 14Kt. For rings: reference @ size 12.
     base_net_weight_14kt = models.DecimalField(max_digits=6, decimal_places=3)
@@ -83,14 +82,11 @@ class Design(models.Model):
     size_weight_refs = models.JSONField(default=dict, blank=True)
     size_weight_counts = models.JSONField(default=dict, blank=True)
 
+    # Diamond weights - melle is single, others are arrays
     diamond_weight_round_melle = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    pointer_solitaire_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    fancy_cut_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    color_stone_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-
-    has_solitaire_pointer = models.BooleanField(default=False)
-    has_fancy_cut = models.BooleanField(default=False)
-    has_color_stone = models.BooleanField(default=False)
+    pointer_weights = models.JSONField(default=list, blank=True, help_text="Array of pointer/solitaire weights in carats")
+    fancy_weights = models.JSONField(default=list, blank=True, help_text="Array of fancy cut weights in carats")
+    color_stone_weights = models.JSONField(default=list, blank=True, help_text="Array of color stone weights in carats")
 
     tags = models.ManyToManyField(Tag, blank=True, related_name='designs')
     is_active = models.BooleanField(default=True)
@@ -113,7 +109,15 @@ class Design(models.Model):
 
     @property
     def total_diamond_weight(self):
-        return self.diamond_weight_round_melle + self.pointer_solitaire_weight + self.fancy_cut_weight
+        """Calculate total from melle + sum of all pointer/fancy weights."""
+        pointer_total = sum(float(w) for w in self.pointer_weights if w)
+        fancy_total = sum(float(w) for w in self.fancy_weights if w)
+        return float(self.diamond_weight_round_melle) + pointer_total + fancy_total
+
+    @property
+    def color_stone_weight(self):
+        """Sum of all color stone weights."""
+        return sum(float(w) for w in self.color_stone_weights if w)
 
     # ── Size-weight reference engine ────────────────────────────────
     def init_size_refs(self, weight, at_size=None):
