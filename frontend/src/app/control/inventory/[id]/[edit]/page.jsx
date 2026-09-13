@@ -15,6 +15,7 @@ export default function EditDesignPage() {
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [files, setFiles] = useState([]);
 
     useEffect(() => { document.title = "Edit Design | Control Panel"; }, []);
 
@@ -36,19 +37,38 @@ export default function EditDesignPage() {
                 setForm({
                     name: d.name,
                     design_code: d.design_code,
-                    description: d.description || "",
                     category: d.category ?? "",
                     is_active: d.is_active !== false,
                     diamond_weight_round_melle: String(d.diamond_weight_round_melle ?? 0),
-                    pointer_solitaire_weight: String(d.pointer_solitaire_weight ?? 0),
-                    fancy_cut_weight: String(d.fancy_cut_weight ?? 0),
-                    color_stone_weight: String(d.color_stone_weight ?? 0),
+                    pointer_weights: d.pointer_weights?.length ? d.pointer_weights : [""],
+                    fancy_weights: d.fancy_weights?.length ? d.fancy_weights : [""],
+                    color_stone_weights: d.color_stone_weights?.length ? d.color_stone_weights : [""],
                 });
             } catch (err) {
                 console.error("Failed to load design:", err);
             }
         })();
     }, [id]);
+
+    // Array field helpers
+    const addField = (fieldName) => {
+        setForm({ ...form, [fieldName]: [...form[fieldName], ""] });
+    };
+
+    const removeField = (fieldName, index) => {
+        if (form[fieldName].length > 1) {
+            setForm({
+                ...form,
+                [fieldName]: form[fieldName].filter((_, i) => i !== index)
+            });
+        }
+    };
+
+    const updateField = (fieldName, index, value) => {
+        const updated = [...form[fieldName]];
+        updated[index] = value;
+        setForm({ ...form, [fieldName]: updated });
+    };
 
     const save = async (e) => {
         e.preventDefault();
@@ -57,13 +77,12 @@ export default function EditDesignPage() {
             await controlApi.updateDesign(id, {
                 name: form.name.trim(),
                 design_code: form.design_code.trim(),
-                description: form.description,
                 category: Number(form.category),
                 is_active: form.is_active,
                 diamond_weight_round_melle: parseFloat(form.diamond_weight_round_melle) || 0,
-                pointer_solitaire_weight: parseFloat(form.pointer_solitaire_weight) || 0,
-                fancy_cut_weight: parseFloat(form.fancy_cut_weight) || 0,
-                color_stone_weight: parseFloat(form.color_stone_weight) || 0,
+                pointer_weights: form.pointer_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                fancy_weights: form.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                color_stone_weights: form.color_stone_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
             });
             router.push(`/control/inventory?design=${id}`);
         } catch (err) {
@@ -74,11 +93,13 @@ export default function EditDesignPage() {
     };
 
     const onUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const newFiles = Array.from(e.target.files);
+        if (!newFiles.length) return;
         setUploading(true);
         try {
-            await controlApi.uploadMedia(id, file);
+            for (const file of newFiles) {
+                await controlApi.uploadMedia(id, file);
+            }
             await reload();
         } catch {
             alert("Upload failed");
@@ -102,7 +123,6 @@ export default function EditDesignPage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            {/* Back button */}
             <button 
                 onClick={() => router.push(`/control/inventory?design=${id}`)} 
                 className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2"
@@ -113,13 +133,11 @@ export default function EditDesignPage() {
                 Back to Design
             </button>
 
-            {/* Header */}
             <div>
                 <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">update blueprint</span>
                 <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Edit Design</h1>
             </div>
 
-            {/* Main Form */}
             <form onSubmit={save} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
@@ -139,30 +157,114 @@ export default function EditDesignPage() {
                     </select>
                 </div>
 
-                <div>
-                    <label className={labelCls}>Description</label>
-                    <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} rows={4} />
-                </div>
+                <div className="space-y-6">
+                    <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Diamond Weights (Ct)</p>
+                    
+                    <div>
+                        <label className={labelCls}>Round Melle</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            value={form.diamond_weight_round_melle} 
+                            onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })} 
+                            className={inputCls} 
+                        />
+                    </div>
 
-                <div>
-                    <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Diamond Weights (Ct)</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label className={labelCls}>Melle</label>
-                            <input type="number" step="0.01" value={form.diamond_weight_round_melle} onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })} className={inputCls} />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Pointer</label>
-                            <input type="number" step="0.01" value={form.pointer_solitaire_weight} onChange={(e) => setForm({ ...form, pointer_solitaire_weight: e.target.value })} className={inputCls} />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Fancy</label>
-                            <input type="number" step="0.01" value={form.fancy_cut_weight} onChange={(e) => setForm({ ...form, fancy_cut_weight: e.target.value })} className={inputCls} />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Color Stone</label>
-                            <input type="number" step="0.01" value={form.color_stone_weight} onChange={(e) => setForm({ ...form, color_stone_weight: e.target.value })} className={inputCls} />
-                        </div>
+                    <div className="space-y-2">
+                        <label className={labelCls}>Pointer / Solitaire Weights</label>
+                        {form.pointer_weights.map((w, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={w}
+                                    onChange={(e) => updateField('pointer_weights', i, e.target.value)}
+                                    className={`${inputCls} flex-1`}
+                                    placeholder={`Pointer ${i + 1}`}
+                                />
+                                {form.pointer_weights.length > 1 && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeField('pointer_weights', i)} 
+                                        className="px-3 text-red-500 hover:text-red-700"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            type="button"
+                            onClick={() => addField('pointer_weights')} 
+                            className="text-xs text-[#B86B5A] font-bold hover:underline"
+                        >
+                            + Add Pointer
+                        </button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className={labelCls}>Fancy Cut Weights</label>
+                        {form.fancy_weights.map((w, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={w}
+                                    onChange={(e) => updateField('fancy_weights', i, e.target.value)}
+                                    className={`${inputCls} flex-1`}
+                                    placeholder={`Fancy ${i + 1}`}
+                                />
+                                {form.fancy_weights.length > 1 && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeField('fancy_weights', i)} 
+                                        className="px-3 text-red-500 hover:text-red-700"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            type="button"
+                            onClick={() => addField('fancy_weights')} 
+                            className="text-xs text-[#B86B5A] font-bold hover:underline"
+                        >
+                            + Add Fancy Cut
+                        </button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className={labelCls}>Color Stone Weights</label>
+                        {form.color_stone_weights.map((w, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={w}
+                                    onChange={(e) => updateField('color_stone_weights', i, e.target.value)}
+                                    className={`${inputCls} flex-1`}
+                                    placeholder={`Color Stone ${i + 1}`}
+                                />
+                                {form.color_stone_weights.length > 1 && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeField('color_stone_weights', i)} 
+                                        className="px-3 text-red-500 hover:text-red-700"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button 
+                            type="button"
+                            onClick={() => addField('color_stone_weights')} 
+                            className="text-xs text-[#B86B5A] font-bold hover:underline"
+                        >
+                            + Add Color Stone
+                        </button>
                     </div>
                 </div>
 
@@ -188,7 +290,6 @@ export default function EditDesignPage() {
                 </button>
             </form>
 
-            {/* Media Section */}
             <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">
@@ -216,7 +317,7 @@ export default function EditDesignPage() {
                 </div>
                 <label className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer">
                     {uploading ? "Uploading…" : "+ Add Media"}
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={onUpload} disabled={uploading} />
+                    <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={onUpload} disabled={uploading} />
                 </label>
             </div>
         </div>
