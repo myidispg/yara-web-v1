@@ -338,10 +338,23 @@ class DesignViewSet(viewsets.ModelViewSet):
         design = self.get_object()
         ser = ProductInputSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
+        
+        # Debug: verify hallmark_numbers is being received
+        hallmark_numbers = ser.validated_data.get('hallmark_numbers', [])
+        print(f"[DEBUG] Received hallmark_numbers: {hallmark_numbers}")
+        
         product = create_product_for_design(design, ser.validated_data, RateCard.get())
-        return Response({'status': 'success', 'instance_id': product.id,
-                         'item_code': product.item_code, 'price': float(product.price)},
-                        status=status.HTTP_201_CREATED)
+        
+        # Verify it was saved
+        print(f"[DEBUG] Saved product hallmark_numbers: {product.hallmark_numbers}")
+        
+        return Response({
+            'status': 'success', 
+            'instance_id': product.id,
+            'item_code': product.item_code, 
+            'price': float(product.price),
+            'hallmark_numbers': product.hallmark_numbers
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
@@ -1129,9 +1142,10 @@ class GlobalSearchView(APIView):
             Q(design_code__icontains=q) | Q(name__icontains=q)
         ).select_related('category')[:10]
 
+        # FIX: Search in hallmark_numbers array
         products = Product.objects.filter(
             Q(item_code__icontains=q) |
-            Q(hallmark_number__icontains=q) |
+            Q(hallmark_numbers__icontains=q) |
             Q(report_number__icontains=q)
         ).select_related('design', 'design__category')[:10]
 
@@ -1158,7 +1172,7 @@ class GlobalSearchView(APIView):
             'customers': StaffUserSerializer(customers, many=True).data,
             'invoices': StaffInvoiceSerializer(invoices, many=True).data,
         })
-
+    
 class PricePreviewView(APIView):
     """Returns calculated price for a given product with hypothetical changes."""
     permission_classes = [IsStaff]
