@@ -568,8 +568,9 @@ class DesignViewSet(viewsets.ModelViewSet):
             cn = (row.get('report_number') or '').strip()
             if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
                 errs.append(f'Report {cl} #{cn} already exists')
+            # Change this line:
             hm = (row.get('hallmark_number') or '').strip()
-            if hm and Product.objects.filter(hallmark_number=hm).exists():
+            if hm and Product.objects.filter(hallmark_numbers__contains=[hm]).exists():
                 errs.append(f'Hallmark "{hm}" already exists')
 
             if errs:
@@ -599,7 +600,7 @@ class DesignViewSet(viewsets.ModelViewSet):
                     actual_net_weight=r['net'], actual_diamond_weight=r['dia_total'],
                     actual_color_stone_weight=r['cstone'],
                     report_lab=r['cert_lab'], report_number=r['cert_number'],
-                    hallmark_number=r['hallmark'])
+                    hallmark_numbers=[r['hallmark']] if r['hallmark'] else [])
                 created_codes.append(p.item_code)
                 net_14kt = r['net'] / 1.2 if r['karat'] == '18Kt' else r['net']
                 if r['design'].is_ring and r['ring_size']:
@@ -615,7 +616,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
                     'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
-                    'report_lab', 'report_number', 'hallmark_number', 'price', 'status'])
+                    'report_lab', 'report_number', 'hallmark_numbers', 'price', 'status'])
         qs = Product.objects.select_related('design', 'design__category').all()
         ids = request.query_params.get('ids')
         if ids:
@@ -625,7 +626,8 @@ class DesignViewSet(viewsets.ModelViewSet):
             w.writerow([p.item_code, p.design.design_code, p.design.name, p.design.category.name,
                         p.karat, p.gold_color, p.ring_size or '', p.diamond_grade,
                         float(p.actual_net_weight), float(p.actual_diamond_weight),
-                        p.report_lab, p.report_number, p.hallmark_number,
+                        p.report_lab, p.report_number, 
+                        ','.join(p.hallmark_numbers or []),
                         float(p.price), p.status])
         return response
 
@@ -717,7 +719,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'status': p.status,
             'price': float(p.price),
             'actual_net_weight': float(p.actual_net_weight),
-            'hallmark_number': p.hallmark_number,
+            'hallmark_numbers': p.hallmark_numbers,
         } for p in products])
 
     @action(detail=False, methods=['post'], url_path='bulk-action')
@@ -1324,3 +1326,50 @@ class TagViewSet(viewsets.ModelViewSet):
                 f"Remove the tag from designs first, or deactivate it."
             )
         instance.delete()
+
+
+class CalculatePriceView(APIView):
+    """Calculate price with full breakdown."""
+    permission_classes = [IsStaff]
+    
+    def post(self, request):
+        net_g = float(request.data.get('net_weight', 0))
+        karat = request.data.get('karat', '18Kt')
+        grade = request.data.get('diamond_grade', 'IJ/SI')
+        
+        melle = float(request.data.get('diamond_weight_round_melle', 0))
+        pointer_weights = request.data.get('pointer_weights', [])
+        fancy_weights = request.data.get('fancy_weights', [])
+        
+        pointer_total = sum(float(w) for w in pointer_weights if w)
+        fancy_total = sum(float(w) for w in fancy_weights if w)
+        total_dia = melle + pointer_total + fancy_total
+        
+        rc = RateCard.get()
+        
+        gold_rate = float(rc.gold_rate_18kt if karat == '18Kt' else rc.gold_rate_14kt)
+        gold_value = net_g * gold_rate
+        
+        grade_rate = float(rc.rate_for_grade(grade))
+        diamond_value = total_dia * grade_rate
+        
+        # Making charges using new formula
+        gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+        making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+        making_charges = making_per_gram * net_g
+        
+        subtotal = gold_value + diamond_value + making_charges
+        
+        gst_pct = float(rc.gst_percentage) / 100
+        gst_amount = subtotal * gst_pct
+        
+        total = subtotal + gst_amount
+        
+        return Response({
+            'gold_value': round(gold_value, 2),
+            'diamond_value': round(diamond_value, 2),
+            'making_charges': round(making_charges, 2),
+            'subtotal': round(subtotal, 2),
+            'gst_amount': round(gst_amount, 2),
+            'total': round(total, 2),
+        })

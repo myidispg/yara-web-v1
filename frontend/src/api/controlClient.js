@@ -39,6 +39,7 @@ const controlApi = {
   updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
   globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
   previewPrice: (data) => api.post("/control/price-preview/", data),
+  calculatePrice: (data) => api.post("/control/calculate-price/", data),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),
