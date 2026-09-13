@@ -493,7 +493,11 @@ export default function InventoryPage() {
                                                     <p className="font-bold text-[#1A2536]">{p.design_name}</p>
                                                     <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">{p.design_code}</p>
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || "—"}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70 font-mono text-xs">
+                                                    {p.hallmark_numbers?.length > 0
+                                                        ? p.hallmark_numbers.map((h, i) => <div key={i}>{h}</div>)
+                                                        : "—"}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">
                                                     {p.karat} {p.gold_color}
                                                     {p.ring_size && ` · Size ${p.ring_size}`}
@@ -722,7 +726,11 @@ export default function InventoryPage() {
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 font-mono text-sm font-bold text-[#B86B5A]">{p.item_code}</td>
-                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || '—'}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70 font-mono text-xs">
+                                                    {p.hallmark_numbers?.length > 0
+                                                        ? p.hallmark_numbers.map((h, i) => <div key={i}>{h}</div>)
+                                                        : '—'}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">
                                                     {p.karat} {p.gold_color}
                                                     {p.ring_size && ` · Size ${p.ring_size}`}
