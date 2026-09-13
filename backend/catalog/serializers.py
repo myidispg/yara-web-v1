@@ -38,12 +38,14 @@ class ProductSerializer(serializers.ModelSerializer):
     diamond_value = serializers.SerializerMethodField()
     making_charges = serializers.SerializerMethodField()
     gst_amount = serializers.SerializerMethodField()
+    hallmark_numbers = serializers.JSONField(read_only=True)
 
     class Meta:
         model = Product
         fields = ["id", "item_code", "karat", "gold_color", "ring_size", "diamond_grade",
                   "status", "price", "actual_net_weight", "actual_diamond_weight",
                   "actual_color_stone_weight", "report_lab", "report_number",
+                  "hallmark_numbers",
                   "gold_value", "diamond_value", "making_charges", "gst_amount"]
 
     def get_gold_value(self, obj):
@@ -112,15 +114,16 @@ class DesignDetailSerializer(serializers.ModelSerializer):
     base_price = serializers.SerializerMethodField()
     rate_card = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
+    pointer_weights = serializers.JSONField(read_only=True)
+    fancy_weights = serializers.JSONField(read_only=True)
+    color_stone_weights = serializers.JSONField(read_only=True)
 
     class Meta:
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
-                  "category_slug", "description", "base_net_weight_14kt",
-                  "size_weight_refs", "total_diamond_weight",
-                  "diamond_weight_round_melle", "pointer_solitaire_weight",
-                  "fancy_cut_weight", "color_stone_weight",
-                  "has_solitaire_pointer", "has_fancy_cut", "has_color_stone",
+                  "category_slug", "base_net_weight_14kt",
+                  "size_weight_refs", "diamond_weight_round_melle",
+                  "pointer_weights", "fancy_weights", "color_stone_weights",
                   "base_price", "media", "products", "rate_card", "is_ring", "tags"]
 
     def get_base_price(self, obj):
