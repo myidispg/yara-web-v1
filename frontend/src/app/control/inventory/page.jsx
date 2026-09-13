@@ -636,12 +636,6 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         )}
-
-                        {selected.description && (
-                            <div className="text-sm text-[#1A2536]/70 leading-relaxed border-t border-[#E5BDB0]/40 pt-4">
-                                {selected.description}
-                            </div>
-                        )}
                     </div>
 
                     <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
