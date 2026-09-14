@@ -104,12 +104,16 @@ class DesignListSerializer(serializers.ModelSerializer):
     base_price = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
+    total_diamond_weight = serializers.SerializerMethodField()  # ADD THIS
 
     class Meta:
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
                   "category_slug", "base_net_weight_14kt", "total_diamond_weight",
                   "base_price", "in_stock", "media", "is_ring", "tags"]
+
+    def get_total_diamond_weight(self, obj):
+        return obj.total_diamond_weight
 
     def get_base_price(self, obj):
         return design_from_price(obj)

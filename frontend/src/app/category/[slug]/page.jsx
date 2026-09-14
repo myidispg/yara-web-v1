@@ -4,12 +4,10 @@ import { useParams } from "next/navigation";
 import ProductListPage from "@/components/ProductListPage";
 
 const TITLES = {
-    rings: ["Natural Diamond & Gold Rings", "Explore handcrafted natural diamond rings set in 14Kt and 18Kt Solid Gold."],
+    rings: ["Diamond Rings", "Explore handcrafted natural diamond rings set in 14Kt and 18Kt Solid Gold."],
     earrings: ["Diamond Earrings", "Studs, huggies & drops in certified natural diamonds."],
-    necklaces: ["Necklaces & Pendants", "Solitaire drops & fine chains in 14Kt & 18Kt gold."],
-    bracelets: ["Tennis Collection", "Diamond bracelets & bangles in classic silhouettes."],
-    solitaires: ["Solitaires", "Engagement rings & solitaire bands, crafted forever."],
-    "color-stone": ["Color Stone Fine Jewellery", "Ruby, sapphire & emerald accents with natural diamonds."],
+    "necklaces-pendants": ["Necklaces & Pendants", "Solitaire drops & fine chains in 14Kt & 18Kt gold."],
+    "bracelets-bangles": ["Bracelets & Bangles", "Diamond bracelets & bangles in classic silhouettes."],
 };
 
 export default function CategoryPage() {
