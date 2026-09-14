@@ -130,7 +130,7 @@ class DesignUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Design
         fields = ['name', 'design_code', 'category', 'is_active',
-                  'diamond_weight_round_melle', 'pointer_weights',
+                  'base_net_weight_14kt', 'diamond_weight_round_melle', 'pointer_weights',
                   'fancy_weights', 'color_stone_weights']
 
 class StaffCategorySerializer(serializers.ModelSerializer):
