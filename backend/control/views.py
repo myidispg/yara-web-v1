@@ -644,22 +644,27 @@ class DesignViewSet(viewsets.ModelViewSet):
                         float(p.price), p.status])
         return response
 
-    @action(detail=True, methods=['patch'], url_path='media/(?P<media_id>[0-9]+)/reorder')
-    def reorder_media(self, request, pk=None, media_id=None):
-        """Update sort_order for a specific media item."""
+    @action(detail=True, methods=['post'], url_path='reorder-media')
+    def reorder_media(self, request, pk=None):
+        """Reorder all media items at once. Expects { media_ids: [id1, id2, id3] }."""
         design = self.get_object()
-        media = design.media.filter(id=media_id).first()
-        if not media:
-            return Response({'error': 'Media not found'}, status=status.HTTP_404_NOT_FOUND)
+        media_ids = request.data.get('media_ids', [])
         
-        new_order = request.data.get('sort_order')
-        if new_order is None:
-            return Response({'error': 'sort_order is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not media_ids:
+            return Response({'error': 'media_ids is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        media.sort_order = int(new_order)
-        media.save(update_fields=['sort_order'])
+        # Validate all IDs belong to this design
+        media_items = list(design.media.filter(id__in=media_ids))
+        if len(media_items) != len(media_ids):
+            return Response({'error': 'Some media IDs are invalid'}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response({'status': 'success', 'media_id': media.id, 'sort_order': media.sort_order})
+        # Update sort_order based on position in the array
+        from django.db import transaction
+        with transaction.atomic():
+            for idx, media_id in enumerate(media_ids, start=1):
+                design.media.filter(id=media_id).update(sort_order=idx)
+        
+        return Response({'status': 'success', 'count': len(media_ids)})
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]

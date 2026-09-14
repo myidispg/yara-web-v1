@@ -30,8 +30,8 @@ const controlApi = {
     api.post("/control/products/bulk-action/", { ids, action, cascade }),
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
-  updateDesignMedia: (designId, mediaId, sortOrder) =>
-    api.patch(`/control/products/${designId}/media/${mediaId}/reorder/`, { sort_order: sortOrder }),
+  reorderDesignMedia: (designId, mediaIds) =>
+    api.post(`/control/products/${designId}/reorder_media/`, { media_ids: mediaIds }),
 
   // Products (physical pieces)
   getInstances: (params = {}) => api.get("/control/instances/", { params }),
