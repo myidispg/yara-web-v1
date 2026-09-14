@@ -44,19 +44,23 @@ export default function NewPage() {
     const [huids, setHuids] = useState([""]);
 
     const [priceBreakdown, setPriceBreakdown] = useState(null);
+    const [allTags, setAllTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
 
     useEffect(() => {
         (async () => {
             try {
-                const [cats, rc, ds] = await Promise.all([
+                const [cats, rc, ds, tagsRes] = await Promise.all([
                     controlApi.getCategories(),
                     controlApi.getRateCard(),
                     controlApi.getProducts(),
+                    controlApi.getTags(),
                 ]);
                 setCategories(cats.data.results || cats.data);
                 setRateCard(rc.data);
                 setDesigns(ds.data.results || ds.data);
                 setDiamondGrade(rc.data.default_grade || "IJ/SI");
+                setAllTags(tagsRes.data || []);
             } catch (e) {
                 console.error(e);
             }
@@ -66,6 +70,14 @@ export default function NewPage() {
     useEffect(() => {
         calculatePrice();
     }, [netWeight, melleWeight, pointerWeights, fancyWeights, karat, diamondGrade, rateCard]);
+
+    const toggleTag = (tagId) => {
+        setSelectedTags(prev =>
+            prev.includes(tagId)
+                ? prev.filter(id => id !== tagId)
+                : [...prev, tagId]
+        );
+    };
 
     const calculatePrice = async () => {
         if (!rateCard || !netWeight) {
@@ -206,6 +218,7 @@ export default function NewPage() {
                     pointer_weights: pointerWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                     fancy_weights: fancyWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                     color_stone_weights: colorStoneWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    tags: selectedTags,
                 };
 
                 const { data } = await controlApi.createDesign(designData);
@@ -294,6 +307,34 @@ export default function NewPage() {
                                             <option key={c.id} value={c.id}>{c.label}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Tags</label>
+                                    {allTags.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag.id}
+                                                    type="button"
+                                                    onClick={() => toggleTag(tag.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${selectedTags.includes(tag.id)
+                                                            ? 'bg-[#1A2536] text-white border-[#1A2536]'
+                                                            : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
+                                                        }`}
+                                                >
+                                                    {tag.name}
+                                                    <span className="ml-1 opacity-60">({tag.group_display})</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-[#1A2536]/50">No tags available. Create tags in the Tags section first.</p>
+                                    )}
+                                    {selectedTags.length > 0 && (
+                                        <p className="text-xs text-[#1A2536]/50 mt-2">
+                                            {selectedTags.length} tag{selectedTags.length !== 1 ? 's' : ''} selected
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -517,8 +558,8 @@ export default function NewPage() {
                             className="hidden"
                             id="file-upload"
                         />
-                        <label 
-                            htmlFor="file-upload" 
+                        <label
+                            htmlFor="file-upload"
                             onDragOver={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -538,7 +579,7 @@ export default function NewPage() {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
-                                
+
                                 const droppedFiles = Array.from(e.dataTransfer.files);
                                 if (droppedFiles.length > 0) {
                                     const newFiles = droppedFiles.map((file, i) => ({

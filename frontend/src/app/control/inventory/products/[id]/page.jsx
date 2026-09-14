@@ -548,8 +548,18 @@ export default function ControlProductPage() {
                         </div>
 
                         <div className="flex gap-3 mt-8">
-                            <button onClick={handleClose} className="btn-outline flex-1">Cancel</button>
-                            <button onClick={saveEdit} disabled={saving || !isDirty} className="btn-solid flex-1">
+                            <button
+                                onClick={handleClose}
+                                className="flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white transition-all"
+                            >Cancel</button>
+                            <button
+                                onClick={saveEdit}
+                                disabled={saving || !isDirty}
+                                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow ${saving || !isDirty
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    : 'bg-[#1A2536] hover:bg-[#111A29] text-white cursor-pointer'
+                                    }`}
+                            >
                                 {saving ? "Saving…" : "Save Changes"}
                             </button>
                         </div>

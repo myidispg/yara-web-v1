@@ -23,9 +23,22 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name', 'slug', 'group', 'group_display', 'is_active', 'design_count']
+        read_only_fields = ['slug']  # Auto-generated, not user-provided
 
     def get_design_count(self, obj):
         return obj.designs.filter(is_active=True).count()
+
+    def create(self, validated_data):
+        from django.utils.text import slugify
+        name = validated_data.get('name', '')
+        base_slug = slugify(name)
+        slug = base_slug
+        n = 2
+        while Tag.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-{n}"
+            n += 1
+        validated_data['slug'] = slug
+        return super().create(validated_data)
 
 class ProductMediaSerializer(serializers.ModelSerializer):
     class Meta:
