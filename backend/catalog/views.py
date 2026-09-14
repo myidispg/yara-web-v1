@@ -78,12 +78,16 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if tag:
             qs = qs.filter(tags__slug=tag)
 
-        # Multiple tags (comma-separated)
-        tags = p.getlist("tags")
-        if tags:
-            for t in tags:
-                qs = qs.filter(tags__slug=t)
-
+        # Multiple tags (comma-separated from frontend) — OR condition
+        tags_param = p.get("tags", "")
+        if tags_param:
+            tag_slugs = [t.strip() for t in tags_param.split(",") if t.strip()]
+            if tag_slugs:
+                tag_query = Q()
+                for t in tag_slugs:
+                    tag_query |= Q(tags__slug=t)
+                qs = qs.filter(tag_query)
+                
         search = p.get("search")
         if search:
             qs = qs.filter(
@@ -93,22 +97,25 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(category__slug__icontains=search)
             )
 
-        purity = p.getlist("purity")
-        color = p.getlist("color")
+        # Purity and color filtering (comma-separated from frontend)
+        purity_param = p.get("purity", "")
+        color_param = p.get("color", "")
+        purity = [v.strip() for v in purity_param.split(",") if v.strip()] if purity_param else []
+        color = [v.strip() for v in color_param.split(",") if v.strip()] if color_param else []
+        
         if purity:
             qs = qs.filter(products__karat__in=purity)
         if color:
             qs = qs.filter(products__gold_color__in=color)
         if p.get("in_stock") in ("1", "true", "True"):
             qs = qs.filter(products__status="in_stock")
-        if purity or color or p.get("in_stock"):
+        
+        # Apply distinct if any filter was used
+        if purity or color or p.get("in_stock") or tags_param:
             qs = qs.distinct()
 
         # Effective "from" price: cheapest in-stock piece, else MTO estimate @ 14Kt.
-        # Since pointer/fancy weights are now JSON arrays, we use the total_diamond_weight
-        # property via Python-level calculation in the serializer instead of SQL annotation.
-        # We still annotate min_price from in-stock products for accurate filtering.
-                # Calculate MTO estimate for designs with no in-stock products
+        # Calculate MTO estimate for designs with no in-stock products
         rc = RateCard.get()
         gold_rate = float(rc.gold_rate_14kt)
         dia_rate = float(rc.rate_for_grade(rc.default_grade))
@@ -116,8 +123,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         gst_pct = float(rc.gst_percentage) / 100.0
         
         # MTO estimate: base weight * gold rate + diamond * dia rate, then making + gst
-        # We use F() expressions for base_net_weight_14kt, but diamond weights are in JSON arrays
-        # so we can't use them in SQL. Instead, use a high default for designs without in-stock products.
         mto_estimate = Value(
             (float(rc.gold_rate_14kt) * 5) * (1 + making_pct) * (1 + gst_pct),  # rough 5g estimate
             output_field=DecimalField()
@@ -130,6 +135,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=DecimalField()
             )
         )
+        
         # Price range filter
         price_min = p.get("price_min")
         price_max = p.get("price_max")

@@ -26,8 +26,8 @@ const IMG = {
 const TILES = [
     { slug: "rings", tag: "Solitaires & Bands", title: "Rings", sub: "Engagement Bands & Daily Stackable Rings", img: IMG.rings, shape: "shape-arch" },
     { slug: "earrings", tag: "Studs, Drops & Hoops", title: "Earrings", sub: "Certified Natural Diamond Earrings", img: IMG.earrings, shape: "shape-asymmetric" },
-    { slug: "necklaces", tag: "Pendants & Layers", title: "Necklaces", sub: "Solitaire Drops & Fine Chains", img: IMG.necklaces, shape: "shape-petal" },
-    { slug: "bracelets", tag: "Tennis Collection", title: "Bracelets", sub: "Classic silhouettes in 14Kt & 18Kt Gold", img: IMG.bracelets, shape: "shape-arch-inverted" },
+    { slug: "necklaces-pendants", tag: "Pendants & Layers", title: "Necklaces", sub: "Solitaire Drops & Fine Chains", img: IMG.necklaces, shape: "shape-petal" },
+    { slug: "bracelets-bangles", tag: "Tennis Collection", title: "Bracelets", sub: "Classic silhouettes in 14Kt & 18Kt Gold", img: IMG.bracelets, shape: "shape-arch-inverted" },
 ];
 
 const FOUR_CS = [
