@@ -15,8 +15,22 @@ export default function EditDesignPage() {
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [dirty, setDirty] = useState(false);
 
     useEffect(() => { document.title = "Edit Design | Control Panel"; }, []);
+
+        // Warn user if they try to close the tab or navigate away via browser buttons
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (dirty) {
+                e.preventDefault();
+                e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+                return e.returnValue;
+            }
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [dirty]);
 
     const reload = async () => {
         const { data } = await controlApi.getProduct(id);
@@ -33,46 +47,58 @@ export default function EditDesignPage() {
                     { id: c.id, label: c.name },
                     ...(c.subcategories || []).map((s) => ({ id: s.id, label: `${c.name} › ${s.name}` })),
                 ]));
-                setForm({
-                    name: d.name,
-                    design_code: d.design_code,
-                    category: d.category ?? "",
-                    is_active: d.is_active !== false,
-                    base_net_weight_14kt: String(d.base_net_weight_14kt ?? ""),
-                    diamond_weight_round_melle: String(d.diamond_weight_round_melle ?? 0),
-                    pointer_weights: d.pointer_weights?.length ? d.pointer_weights.map(String) : [""],
-                    fancy_weights: d.fancy_weights?.length ? d.fancy_weights.map(String) : [""],
-                    color_stone_weights: d.color_stone_weights?.length ? d.color_stone_weights.map(String) : [""],
-                });
+                initForm(d);
             } catch (err) {
                 console.error("Failed to load design:", err);
             }
         })();
     }, [id]);
 
+    const initForm = (d) => {
+        const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
+        setForm({
+            name: d.name,
+            design_code: d.design_code,
+            category: d.category ?? "",
+            is_active: d.is_active !== false,
+            base_net_weight_14kt: String(d.base_net_weight_14kt ?? ""),
+            diamond_weight_round_melle: String(d.diamond_weight_round_melle ?? 0),
+            pointer_weights: d.pointer_weights?.length ? d.pointer_weights.map(String) : [""],
+            fancy_weights: d.fancy_weights?.length ? d.fancy_weights.map(String) : [""],
+            color_stone_weights: d.color_stone_weights?.length ? d.color_stone_weights.map(String) : [""],
+            media: mediaList,
+            media_order: mediaList.map(m => m.id),
+        });
+        setDirty(false);
+    };
+
+    const markDirty = () => setDirty(true);
+
+    const updateForm = (updates) => {
+        setForm(prev => ({ ...prev, ...updates }));
+        setDirty(true);
+    };
+
     const addField = (fieldName) => {
-        setForm({ ...form, [fieldName]: [...form[fieldName], ""] });
+        updateForm({ [fieldName]: [...form[fieldName], ""] });
     };
 
     const removeField = (fieldName, index) => {
         if (form[fieldName].length > 1) {
-            setForm({
-                ...form,
-                [fieldName]: form[fieldName].filter((_, i) => i !== index)
-            });
+            updateForm({ [fieldName]: form[fieldName].filter((_, i) => i !== index) });
         }
     };
 
     const updateField = (fieldName, index, value) => {
         const updated = [...form[fieldName]];
         updated[index] = value;
-        setForm({ ...form, [fieldName]: updated });
+        updateForm({ [fieldName]: updated });
     };
 
-    const save = async (e) => {
-        if (e) e.preventDefault();
+    const save = async () => {
         setSaving(true);
         try {
+            // Save design fields
             await controlApi.updateDesign(id, {
                 name: form.name.trim(),
                 design_code: form.design_code.trim(),
@@ -84,10 +110,20 @@ export default function EditDesignPage() {
                 fancy_weights: form.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                 color_stone_weights: form.color_stone_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
             });
+
+            // Save media order if it changed
+            const originalOrder = (design.media || [])
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map(m => m.id);
+            const orderChanged = JSON.stringify(form.media_order) !== JSON.stringify(originalOrder);
+
+            if (orderChanged && form.media_order.length > 0) {
+                await controlApi.reorderDesignMedia(id, form.media_order);
+            }
+
             router.push(`/control/inventory?design=${id}`);
         } catch (err) {
             alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
-        } finally {
             setSaving(false);
         }
     };
@@ -100,7 +136,8 @@ export default function EditDesignPage() {
             for (const file of newFiles) {
                 await controlApi.uploadMedia(id, file);
             }
-            await reload();
+            const d = await reload();
+            initForm(d);
         } catch {
             alert("Upload failed");
         } finally {
@@ -112,23 +149,20 @@ export default function EditDesignPage() {
     const removeMedia = async (mediaId) => {
         if (!confirm("Remove this media?")) return;
         await controlApi.deleteMedia(id, mediaId);
-        await reload();
+        const d = await reload();
+        initForm(d);
     };
 
-    const reorderMedia = async (fromIndex, toIndex) => {
+    // Drag-and-drop only updates local state — no API call
+    const reorderMedia = (fromIndex, toIndex) => {
         if (fromIndex === toIndex) return;
-        const newMedia = [...design.media];
-        const [moved] = newMedia.splice(fromIndex, 1);
-        newMedia.splice(toIndex, 0, moved);
-        setDesign({ ...design, media: newMedia });
-
-        try {
-            const mediaIds = newMedia.map(m => m.id);
-            await controlApi.reorderDesignMedia(id, mediaIds);
-        } catch (err) {
-            console.error("Failed to update media order:", err);
-            await reload();
-        }
+        const newMedia = [...form.media];
+        const newOrder = [...form.media_order];
+        const [movedMedia] = newMedia.splice(fromIndex, 1);
+        const [movedId] = newOrder.splice(fromIndex, 1);
+        newMedia.splice(toIndex, 0, movedMedia);
+        newOrder.splice(toIndex, 0, movedId);
+        updateForm({ media: newMedia, media_order: newOrder });
     };
 
     if (!form) return (
@@ -140,7 +174,10 @@ export default function EditDesignPage() {
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-20">
             <button
-                onClick={() => router.push(`/control/inventory?design=${id}`)}
+                onClick={() => {
+                    if (dirty && !confirm("You have unsaved changes. Discard them?")) return;
+                    router.push(`/control/inventory?design=${id}`);
+                }}
                 className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,9 +186,16 @@ export default function EditDesignPage() {
                 Back to Design
             </button>
 
-            <div>
-                <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">update blueprint</span>
-                <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Edit Design</h1>
+            <div className="flex items-end justify-between">
+                <div>
+                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">update blueprint</span>
+                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Edit Design</h1>
+                </div>
+                {dirty && (
+                    <span className="text-xs text-amber-600 font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                        Unsaved changes
+                    </span>
+                )}
             </div>
 
             {/* Design Form */}
@@ -159,17 +203,17 @@ export default function EditDesignPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label className={labelCls}>Design Name *</label>
-                        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} required />
+                        <input value={form.name} onChange={(e) => updateForm({ name: e.target.value })} className={inputCls} required />
                     </div>
                     <div>
                         <label className={labelCls}>Design Code *</label>
-                        <input value={form.design_code} onChange={(e) => setForm({ ...form, design_code: e.target.value })} className={inputCls} required />
+                        <input value={form.design_code} onChange={(e) => updateForm({ design_code: e.target.value })} className={inputCls} required />
                     </div>
                 </div>
 
                 <div>
                     <label className={labelCls}>Category</label>
-                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputCls}>
+                    <select value={form.category} onChange={(e) => updateForm({ category: e.target.value })} className={inputCls}>
                         {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                 </div>
@@ -181,7 +225,7 @@ export default function EditDesignPage() {
                         step="0.001"
                         min="0"
                         value={form.base_net_weight_14kt}
-                        onChange={(e) => setForm({ ...form, base_net_weight_14kt: e.target.value })}
+                        onChange={(e) => updateForm({ base_net_weight_14kt: e.target.value })}
                         className={inputCls}
                         placeholder="Reference weight for price estimates"
                         required
@@ -200,7 +244,7 @@ export default function EditDesignPage() {
                             type="number"
                             step="0.01"
                             value={form.diamond_weight_round_melle}
-                            onChange={(e) => setForm({ ...form, diamond_weight_round_melle: e.target.value })}
+                            onChange={(e) => updateForm({ diamond_weight_round_melle: e.target.value })}
                             className={inputCls}
                         />
                     </div>
@@ -306,7 +350,7 @@ export default function EditDesignPage() {
                     <input
                         type="checkbox"
                         checked={form.is_active}
-                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                        onChange={(e) => updateForm({ is_active: e.target.checked })}
                         className="w-5 h-5 accent-[#B86B5A]"
                     />
                     <div>
@@ -320,16 +364,16 @@ export default function EditDesignPage() {
             <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">
-                        Media <span className="text-[#B86B5A]">({design?.media?.length || 0})</span>
+                        Media <span className="text-[#B86B5A]">({form.media?.length || 0})</span>
                     </h3>
                 </div>
 
-                {design?.media?.length > 0 && (
+                {form.media?.length > 0 && (
                     <div className="space-y-2 mb-5">
                         <p className="text-xs text-[#1A2536]/60 font-semibold uppercase tracking-wider">
                             Drag the ⋮⋮ handle to reorder
                         </p>
-                        {design.media.map((m, i) => (
+                        {form.media.map((m, i) => (
                             <div
                                 key={m.id}
                                 onDragOver={(e) => {
@@ -383,7 +427,7 @@ export default function EditDesignPage() {
                                         {m.kind === "video" ? "Video" : "Image"} #{i + 1}
                                     </p>
                                     <p className="text-xs text-[#1A2536]/50">
-                                        Sort order: {m.sort_order}
+                                        Position: {i + 1} of {form.media.length}
                                     </p>
                                 </div>
                                 <button
@@ -409,8 +453,8 @@ export default function EditDesignPage() {
             {/* Save Button at the bottom */}
             <button
                 onClick={save}
-                disabled={saving}
-                className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
+                disabled={saving || !dirty}
+                className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {saving ? "Saving…" : "Save Changes"}
             </button>

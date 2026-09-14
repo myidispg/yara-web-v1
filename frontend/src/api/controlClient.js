@@ -31,7 +31,7 @@ const controlApi = {
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
   reorderDesignMedia: (designId, mediaIds) =>
-    api.post(`/control/products/${designId}/reorder_media/`, { media_ids: mediaIds }),
+    api.post(`/control/products/${designId}/reorder-media/`, { media_ids: mediaIds }),
 
   // Products (physical pieces)
   getInstances: (params = {}) => api.get("/control/instances/", { params }),
