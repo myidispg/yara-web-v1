@@ -15,7 +15,6 @@ export default function EditDesignPage() {
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [files, setFiles] = useState([]);
 
     useEffect(() => { document.title = "Edit Design | Control Panel"; }, []);
 
@@ -51,7 +50,6 @@ export default function EditDesignPage() {
         })();
     }, [id]);
 
-    // Array field helpers
     const addField = (fieldName) => {
         setForm({ ...form, [fieldName]: [...form[fieldName], ""] });
     };
@@ -72,7 +70,7 @@ export default function EditDesignPage() {
     };
 
     const save = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSaving(true);
         try {
             await controlApi.updateDesign(id, {
@@ -80,7 +78,7 @@ export default function EditDesignPage() {
                 design_code: form.design_code.trim(),
                 category: Number(form.category),
                 is_active: form.is_active,
-                base_net_weight_14kt: parseFloat(form.base_net_weight_14kt) || 0,  // ADD THIS
+                base_net_weight_14kt: parseFloat(form.base_net_weight_14kt) || 0,
                 diamond_weight_round_melle: parseFloat(form.diamond_weight_round_melle) || 0,
                 pointer_weights: form.pointer_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                 fancy_weights: form.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
@@ -117,6 +115,22 @@ export default function EditDesignPage() {
         await reload();
     };
 
+    const reorderMedia = async (fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return;
+        const newMedia = [...design.media];
+        const [moved] = newMedia.splice(fromIndex, 1);
+        newMedia.splice(toIndex, 0, moved);
+        setDesign({ ...design, media: newMedia });
+
+        try {
+            const mediaIds = newMedia.map(m => m.id);
+            await controlApi.reorderDesignMedia(id, mediaIds);
+        } catch (err) {
+            console.error("Failed to update media order:", err);
+            await reload();
+        }
+    };
+
     if (!form) return (
         <div className="flex items-center justify-center py-24">
             <p className="text-sm text-[#1A2536]/50">Loading design…</p>
@@ -124,7 +138,7 @@ export default function EditDesignPage() {
     );
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6 pb-20">
             <button
                 onClick={() => router.push(`/control/inventory?design=${id}`)}
                 className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2"
@@ -140,7 +154,8 @@ export default function EditDesignPage() {
                 <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Edit Design</h1>
             </div>
 
-            <form onSubmit={save} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
+            {/* Design Form */}
+            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label className={labelCls}>Design Name *</label>
@@ -299,15 +314,7 @@ export default function EditDesignPage() {
                         <p className="text-xs text-[#1A2536]/60 mt-0.5">Visible on storefront</p>
                     </div>
                 </label>
-
-                <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
-                >
-                    {saving ? "Saving…" : "Save Changes"}
-                </button>
-            </form>
+            </div>
 
             {/* Media Section */}
             <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
@@ -320,44 +327,26 @@ export default function EditDesignPage() {
                 {design?.media?.length > 0 && (
                     <div className="space-y-2 mb-5">
                         <p className="text-xs text-[#1A2536]/60 font-semibold uppercase tracking-wider">
-                            Drag the ⋮⋮ icon to reorder
+                            Drag the ⋮⋮ handle to reorder
                         </p>
                         {design.media.map((m, i) => (
                             <div
                                 key={m.id}
                                 onDragOver={(e) => {
                                     e.preventDefault();
-                                    e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
-                                }}
-                                onDragEnter={(e) => {
-                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
                                     e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
                                 }}
                                 onDragLeave={(e) => {
                                     e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
                                 }}
-                                onDrop={async (e) => {
+                                onDrop={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
                                     const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                                    const toIndex = i;
-                                    if (!isNaN(fromIndex) && fromIndex !== toIndex) {
-                                        // Reorder in state
-                                        const newMedia = [...design.media];
-                                        const [moved] = newMedia.splice(fromIndex, 1);
-                                        newMedia.splice(toIndex, 0, moved);
-                                        setDesign({ ...design, media: newMedia });
-
-                                        // Update sort_order for all media
-                                        try {
-                                            for (let idx = 0; idx < newMedia.length; idx++) {
-                                                await controlApi.updateDesignMedia(id, newMedia[idx].id, idx + 1);
-                                            }
-                                        } catch (err) {
-                                            console.error("Failed to update media order:", err);
-                                            await reload();
-                                        }
+                                    if (!isNaN(fromIndex) && fromIndex !== i) {
+                                        reorderMedia(fromIndex, i);
                                     }
                                 }}
                                 className="flex items-center gap-3 glass-card-vibrant rounded-xl border-2 border-[#E5BDB0] p-3 transition-all"
@@ -416,6 +405,15 @@ export default function EditDesignPage() {
                     <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={onUpload} disabled={uploading} />
                 </label>
             </div>
+
+            {/* Save Button at the bottom */}
+            <button
+                onClick={save}
+                disabled={saving}
+                className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
+            >
+                {saving ? "Saving…" : "Save Changes"}
+            </button>
         </div>
     );
 }
