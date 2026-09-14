@@ -28,7 +28,7 @@ export default function NewPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const [productCode, setProductCode] = useState("");
-    const [karat, setKarat] = useState("18Kt");
+    const [karat, setKarat] = useState("14Kt");
     const [goldColor, setGoldColor] = useState("Yellow");
     const [ringSize, setRingSize] = useState("");
     const [netWeight, setNetWeight] = useState("");
