@@ -644,6 +644,23 @@ class DesignViewSet(viewsets.ModelViewSet):
                         float(p.price), p.status])
         return response
 
+    @action(detail=True, methods=['patch'], url_path='media/(?P<media_id>[0-9]+)/reorder')
+    def reorder_media(self, request, pk=None, media_id=None):
+        """Update sort_order for a specific media item."""
+        design = self.get_object()
+        media = design.media.filter(id=media_id).first()
+        if not media:
+            return Response({'error': 'Media not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        new_order = request.data.get('sort_order')
+        if new_order is None:
+            return Response({'error': 'sort_order is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        media.sort_order = int(new_order)
+        media.save(update_fields=['sort_order'])
+        
+        return Response({'status': 'success', 'media_id': media.id, 'sort_order': media.sort_order})
+
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffProductSerializer
