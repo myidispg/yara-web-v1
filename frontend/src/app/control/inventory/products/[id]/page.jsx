@@ -30,6 +30,7 @@ export default function ControlProductPage() {
     const [editForm, setEditForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [previewPrice, setPreviewPrice] = useState(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     const load = async () => {
         try {
@@ -85,50 +86,64 @@ export default function ControlProductPage() {
             report_number: p.report_number || "",
             hallmark_numbers: p.hallmark_numbers?.length ? [...p.hallmark_numbers] : [""],
             status: p.status,
-            // Design fields
             melle_weight: design?.diamond_weight_round_melle || "",
             pointer_weights: design?.pointer_weights?.length ? [...design.pointer_weights] : [""],
             fancy_weights: design?.fancy_weights?.length ? [...design.fancy_weights] : [""],
             color_stone_weights: design?.color_stone_weights?.length ? [...design.color_stone_weights] : [""],
         });
+        setIsDirty(false);
         setShowEdit(true);
     };
 
-    // Array helpers
+    // Single helper: updates form AND marks dirty
+    const updateForm = (updates) => {
+        setEditForm(prev => ({ ...prev, ...updates }));
+        setIsDirty(true);
+    };
+
+    // Close handler: confirms if unsaved changes exist
+    const handleClose = () => {
+        if (isDirty && !confirm("You have unsaved changes. Discard them?")) {
+            return;
+        }
+        setShowEdit(false);
+        setIsDirty(false);
+    };
+
+    // Array helpers — all now mark dirty
     const addHuid = () => {
         if (editForm.hallmark_numbers.length < 3) {
-            setEditForm({ ...editForm, hallmark_numbers: [...editForm.hallmark_numbers, ""] });
+            updateForm({ hallmark_numbers: [...editForm.hallmark_numbers, ""] });
         }
     };
     const removeHuid = (i) => {
         if (editForm.hallmark_numbers.length > 1) {
-            setEditForm({ ...editForm, hallmark_numbers: editForm.hallmark_numbers.filter((_, idx) => idx !== i) });
+            updateForm({ hallmark_numbers: editForm.hallmark_numbers.filter((_, idx) => idx !== i) });
         }
     };
     const updateHuid = (i, val) => {
         const updated = [...editForm.hallmark_numbers];
         updated[i] = val;
-        setEditForm({ ...editForm, hallmark_numbers: updated });
+        updateForm({ hallmark_numbers: updated });
     };
 
     const addField = (field) => {
-        setEditForm({ ...editForm, [field]: [...editForm[field], ""] });
+        updateForm({ [field]: [...editForm[field], ""] });
     };
     const removeField = (field, i) => {
         if (editForm[field].length > 1) {
-            setEditForm({ ...editForm, [field]: editForm[field].filter((_, idx) => idx !== i) });
+            updateForm({ [field]: editForm[field].filter((_, idx) => idx !== i) });
         }
     };
     const updateField = (field, i, val) => {
         const updated = [...editForm[field]];
         updated[i] = val;
-        setEditForm({ ...editForm, [field]: updated });
+        updateForm({ [field]: updated });
     };
 
     const saveEdit = async () => {
         setSaving(true);
         try {
-            // Update product
             await controlApi.updateProduct(p.id, {
                 item_code: editForm.item_code.trim(),
                 karat: editForm.karat,
@@ -144,7 +159,6 @@ export default function ControlProductPage() {
                 status: editForm.status,
             });
 
-            // Update design diamond weights
             if (design) {
                 await controlApi.updateDesign(design.id, {
                     name: design.name,
@@ -159,6 +173,7 @@ export default function ControlProductPage() {
             }
 
             setShowEdit(false);
+            setIsDirty(false);
             await load();
         } catch (err) {
             alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
@@ -231,7 +246,6 @@ export default function ControlProductPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Specifications */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Specifications</h3>
                     <Row label="Design" value={<Link className="text-gold-dark hover:text-ink" href={`/control/inventory?design=${p.design_id}`}>{p.design_code}</Link>} />
@@ -247,7 +261,6 @@ export default function ControlProductPage() {
                     <Row label="Diamond Report" value={p.report_number ? `${p.report_lab} #${p.report_number}` : "—"} />
                 </div>
 
-                {/* Weights & Pricing */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Weights & Pricing</h3>
                     <Row label="Net Weight" value={`${Number(p.actual_net_weight).toFixed(3)} g`} />
@@ -262,7 +275,6 @@ export default function ControlProductPage() {
                     <Row label="Final Price" value={<span className="font-semibold text-base">{inr(p.price)}</span>} />
                 </div>
 
-                {/* Lifecycle */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Lifecycle</h3>
                     <Row label="Added on cPanel" value={fmt(p.created_at)} />
@@ -277,7 +289,6 @@ export default function ControlProductPage() {
                 </div>
             </div>
 
-            {/* Media Gallery */}
             {design?.media && design.media.length > 0 && (
                 <div className="mt-8 bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Product Media</h3>
@@ -297,18 +308,24 @@ export default function ControlProductPage() {
 
             {/* Edit Modal */}
             {showEdit && editForm && (
-                <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowEdit(false)}>
+                <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={handleClose}>
                     <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <h2 className="font-serif text-2xl mb-6">Edit {p.item_code}</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="font-serif text-2xl">Edit {p.item_code}</h2>
+                            {isDirty && (
+                                <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                                    Unsaved changes
+                                </span>
+                            )}
+                        </div>
 
                         <div className="space-y-6">
-                            {/* Product Fields */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code *</label>
                                     <input
                                         value={editForm.item_code}
-                                        onChange={(e) => setEditForm({ ...editForm, item_code: e.target.value })}
+                                        onChange={(e) => updateForm({ item_code: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                         required
                                     />
@@ -317,7 +334,7 @@ export default function ControlProductPage() {
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Status</label>
                                     <select
                                         value={editForm.status}
-                                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                        onChange={(e) => updateForm({ status: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     >
                                         <option value="in_stock">In Stock</option>
@@ -331,20 +348,20 @@ export default function ControlProductPage() {
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Karat</label>
-                                    <select value={editForm.karat} onChange={(e) => setEditForm({ ...editForm, karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    <select value={editForm.karat} onChange={(e) => updateForm({ karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                         {KARAT_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold Colour</label>
-                                    <select value={editForm.gold_color} onChange={(e) => setEditForm({ ...editForm, gold_color: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    <select value={editForm.gold_color} onChange={(e) => updateForm({ gold_color: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                         {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 {isRing && (
                                     <div>
                                         <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Ring Size</label>
-                                        <select value={editForm.ring_size} onChange={(e) => setEditForm({ ...editForm, ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        <select value={editForm.ring_size} onChange={(e) => updateForm({ ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                             <option value="">No size</option>
                                             {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
                                         </select>
@@ -359,7 +376,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.001"
                                         value={editForm.actual_net_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_net_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_net_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -369,7 +386,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.01"
                                         value={editForm.actual_diamond_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_diamond_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_diamond_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -379,7 +396,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.01"
                                         value={editForm.actual_color_stone_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_color_stone_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_color_stone_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -387,7 +404,7 @@ export default function ControlProductPage() {
 
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Grade</label>
-                                <select value={editForm.diamond_grade} onChange={(e) => setEditForm({ ...editForm, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                <select value={editForm.diamond_grade} onChange={(e) => updateForm({ diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                     {rateCard && Object.entries(rateCard.diamond_rates || {})
                                         .filter(([, v]) => v)
                                         .map(([k]) => <option key={k} value={k}>{k}</option>)}
@@ -405,17 +422,16 @@ export default function ControlProductPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Lab</label>
-                                    <select value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    <select value={editForm.report_lab} onChange={(e) => updateForm({ report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                         <option>IGI</option><option>GIA</option><option>SGL</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Number</label>
-                                    <input value={editForm.report_number} onChange={(e) => setEditForm({ ...editForm, report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
+                                    <input value={editForm.report_number} onChange={(e) => updateForm({ report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
                                 </div>
                             </div>
 
-                            {/* Multiple HUIDs */}
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">HUID Numbers (max 3)</label>
                                 {editForm.hallmark_numbers.map((h, i) => (
@@ -443,17 +459,16 @@ export default function ControlProductPage() {
                                 </p>
                             </div>
 
-                            {/* Design Diamond Weights */}
                             <div className="border-t border-line pt-6">
                                 <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-4">Design Diamond Weights (blueprint)</p>
-                                
+
                                 <div className="mb-4">
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Round Melle (Ct)</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={editForm.melle_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, melle_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ melle_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -533,8 +548,8 @@ export default function ControlProductPage() {
                         </div>
 
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setShowEdit(false)} className="btn-outline flex-1">Cancel</button>
-                            <button onClick={saveEdit} disabled={saving} className="btn-solid flex-1">
+                            <button onClick={handleClose} className="btn-outline flex-1">Cancel</button>
+                            <button onClick={saveEdit} disabled={saving || !isDirty} className="btn-solid flex-1">
                                 {saving ? "Saving…" : "Save Changes"}
                             </button>
                         </div>

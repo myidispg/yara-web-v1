@@ -649,21 +649,22 @@ class DesignViewSet(viewsets.ModelViewSet):
         """Reorder all media items at once. Expects { media_ids: [id1, id2, id3] }."""
         design = self.get_object()
         media_ids = request.data.get('media_ids', [])
-        
+
         if not media_ids:
             return Response({'error': 'media_ids is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Validate all IDs belong to this design
-        media_items = list(design.media.filter(id__in=media_ids))
-        if len(media_items) != len(media_ids):
-            return Response({'error': 'Some media IDs are invalid'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        existing_ids = set(design.media.values_list('id', flat=True))
+        if set(media_ids) != existing_ids:
+            return Response({'error': 'media_ids must contain all media IDs for this design'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         # Update sort_order based on position in the array
         from django.db import transaction
         with transaction.atomic():
             for idx, media_id in enumerate(media_ids, start=1):
                 design.media.filter(id=media_id).update(sort_order=idx)
-        
+
         return Response({'status': 'success', 'count': len(media_ids)})
 
 class ProductViewSet(viewsets.ModelViewSet):
