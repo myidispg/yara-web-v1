@@ -3,9 +3,10 @@ import secrets
 from rest_framework import serializers
 
 from accounts.models import User
-from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
+from catalog.models import ( Category, Design, ProductMedia, Product, RateCard,
+                             RING_SIZES, GoldRateHistory, Notification, Tag )
 from orders.models import Order, OrderItem, Invoice
-from catalog.serializers import ProductMediaSerializer
+from catalog.serializers import ProductMediaSerializer, TagSerializer
 
 from .models import AuditLog
 
@@ -94,6 +95,7 @@ class StaffDesignSerializer(serializers.ModelSerializer):
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Design
@@ -103,7 +105,7 @@ class StaffDesignSerializer(serializers.ModelSerializer):
                   'total_diamond_weight', 'diamond_weight_round_melle',
                   'pointer_weights', 'fancy_weights', 'color_stone_weights',
                   'products', 'instance_count', 'in_stock_count', 'base_price',
-                  'created_at', 'media']
+                  'created_at', 'media', 'tags']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()
@@ -126,12 +128,15 @@ class StaffDesignSerializer(serializers.ModelSerializer):
 
 class DesignUpdateSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.filter(is_active=True), required=False, default=list
+    )
 
     class Meta:
         model = Design
         fields = ['name', 'design_code', 'category', 'is_active',
                   'base_net_weight_14kt', 'diamond_weight_round_melle', 'pointer_weights',
-                  'fancy_weights', 'color_stone_weights']
+                  'fancy_weights', 'color_stone_weights', 'tags']
 
 class StaffCategorySerializer(serializers.ModelSerializer):
     product_count = serializers.SerializerMethodField()
@@ -393,18 +398,18 @@ class DesignCreateSerializer(serializers.ModelSerializer):
     reference_size = serializers.IntegerField(required=False, default=12)
     pointer_weights = serializers.ListField(
         child=serializers.DecimalField(max_digits=5, decimal_places=2),
-        required=False,
-        default=list
+        required=False, default=list
     )
     fancy_weights = serializers.ListField(
         child=serializers.DecimalField(max_digits=5, decimal_places=2),
-        required=False,
-        default=list
+        required=False, default=list
     )
     color_stone_weights = serializers.ListField(
         child=serializers.DecimalField(max_digits=5, decimal_places=2),
-        required=False,
-        default=list
+        required=False, default=list
+    )
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.filter(is_active=True), required=False, default=list
     )
 
     class Meta:
@@ -412,7 +417,7 @@ class DesignCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'design_code', 'category',
                   'base_net_weight_14kt', 'reference_weight', 'reference_size',
                   'diamond_weight_round_melle', 'pointer_weights', 'fancy_weights',
-                  'color_stone_weights', 'media', 'products']
+                  'color_stone_weights', 'media', 'products', 'tags']
 
     def create(self, validated_data):
         from django.db import transaction
@@ -421,9 +426,8 @@ class DesignCreateSerializer(serializers.ModelSerializer):
         products_list = validated_data.pop('products', [])
         ref_w = validated_data.pop('reference_weight', None)
         ref_s = validated_data.pop('reference_size', 12) or 12
-        category = validated_data['category']
+        tags_list = validated_data.pop('tags', [])
 
-        # Extract and normalize array fields
         pointer_weights = [float(w) for w in validated_data.pop('pointer_weights', []) if w]
         fancy_weights = [float(w) for w in validated_data.pop('fancy_weights', []) if w]
         color_stone_weights = [float(w) for w in validated_data.pop('color_stone_weights', []) if w]
@@ -435,6 +439,10 @@ class DesignCreateSerializer(serializers.ModelSerializer):
 
             design = Design.objects.create(**validated_data)
 
+            # M2M: set tags after creation
+            if tags_list:
+                design.tags.set(tags_list)
+
             if design.is_ring:
                 design.init_size_refs(float(ref_w or design.base_net_weight_14kt), at_size=ref_s)
             else:
@@ -444,10 +452,7 @@ class DesignCreateSerializer(serializers.ModelSerializer):
             rc = RateCard.get()
             for order, m in enumerate(media_list, start=1):
                 ProductMedia.objects.create(
-                    design=design,
-                    url=m['url'],
-                    kind=m['kind'],
-                    sort_order=order
+                    design=design, url=m['url'], kind=m['kind'], sort_order=order
                 )
 
             for inst in products_list:

@@ -12,6 +12,7 @@ export default function EditDesignPage() {
     const router = useRouter();
     const [design, setDesign] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [allTags, setAllTags] = useState([]);
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -19,7 +20,7 @@ export default function EditDesignPage() {
 
     useEffect(() => { document.title = "Edit Design | Control Panel"; }, []);
 
-        // Warn user if they try to close the tab or navigate away via browser buttons
+    // Warn user if they try to close the tab with unsaved changes
     useEffect(() => {
         const handleBeforeUnload = (e) => {
             if (dirty) {
@@ -41,38 +42,35 @@ export default function EditDesignPage() {
     useEffect(() => {
         (async () => {
             try {
-                const [d, cats] = await Promise.all([reload(), controlApi.getCategories()]);
+                const [d, cats, tagsRes] = await Promise.all([
+                    reload(), controlApi.getCategories(), controlApi.getTags()
+                ]);
                 const list = cats.data?.results || cats.data || cats.results || cats;
                 setCategories((Array.isArray(list) ? list : []).flatMap((c) => [
                     { id: c.id, label: c.name },
                     ...(c.subcategories || []).map((s) => ({ id: s.id, label: `${c.name} › ${s.name}` })),
                 ]));
-                initForm(d);
+                setAllTags(tagsRes.data || []);
+                const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
+                setForm({
+                    name: d.name,
+                    design_code: d.design_code,
+                    category: d.category ?? "",
+                    is_active: d.is_active !== false,
+                    base_net_weight_14kt: String(d.base_net_weight_14kt ?? ""),
+                    diamond_weight_round_melle: String(d.diamond_weight_round_melle ?? 0),
+                    pointer_weights: d.pointer_weights?.length ? d.pointer_weights.map(String) : [""],
+                    fancy_weights: d.fancy_weights?.length ? d.fancy_weights.map(String) : [""],
+                    color_stone_weights: d.color_stone_weights?.length ? d.color_stone_weights.map(String) : [""],
+                    tags: d.tags?.map(t => t.id) || [],
+                    media: mediaList,
+                    media_order: mediaList.map(m => m.id),
+                });
             } catch (err) {
                 console.error("Failed to load design:", err);
             }
         })();
     }, [id]);
-
-    const initForm = (d) => {
-        const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
-        setForm({
-            name: d.name,
-            design_code: d.design_code,
-            category: d.category ?? "",
-            is_active: d.is_active !== false,
-            base_net_weight_14kt: String(d.base_net_weight_14kt ?? ""),
-            diamond_weight_round_melle: String(d.diamond_weight_round_melle ?? 0),
-            pointer_weights: d.pointer_weights?.length ? d.pointer_weights.map(String) : [""],
-            fancy_weights: d.fancy_weights?.length ? d.fancy_weights.map(String) : [""],
-            color_stone_weights: d.color_stone_weights?.length ? d.color_stone_weights.map(String) : [""],
-            media: mediaList,
-            media_order: mediaList.map(m => m.id),
-        });
-        setDirty(false);
-    };
-
-    const markDirty = () => setDirty(true);
 
     const updateForm = (updates) => {
         setForm(prev => ({ ...prev, ...updates }));
@@ -95,10 +93,28 @@ export default function EditDesignPage() {
         updateForm({ [fieldName]: updated });
     };
 
+    const toggleTag = (tagId) => {
+        updateForm({
+            tags: form.tags.includes(tagId)
+                ? form.tags.filter(id => id !== tagId)
+                : [...form.tags, tagId]
+        });
+    };
+
+    const reorderMedia = (fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return;
+        const newMedia = [...form.media];
+        const newOrder = [...form.media_order];
+        const [movedMedia] = newMedia.splice(fromIndex, 1);
+        const [movedId] = newOrder.splice(fromIndex, 1);
+        newMedia.splice(toIndex, 0, movedMedia);
+        newOrder.splice(toIndex, 0, movedId);
+        updateForm({ media: newMedia, media_order: newOrder });
+    };
+
     const save = async () => {
         setSaving(true);
         try {
-            // Save design fields
             await controlApi.updateDesign(id, {
                 name: form.name.trim(),
                 design_code: form.design_code.trim(),
@@ -109,6 +125,7 @@ export default function EditDesignPage() {
                 pointer_weights: form.pointer_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                 fancy_weights: form.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
                 color_stone_weights: form.color_stone_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                tags: form.tags,
             });
 
             // Save media order if it changed
@@ -137,7 +154,12 @@ export default function EditDesignPage() {
                 await controlApi.uploadMedia(id, file);
             }
             const d = await reload();
-            initForm(d);
+            const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
+            setForm(prev => ({
+                ...prev,
+                media: mediaList,
+                media_order: mediaList.map(m => m.id),
+            }));
         } catch {
             alert("Upload failed");
         } finally {
@@ -150,19 +172,17 @@ export default function EditDesignPage() {
         if (!confirm("Remove this media?")) return;
         await controlApi.deleteMedia(id, mediaId);
         const d = await reload();
-        initForm(d);
+        const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
+        setForm(prev => ({
+            ...prev,
+            media: mediaList,
+            media_order: mediaList.map(m => m.id),
+        }));
     };
 
-    // Drag-and-drop only updates local state — no API call
-    const reorderMedia = (fromIndex, toIndex) => {
-        if (fromIndex === toIndex) return;
-        const newMedia = [...form.media];
-        const newOrder = [...form.media_order];
-        const [movedMedia] = newMedia.splice(fromIndex, 1);
-        const [movedId] = newOrder.splice(fromIndex, 1);
-        newMedia.splice(toIndex, 0, movedMedia);
-        newOrder.splice(toIndex, 0, movedId);
-        updateForm({ media: newMedia, media_order: newOrder });
+    const handleBack = () => {
+        if (dirty && !confirm("You have unsaved changes. Discard them?")) return;
+        router.push(`/control/inventory?design=${id}`);
     };
 
     if (!form) return (
@@ -174,10 +194,7 @@ export default function EditDesignPage() {
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-20">
             <button
-                onClick={() => {
-                    if (dirty && !confirm("You have unsaved changes. Discard them?")) return;
-                    router.push(`/control/inventory?design=${id}`);
-                }}
+                onClick={handleBack}
                 className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,6 +233,36 @@ export default function EditDesignPage() {
                     <select value={form.category} onChange={(e) => updateForm({ category: e.target.value })} className={inputCls}>
                         {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
+                </div>
+
+                <div>
+                    <label className={labelCls}>Tags</label>
+                    {allTags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {allTags.map(tag => (
+                                <button
+                                    key={tag.id}
+                                    type="button"
+                                    onClick={() => toggleTag(tag.id)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
+                                        form.tags?.includes(tag.id)
+                                            ? 'bg-[#1A2536] text-white border-[#1A2536]'
+                                            : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
+                                    }`}
+                                >
+                                    {tag.name}
+                                    <span className="ml-1 opacity-60">({tag.group_display})</span>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-[#1A2536]/50">No tags available. Create tags in the Tags section first.</p>
+                    )}
+                    {form.tags?.length > 0 && (
+                        <p className="text-xs text-[#1A2536]/50 mt-2">
+                            {form.tags.length} tag{form.tags.length !== 1 ? 's' : ''} selected
+                        </p>
+                    )}
                 </div>
 
                 <div>
@@ -262,21 +309,13 @@ export default function EditDesignPage() {
                                     placeholder={`Pointer ${i + 1}`}
                                 />
                                 {form.pointer_weights.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeField('pointer_weights', i)}
-                                        className="px-3 text-red-500 hover:text-red-700"
-                                    >
+                                    <button type="button" onClick={() => removeField('pointer_weights', i)} className="px-3 text-red-500 hover:text-red-700">
                                         ✕
                                     </button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            type="button"
-                            onClick={() => addField('pointer_weights')}
-                            className="text-xs text-[#B86B5A] font-bold hover:underline"
-                        >
+                        <button type="button" onClick={() => addField('pointer_weights')} className="text-xs text-[#B86B5A] font-bold hover:underline">
                             + Add Pointer
                         </button>
                     </div>
@@ -294,21 +333,13 @@ export default function EditDesignPage() {
                                     placeholder={`Fancy ${i + 1}`}
                                 />
                                 {form.fancy_weights.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeField('fancy_weights', i)}
-                                        className="px-3 text-red-500 hover:text-red-700"
-                                    >
+                                    <button type="button" onClick={() => removeField('fancy_weights', i)} className="px-3 text-red-500 hover:text-red-700">
                                         ✕
                                     </button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            type="button"
-                            onClick={() => addField('fancy_weights')}
-                            className="text-xs text-[#B86B5A] font-bold hover:underline"
-                        >
+                        <button type="button" onClick={() => addField('fancy_weights')} className="text-xs text-[#B86B5A] font-bold hover:underline">
                             + Add Fancy Cut
                         </button>
                     </div>
@@ -326,21 +357,13 @@ export default function EditDesignPage() {
                                     placeholder={`Color Stone ${i + 1}`}
                                 />
                                 {form.color_stone_weights.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeField('color_stone_weights', i)}
-                                        className="px-3 text-red-500 hover:text-red-700"
-                                    >
+                                    <button type="button" onClick={() => removeField('color_stone_weights', i)} className="px-3 text-red-500 hover:text-red-700">
                                         ✕
                                     </button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            type="button"
-                            onClick={() => addField('color_stone_weights')}
-                            className="text-xs text-[#B86B5A] font-bold hover:underline"
-                        >
+                        <button type="button" onClick={() => addField('color_stone_weights')} className="text-xs text-[#B86B5A] font-bold hover:underline">
                             + Add Color Stone
                         </button>
                     </div>
@@ -454,7 +477,7 @@ export default function EditDesignPage() {
             <button
                 onClick={save}
                 disabled={saving || !dirty}
-                className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
             >
                 {saving ? "Saving…" : "Save Changes"}
             </button>
