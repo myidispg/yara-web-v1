@@ -14,10 +14,8 @@ const inr = (n) =>
 const categories = [
     { slug: "rings", label: "Rings" },
     { slug: "earrings", label: "Earrings" },
-    { slug: "necklaces", label: "Necklaces" },
-    { slug: "bracelets", label: "Bracelets" },
-    { slug: "solitaires", label: "Solitaires" },
-    { slug: "color-stone", label: "Color Stone" },
+    { slug: "necklaces-pendants", label: "Necklaces" },
+    { slug: "bracelets-bangles", label: "Bracelets" },
 ];
 
 export default function Navbar() {

@@ -112,8 +112,7 @@ export default function NewPage() {
 
     const isRingCategory = (catId) => {
         const cat = flatCategories.find((c) => c.id === parseInt(catId));
-        return cat && (["rings", "solitaires", "color-stone"].includes(cat.slug) ||
-            ["rings", "solitaires", "color-stone"].includes(cat.parent_slug));
+        return cat && (cat.slug === "rings" || cat.parent_slug === "rings");
     };
 
     const showRingSize = mode === "new" ? isRingCategory(categoryId) :

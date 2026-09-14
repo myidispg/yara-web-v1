@@ -21,7 +21,7 @@ class Category(models.Model):
             return f"{self.parent.name} > {self.name}"
         return self.name
 
-    RING_FAMILY_SLUGS = ("rings", "solitaires", "color-stone")
+    RING_FAMILY_SLUGS = ("rings",)
 
     @property
     def is_ring_family(self):

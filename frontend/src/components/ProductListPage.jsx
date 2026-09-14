@@ -124,9 +124,9 @@ export default function ProductListPage({ mode, slug, title, subtitle }) {
             if (selectedSub) p.sub = selectedSub;
         }
 
-        if (selectedTags.length) p.tags = selectedTags;
-        if (sel.karat.length) p.purity = sel.karat;
-        if (sel.color.length) p.color = sel.color;
+        if (selectedTags.length) p.tags = selectedTags.join(",");
+        if (sel.karat.length) p.purity = sel.karat.join(",");
+        if (sel.color.length) p.color = sel.color.join(",");
         if (inStockOnly) p.in_stock = "1";
         if (sel.priceMax < 200000) p.price_max = sel.priceMax;
         return p;
