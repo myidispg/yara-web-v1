@@ -50,7 +50,8 @@ export default function EditDesignPage() {
                     { id: c.id, label: c.name },
                     ...(c.subcategories || []).map((s) => ({ id: s.id, label: `${c.name} › ${s.name}` })),
                 ]));
-                setAllTags(tagsRes.data || []);
+                const tagsData = tagsRes.data;
+                setAllTags(tagsData?.results || tagsData || []);
                 const mediaList = (d.media || []).sort((a, b) => a.sort_order - b.sort_order);
                 setForm({
                     name: d.name,
@@ -244,11 +245,10 @@ export default function EditDesignPage() {
                                     key={tag.id}
                                     type="button"
                                     onClick={() => toggleTag(tag.id)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
-                                        form.tags?.includes(tag.id)
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${form.tags?.includes(tag.id)
                                             ? 'bg-[#1A2536] text-white border-[#1A2536]'
                                             : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
-                                    }`}
+                                        }`}
                                 >
                                     {tag.name}
                                     <span className="ml-1 opacity-60">({tag.group_display})</span>

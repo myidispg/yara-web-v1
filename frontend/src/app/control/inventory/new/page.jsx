@@ -60,7 +60,8 @@ export default function NewPage() {
                 setRateCard(rc.data);
                 setDesigns(ds.data.results || ds.data);
                 setDiamondGrade(rc.data.default_grade || "IJ/SI");
-                setAllTags(tagsRes.data || []);
+                const tagsData = tagsRes.data;
+                setAllTags(tagsData?.results || tagsData || []);
             } catch (e) {
                 console.error(e);
             }
@@ -189,6 +190,13 @@ export default function NewPage() {
         }
         if (!productCode.trim()) return "Product code is required";
         if (!netWeight) return "Net weight is required";
+        if (!karat) return "Karat is required";
+        if (!goldColor) return "Gold color is required";
+        if (!melleWeight || parseFloat(melleWeight) <= 0) return "Round melle weight is required";
+        if (!diamondGrade) return "Diamond grade is required";
+        if (!reportLab) return "Report lab is required";
+        if (!reportNumber.trim()) return "Report number is required";
+        if (huids.filter(h => h.trim()).length === 0) return "At least one HUID is required";
         if (showRingSize && !ringSize) return "Ring size is required";
         return null;
     };
@@ -318,8 +326,8 @@ export default function NewPage() {
                                                     type="button"
                                                     onClick={() => toggleTag(tag.id)}
                                                     className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${selectedTags.includes(tag.id)
-                                                            ? 'bg-[#1A2536] text-white border-[#1A2536]'
-                                                            : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
+                                                        ? 'bg-[#1A2536] text-white border-[#1A2536]'
+                                                        : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
                                                         }`}
                                                 >
                                                     {tag.name}
@@ -381,14 +389,14 @@ export default function NewPage() {
                                 <input value={productCode} onChange={(e) => setProductCode(e.target.value)} className={inputCls} placeholder="Unique identifier" />
                             </div>
                             <div>
-                                <label className={labelCls}>Karat</label>
+                                <label className={labelCls}>Karat *</label>
                                 <select value={karat} onChange={(e) => setKarat(e.target.value)} className={inputCls}>
                                     <option>14Kt</option>
                                     <option>18Kt</option>
                                 </select>
                             </div>
                             <div>
-                                <label className={labelCls}>Gold Color</label>
+                                <label className={labelCls}>Gold Color *</label>
                                 <select value={goldColor} onChange={(e) => setGoldColor(e.target.value)} className={inputCls}>
                                     <option>Yellow</option>
                                     <option>Rose</option>
@@ -416,7 +424,7 @@ export default function NewPage() {
                         <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Diamond Weights</h2>
 
                         <div>
-                            <label className={labelCls}>Round Melle (Ct)</label>
+                            <label className={labelCls}>Round Melle (Ct) *</label>
                             <input type="number" step="0.01" value={melleWeight} onChange={(e) => setMelleWeight(e.target.value)} className={inputCls} placeholder="Total melle weight" />
                         </div>
 
@@ -498,7 +506,7 @@ export default function NewPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={labelCls}>Diamond Grade</label>
+                                <label className={labelCls}>Diamond Grade *</label>
                                 <select value={diamondGrade} onChange={(e) => setDiamondGrade(e.target.value)} className={inputCls}>
                                     {rateCard && Object.entries(rateCard.diamond_rates || {})
                                         .filter(([, v]) => v)
@@ -506,7 +514,7 @@ export default function NewPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className={labelCls}>Report Lab</label>
+                                <label className={labelCls}>Report Lab *</label>
                                 <select value={reportLab} onChange={(e) => setReportLab(e.target.value)} className={inputCls}>
                                     <option>IGI</option>
                                     <option>GIA</option>
@@ -514,13 +522,13 @@ export default function NewPage() {
                                 </select>
                             </div>
                             <div className="col-span-2">
-                                <label className={labelCls}>Report Number</label>
+                                <label className={labelCls}>Report Number *</label>
                                 <input value={reportNumber} onChange={(e) => setReportNumber(e.target.value)} className={inputCls} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className={labelCls}>HUID Numbers (max 3)</label>
+                            <label className={labelCls}>HUID Numbers (max 3) *</label>
                             {huids.map((h, i) => (
                                 <div key={i} className="flex gap-2">
                                     <input
