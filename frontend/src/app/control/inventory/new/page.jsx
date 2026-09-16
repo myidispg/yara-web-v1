@@ -91,6 +91,7 @@ export default function NewPage() {
         const fancyTotal = fancyWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
 
         try {
+                        const colorStoneTotal = colorStoneWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
             const { data } = await controlApi.calculatePrice({
                 net_weight: parseFloat(netWeight),
                 karat,
@@ -98,6 +99,7 @@ export default function NewPage() {
                 diamond_weight_round_melle: melle,
                 pointer_weights: pointerWeights.map(w => parseFloat(w) || 0),
                 fancy_weights: fancyWeights.map(w => parseFloat(w) || 0),
+                color_stone_weight: colorStoneTotal,
             });
             setPriceBreakdown(data);
         } catch (e) {
@@ -704,6 +706,12 @@ export default function NewPage() {
                                         <span className="text-[#1A2536]/70">Diamond Value</span>
                                         <span className="font-bold">{inr(priceBreakdown.diamond_value)}</span>
                                     </div>
+                                    {priceBreakdown.color_stone_value > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[#1A2536]/70">Color Stone Value</span>
+                                            <span className="font-bold">{inr(priceBreakdown.color_stone_value)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between">
                                         <span className="text-[#1A2536]/70">Making Charges</span>
                                         <span className="font-bold">{inr(priceBreakdown.making_charges)}</span>

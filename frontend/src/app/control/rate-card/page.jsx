@@ -16,13 +16,14 @@ export default function RateCardPage() {
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
     const formDirtyRef = useRef(false);
-    const [form, setForm] = useState({ 
-        gold_rate_14kt: "", 
-        gold_rate_18kt: "", 
-        making_fixed_per_gram: "", 
-        making_pct_24kt: "", 
-        gst_percentage: "", 
-        default_grade: "" 
+    const [form, setForm] = useState({
+        gold_rate_14kt: "",
+        gold_rate_18kt: "",
+        making_fixed_per_gram: "",
+        making_pct_24kt: "",
+        gst_percentage: "",
+        default_grade: "",
+        color_stone_rate_per_carat: ""
     });
     const [auto, setAuto] = useState({
         enabled: false,
@@ -55,6 +56,7 @@ export default function RateCardPage() {
                     making_pct_24kt: data.making_pct_24kt?.toString() || "0",
                     gst_percentage: data.gst_percentage.toString(),
                     default_grade: data.default_grade,
+                    color_stone_rate_per_carat: data.color_stone_rate_per_carat?.toString() || "0",
                 });
                 setAuto({
                     enabled: !!data.auto_fetch_enabled,
@@ -88,6 +90,7 @@ export default function RateCardPage() {
                 gst_percentage: parseFloat(form.gst_percentage),
                 default_grade: form.default_grade,
                 diamond_rates: Object.fromEntries(bands.filter((b) => b.name).map((b) => [b.name, parseFloat(b.rate) || 0])),
+                color_stone_rate_per_carat: parseFloat(form.color_stone_rate_per_carat) || 0,
                 auto_fetch_enabled: auto.enabled,
                 auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
                 increment_percentage: parseFloat(auto.increment) || 0.50,
@@ -214,6 +217,18 @@ export default function RateCardPage() {
                         <select value={form.default_grade} onChange={(e) => setForm({ ...form, default_grade: e.target.value })} className={inputCls}>
                             {activeBands.map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
                         </select>
+                    </div>
+                    {/* Color Stone charges */}
+                    <div>
+                        <label className={labelCls}>Color Stone Rate (₹ per Carat)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={form.color_stone_rate_per_carat || 0}
+                            onChange={(e) => setForm({ ...form, color_stone_rate_per_carat: e.target.value })}
+                            className={inputCls}
+                            placeholder="e.g., 5000"
+                        />
                     </div>
 
                     <button type="button" onClick={handleSaveClick} disabled={saving} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">

@@ -1209,12 +1209,14 @@ class PricePreviewView(APIView):
         
         karat = request.data.get('karat', product.karat)
         grade = request.data.get('diamond_grade', product.diamond_grade)
+        color_stone_weight = request.data.get('color_stone_weight', product.actual_color_stone_weight)
         
         price = Product.calculate_price(
             net_weight=product.actual_net_weight,
             diamond_weight=product.actual_diamond_weight,
             karat=karat,
             diamond_grade=grade,
+            color_stone_weight=color_stone_weight,
         )
         return Response({'price': price})
 
@@ -1373,6 +1375,7 @@ class CalculatePriceView(APIView):
         net_g = float(request.data.get('net_weight', 0))
         karat = request.data.get('karat', '18Kt')
         grade = request.data.get('diamond_grade', 'IJ/SI')
+        color_stone_weight = float(request.data.get('color_stone_weight', 0))
         
         melle = float(request.data.get('diamond_weight_round_melle', 0))
         pointer_weights = request.data.get('pointer_weights', [])
@@ -1390,12 +1393,15 @@ class CalculatePriceView(APIView):
         grade_rate = float(rc.rate_for_grade(grade))
         diamond_value = total_dia * grade_rate
         
+        color_stone_rate = float(rc.color_stone_rate_per_carat or 0)
+        color_stone_value = color_stone_weight * color_stone_rate
+        
         # Making charges using new formula
         gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
         making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
         making_charges = making_per_gram * net_g
         
-        subtotal = gold_value + diamond_value + making_charges
+        subtotal = gold_value + diamond_value + color_stone_value + making_charges
         
         gst_pct = float(rc.gst_percentage) / 100
         gst_amount = subtotal * gst_pct
@@ -1405,6 +1411,7 @@ class CalculatePriceView(APIView):
         return Response({
             'gold_value': round(gold_value, 2),
             'diamond_value': round(diamond_value, 2),
+            'color_stone_value': round(color_stone_value, 2),
             'making_charges': round(making_charges, 2),
             'subtotal': round(subtotal, 2),
             'gst_amount': round(gst_amount, 2),

@@ -160,9 +160,9 @@ class RateCardSerializer(serializers.ModelSerializer):
         model = RateCard
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
                   'making_charges_percentage', 'making_fixed_per_gram', 'making_pct_24kt', 
-                  'gst_percentage', 'updated_at', 'auto_fetch_enabled', 'increment_percentage', 
-                  'change_threshold_type', 'change_threshold_percentage', 'change_threshold_amount', 
-                  'last_auto_run_at', 'auto_fetch_interval_minutes']
+                  'gst_percentage', 'color_stone_rate_per_carat', 'updated_at', 'auto_fetch_enabled', 
+                  'increment_percentage', 'change_threshold_type', 'change_threshold_percentage', 
+                  'change_threshold_amount', 'last_auto_run_at', 'auto_fetch_interval_minutes']
 
 
 class GoldRateHistorySerializer(serializers.ModelSerializer):
@@ -303,8 +303,10 @@ def create_product_for_design(design, inst, rc):
     making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
     making = making_per_gram * net
     
-    gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
-    price = round(gold_value + diamond_value + making + gst, 2)
+    color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
+    subtotal = gold_value + diamond_value + color_stone_value + making
+    gst = subtotal * (float(rc.gst_percentage) / 100)
+    price = round(subtotal + gst, 2)
         
     product = Product.objects.create(
         design=design, item_code=item_code, karat=karat, gold_color=inst['gold_color'],
