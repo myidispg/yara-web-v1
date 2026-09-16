@@ -122,8 +122,10 @@ export default function ControlProductPage() {
         }
     };
     const updateHuid = (i, val) => {
+        // Strip non-alphanumeric characters and force uppercase
+        const cleanVal = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         const updated = [...editForm.hallmark_numbers];
-        updated[i] = val;
+        updated[i] = cleanVal;
         updateForm({ hallmark_numbers: updated });
     };
 
@@ -439,8 +441,10 @@ export default function ControlProductPage() {
                                         <input
                                             value={h}
                                             onChange={(e) => updateHuid(i, e.target.value)}
-                                            className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                            className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1 font-mono tracking-wider"
                                             placeholder={`HUID ${i + 1}`}
+                                            autoCapitalize="characters"
+                                            spellCheck="false"
                                         />
                                         {editForm.hallmark_numbers.length > 1 && (
                                             <button type="button" onClick={() => removeHuid(i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
