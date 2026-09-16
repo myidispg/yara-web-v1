@@ -97,6 +97,7 @@ export default function RateCardPage() {
                 change_threshold_type: auto.thresholdType,
                 change_threshold_percentage: parseFloat(auto.thresholdPct) || 0.50,
                 change_threshold_amount: parseFloat(auto.thresholdAmt) || 500,
+                update_mode: 'sync', // THIS TRIGGERS THE BULK PRICE RECALCULATION
             };
             await controlApi.updateRateCard(payload);
             formDirtyRef.current = false;

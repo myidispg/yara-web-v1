@@ -91,7 +91,7 @@ export default function NewPage() {
         const fancyTotal = fancyWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
 
         try {
-                        const colorStoneTotal = colorStoneWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
+            const colorStoneTotal = colorStoneWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
             const { data } = await controlApi.calculatePrice({
                 net_weight: parseFloat(netWeight),
                 karat,
@@ -176,8 +176,10 @@ export default function NewPage() {
     };
     const removeHuid = (i) => setHuids(huids.filter((_, idx) => idx !== i));
     const updateHuid = (i, val) => {
+        // Strip non-alphanumeric characters and force uppercase
+        const cleanVal = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         const updated = [...huids];
-        updated[i] = val;
+        updated[i] = cleanVal;
         setHuids(updated);
     };
 
@@ -535,8 +537,10 @@ export default function NewPage() {
                                     <input
                                         value={h}
                                         onChange={(e) => updateHuid(i, e.target.value)}
-                                        className={`${inputCls} flex-1`}
+                                        className={`${inputCls} flex-1 font-mono tracking-wider`}
                                         placeholder={`HUID ${i + 1}`}
+                                        autoCapitalize="characters"
+                                        spellCheck="false"
                                     />
                                     {huids.length > 1 && (
                                         <button onClick={() => removeHuid(i)} className="px-3 text-red-500 hover:text-red-700">

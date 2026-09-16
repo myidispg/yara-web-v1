@@ -582,8 +582,10 @@ class DesignViewSet(viewsets.ModelViewSet):
             if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
                 errs.append(f'Report {cl} #{cn} already exists')
             # Change this line:
-            hm = (row.get('hallmark_number') or '').strip()
-            if hm and Product.objects.filter(hallmark_numbers__contains=[hm]).exists():
+            hm = (row.get('hallmark_number') or '').strip().upper()
+            if hm and not hm.isalnum():
+                errs.append(f'Hallmark "{hm}" must be alphanumeric (letters and numbers only)')
+            elif hm and Product.objects.filter(hallmark_numbers__contains=[hm]).exists():
                 errs.append(f'Hallmark "{hm}" already exists')
 
             if errs:
