@@ -139,6 +139,7 @@ class DesignDetailSerializer(serializers.ModelSerializer):
     products = ProductSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    parent_category_slug = serializers.SerializerMethodField()
     is_ring = serializers.BooleanField(source="category.is_ring_family", read_only=True)
     base_price = serializers.SerializerMethodField()
     rate_card = serializers.SerializerMethodField()
@@ -146,14 +147,26 @@ class DesignDetailSerializer(serializers.ModelSerializer):
     pointer_weights = serializers.JSONField(read_only=True)
     fancy_weights = serializers.JSONField(read_only=True)
     color_stone_weights = serializers.JSONField(read_only=True)
+    total_diamond_weight = serializers.SerializerMethodField()
+    color_stone_weight = serializers.SerializerMethodField()
 
     class Meta:
         model = Design
         fields = ["id", "design_code", "slug", "name", "category", "category_name",
-                  "category_slug", "base_net_weight_14kt",
+                  "category_slug", "parent_category_slug", "base_net_weight_14kt",
                   "size_weight_refs", "diamond_weight_round_melle",
                   "pointer_weights", "fancy_weights", "color_stone_weights",
+                  "total_diamond_weight", "color_stone_weight",
                   "base_price", "media", "products", "rate_card", "is_ring", "tags"]
+
+    def get_parent_category_slug(self, obj):
+        return obj.category.parent.slug if obj.category.parent else None
+
+    def get_total_diamond_weight(self, obj):
+        return obj.total_diamond_weight
+
+    def get_color_stone_weight(self, obj):
+        return obj.color_stone_weight
 
     def get_base_price(self, obj):
         return design_from_price(obj)
@@ -166,6 +179,8 @@ class DesignDetailSerializer(serializers.ModelSerializer):
             "diamond_rates": {k: float(v) for k, v in rc.grade_choices().items()},
             "default_grade": rc.default_grade,
             "making_charges_percentage": float(rc.making_charges_percentage),
+            "making_fixed_per_gram": float(rc.making_fixed_per_gram or 0),
+            "making_pct_24kt": float(rc.making_pct_24kt or 0),
             "gst_percentage": float(rc.gst_percentage),
             "color_stone_rate_per_carat": float(rc.color_stone_rate_per_carat or 0),
         }

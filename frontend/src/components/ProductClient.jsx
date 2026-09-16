@@ -159,17 +159,32 @@ export default function ProductClient({ product }) {
 
         const goldRate = activePurity === "18Kt" ? rc.gold_rate_18kt : rc.gold_rate_14kt;
         const diaRate = rc.diamond_rates?.[defaultGrade] ?? 0;
+
         const goldValue = baseWeight * Number(goldRate ?? 0);
-        const diaValue = Number(product.total_diamond_weight) * Number(diaRate);
+        const diaValue = Number(product.total_diamond_weight || 0) * Number(diaRate);
+
         const colorStoneRate = Number(rc.color_stone_rate_per_carat ?? 0);
-        const colorStoneValue = Number(product.color_stone_weight ?? 0) * colorStoneRate;
-        const making = (goldValue + diaValue + colorStoneValue) * (Number(rc.making_charges_percentage ?? 0) / 100);
-        const gst = (goldValue + diaValue + colorStoneValue + making) * (Number(rc.gst_percentage ?? 0) / 100);
-        price = Math.round(goldValue + diaValue + colorStoneValue + making + gst);
-        breakdown = { gold_value: Math.round(goldValue), diamond_value: Math.round(diaValue), color_stone_value: Math.round(colorStoneValue), making_charges: Math.round(making), gst_amount: Math.round(gst) };
+        const colorStoneValue = Number(product.color_stone_weight || 0) * colorStoneRate;
+
+        // New making formula (Fixed + % of 24kt)
+        const goldRate24kt = Number(rc.gold_rate_18kt ?? 0) * (24.0 / 18.0);
+        const makingPerGram = Number(rc.making_fixed_per_gram ?? 0) + (Number(rc.making_pct_24kt ?? 0) / 100) * goldRate24kt;
+        const making = baseWeight * makingPerGram;
+
+        const subtotal = goldValue + diaValue + colorStoneValue + making;
+        const gst = subtotal * (Number(rc.gst_percentage ?? 0) / 100);
+
+        price = Math.round(subtotal + gst);
+        breakdown = {
+            gold_value: Math.round(goldValue),
+            diamond_value: Math.round(diaValue),
+            color_stone_value: Math.round(colorStoneValue),
+            making_charges: Math.round(making),
+            gst_amount: Math.round(gst)
+        };
         netWeight = baseWeight.toFixed(3);
-        diaWeight = Number(product.total_diamond_weight).toFixed(2);
-        colorStoneWeight = Number(product.color_stone_weight ?? 0).toFixed(2);
+        diaWeight = Number(product.total_diamond_weight || 0).toFixed(2);
+        colorStoneWeight = Number(product.color_stone_weight || 0).toFixed(2);
     }
 
     const selection = { karat: activePurity, gold_color: activeColor, ring_size: activeSize, price };
