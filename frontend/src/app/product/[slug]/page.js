@@ -15,9 +15,9 @@ async function getProduct(slug) {
     
     const product = await res.json();
     
-    // Get parent category from the category object
-    product.parent_category_slug = product.category?.parent?.slug || null;
-    product.parent_category_name = product.category?.parent?.name || null;
+    // The backend DesignDetailSerializer already includes parent_category_slug 
+    // at the root level of the JSON response. We don't need to extract it manually.
+    // (product.category is just an ID, so manual extraction was overwriting it with null!)
     
     return product;
   } catch {
