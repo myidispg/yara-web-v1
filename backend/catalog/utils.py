@@ -23,6 +23,7 @@ def recalculate_all_prices(rate_card=None, user=None, reason="rate_card_update")
         new_price = Product.calculate_price(
             net_weight=p.actual_net_weight,
             diamond_weight=p.actual_diamond_weight,
+            color_stone_weight=p.actual_color_stone_weight,
             karat=p.karat,
             diamond_grade=p.diamond_grade,
             rate_card=rc,

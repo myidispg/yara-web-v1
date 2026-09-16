@@ -297,13 +297,13 @@ def create_product_for_design(design, inst, rc):
     
     gold_value = net * gold_rate
     diamond_value = dia * grade_rate
+    color_stone_weight = float(inst.get('actual_color_stone_weight') or 0)
+    color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
     
     # Making = (fixed per gram + % of 24Kt gold) × net weight
     gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
     making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
     making = making_per_gram * net
-    
-    color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
     subtotal = gold_value + diamond_value + color_stone_value + making
     gst = subtotal * (float(rc.gst_percentage) / 100)
     price = round(subtotal + gst, 2)

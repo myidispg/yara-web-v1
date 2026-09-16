@@ -89,11 +89,19 @@ def design_from_price(obj):
     rc = RateCard.get()
     net = float(obj.base_net_weight_14kt)
     dia = float(obj.total_diamond_weight)
+    color_stone = float(obj.color_stone_weight)
+    
     gold_value = net * float(rc.gold_rate_14kt)
     dia_value = dia * float(rc.rate_for_grade(rc.default_grade))
-    making = (gold_value + dia_value) * (float(rc.making_charges_percentage) / 100)
-    gst = (gold_value + dia_value + making) * (float(rc.gst_percentage) / 100)
-    return round(gold_value + dia_value + making + gst)
+    color_stone_value = color_stone * float(rc.color_stone_rate_per_carat or 0)
+    
+    gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+    making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+    making = making_per_gram * net
+    
+    subtotal = gold_value + dia_value + color_stone_value + making
+    gst = subtotal * (float(rc.gst_percentage) / 100)
+    return round(subtotal + gst)
 
 
 class DesignListSerializer(serializers.ModelSerializer):
