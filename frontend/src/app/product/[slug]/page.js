@@ -1,3 +1,5 @@
+"use client";
+
 import ProductClient from "@/components/ProductClient";
 import { notFound } from "next/navigation";
 import { generateSEO, generateProductSchema, generateBreadcrumbSchema } from '@/lib/seo';
@@ -12,7 +14,14 @@ async function getProduct(slug) {
       cache: "no-store" // Ensures we always get fresh stock data
     });
     if (!res.ok) return null;
-    return res.json();
+    
+    const product = await res.json();
+    
+    // Get parent category from the category object
+    product.parent_category_slug = product.category?.parent?.slug || null;
+    product.parent_category_name = product.category?.parent?.name || null;
+    
+    return product;
   } catch {
     return null;
   }
