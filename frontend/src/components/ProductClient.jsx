@@ -131,17 +131,19 @@ export default function ProductClient({ product }) {
     const defaultGrade = rc.default_grade ?? "IJ/SI";
     const activeGrade = activeProduct?.diamond_grade ?? defaultGrade;
 
-    let price, breakdown, netWeight, diaWeight;
+    let price, breakdown, netWeight, diaWeight, colorStoneWeight;
     if (activeProduct) {
         price = Number(activeProduct.price);
         breakdown = {
             gold_value: Number(activeProduct.gold_value ?? 0),
             diamond_value: Number(activeProduct.diamond_value ?? 0),
+            color_stone_value: Number(activeProduct.color_stone_value ?? 0),
             making_charges: Number(activeProduct.making_charges ?? 0),
             gst_amount: Number(activeProduct.gst_amount ?? 0),
         };
         netWeight = Number(activeProduct.actual_net_weight).toFixed(3);
         diaWeight = Number(activeProduct.actual_diamond_weight).toFixed(2);
+        colorStoneWeight = Number(activeProduct.actual_color_stone_weight).toFixed(2);
     } else {
         const refs = product.size_weight_refs ?? {};
         let baseWeight;
@@ -159,12 +161,15 @@ export default function ProductClient({ product }) {
         const diaRate = rc.diamond_rates?.[defaultGrade] ?? 0;
         const goldValue = baseWeight * Number(goldRate ?? 0);
         const diaValue = Number(product.total_diamond_weight) * Number(diaRate);
-        const making = (goldValue + diaValue) * (Number(rc.making_charges_percentage ?? 0) / 100);
-        const gst = (goldValue + diaValue + making) * (Number(rc.gst_percentage ?? 0) / 100);
-        price = Math.round(goldValue + diaValue + making + gst);
-        breakdown = { gold_value: Math.round(goldValue), diamond_value: Math.round(diaValue), making_charges: Math.round(making), gst_amount: Math.round(gst) };
+        const colorStoneRate = Number(rc.color_stone_rate_per_carat ?? 0);
+        const colorStoneValue = Number(product.color_stone_weight ?? 0) * colorStoneRate;
+        const making = (goldValue + diaValue + colorStoneValue) * (Number(rc.making_charges_percentage ?? 0) / 100);
+        const gst = (goldValue + diaValue + colorStoneValue + making) * (Number(rc.gst_percentage ?? 0) / 100);
+        price = Math.round(goldValue + diaValue + colorStoneValue + making + gst);
+        breakdown = { gold_value: Math.round(goldValue), diamond_value: Math.round(diaValue), color_stone_value: Math.round(colorStoneValue), making_charges: Math.round(making), gst_amount: Math.round(gst) };
         netWeight = baseWeight.toFixed(3);
         diaWeight = Number(product.total_diamond_weight).toFixed(2);
+        colorStoneWeight = Number(product.color_stone_weight ?? 0).toFixed(2);
     }
 
     const selection = { karat: activePurity, gold_color: activeColor, ring_size: activeSize, price };
@@ -425,6 +430,9 @@ export default function ProductClient({ product }) {
                             <div className="pt-3 border-t border-[#E5BDB0]/40 space-y-2.5">
                                 <BreakRow label={`Gold (${activePurity}, ${netWeight}g)`} value={breakdown.gold_value} />
                                 <BreakRow label={`Natural Diamond (${diaWeight} Ct, ${activeGrade})`} value={breakdown.diamond_value} />
+                                {breakdown.color_stone_value > 0 && (
+                                    <BreakRow label={`Color Stone (${colorStoneWeight} Ct)`} value={breakdown.color_stone_value} />
+                                )}
                                 <BreakRow label="Making Charges" value={breakdown.making_charges} />
                                 <BreakRow label={`GST (${rc.gst_percentage || 3}%)`} value={breakdown.gst_amount} />
                                 <div className="flex items-center justify-between text-sm border-t border-[#E5BDB0]/40 pt-2.5">

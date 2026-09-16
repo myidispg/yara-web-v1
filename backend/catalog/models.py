@@ -236,7 +236,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @classmethod
-    def calculate_price(cls, net_weight, diamond_weight, karat, diamond_grade, rate_card=None):
+    def calculate_price(cls, net_weight, diamond_weight, karat, diamond_grade, color_stone_weight=0, rate_card=None):
         """Pure calculation — no instance needed. Uses current rate card."""
         from catalog.models import RateCard
         rc = rate_card or RateCard.get()
@@ -247,22 +247,30 @@ class Product(models.Model):
         # Diamond rate based on grade
         grade_rate = float(rc.rate_for_grade(diamond_grade))
         
+        # Color stone rate
+        color_stone_rate = float(rc.color_stone_rate_per_carat or 0)
+        
         # Gold value
         gold_value = float(net_weight) * gold_rate
         
         # Diamond value
         diamond_value = float(diamond_weight) * grade_rate
         
+        # Color stone value
+        color_stone_value = float(color_stone_weight) * color_stone_rate
+        
         # Making charges: fixed per gram + % of 24Kt gold
-        # Derive 24Kt from 18Kt (24Kt = 18Kt × 24/18)
         gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
         making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
         making = making_per_gram * float(net_weight)
         
-        # GST
-        gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+        # Subtotal
+        subtotal = gold_value + diamond_value + color_stone_value + making
         
-        return round(gold_value + diamond_value + making + gst, 2)
+        # GST
+        gst = subtotal * (float(rc.gst_percentage) / 100)
+        
+        return round(subtotal + gst, 2)
     
     def __str__(self):
         return self.item_code
@@ -279,7 +287,8 @@ class Product(models.Model):
 
     @property
     def color_stone_value(self):
-        return Decimal("0.00")
+        rc = RateCard.get()
+        return Decimal(str(self.actual_color_stone_weight)) * Decimal(str(rc.color_stone_rate_per_carat or 0))
 
     @property
     def making_charges(self):
@@ -349,6 +358,10 @@ class RateCard(models.Model):
     auto_fetch_interval_minutes = models.PositiveIntegerField(
         default=30,
         help_text="How often to fetch (in minutes). Set to 1 for testing."
+    )
+    color_stone_rate_per_carat = models.DecimalField(
+        max_digits=10, decimal_places=2, default=500,
+        help_text="Rate per carat for color stones (e.g., rubies, emeralds)"
     )
 
     class Meta:

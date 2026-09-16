@@ -78,7 +78,7 @@ class RateCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCard
         fields = ["gold_rate_14kt", "gold_rate_18kt", "diamond_rates", "default_grade",
-                  "making_charges_percentage", "gst_percentage"]
+                  "making_charges_percentage", "gst_percentage", "color_stone_rate_per_carat"]
 
 
 def design_from_price(obj):
@@ -155,4 +155,5 @@ class DesignDetailSerializer(serializers.ModelSerializer):
             "default_grade": rc.default_grade,
             "making_charges_percentage": float(rc.making_charges_percentage),
             "gst_percentage": float(rc.gst_percentage),
+            "color_stone_rate_per_carat": float(rc.color_stone_rate_per_carat or 0),
         }
