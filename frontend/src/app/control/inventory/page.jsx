@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import controlApi from "@/api/controlClient";
@@ -88,6 +88,25 @@ export default function InventoryPage() {
         } catch (err) {
             console.error("Failed to load categories:", err);
         }
+    };
+
+    const flattenCategories = (cats) => {
+        const flat = [];
+        cats.forEach(parent => {
+            flat.push({ id: parent.id, name: parent.name, slug: parent.slug, isSubcategory: false });
+            if (parent.subcategories && parent.subcategories.length > 0) {
+                parent.subcategories.forEach(sub => {
+                    flat.push({
+                        id: sub.id,
+                        name: sub.name,
+                        slug: sub.slug,
+                        isSubcategory: true,
+                        parentName: parent.name
+                    });
+                });
+            }
+        });
+        return flat;
     };
 
     const viewDesign = async (id, pushUrl = true) => {
@@ -319,7 +338,27 @@ export default function InventoryPage() {
     };
 
     const filteredDesigns = categoryFilter
-        ? products.filter(d => d.category_name === categoryFilter)
+        ? (() => {
+            // Find the selected category in our flattened list
+            const selectedCat = flattenCategories(categories).find(c => c.slug === categoryFilter);
+
+            if (!selectedCat) return products;
+
+            if (selectedCat.isSubcategory) {
+                // If filtering by subcategory, only show that subcategory's products
+                return products.filter(d => d.category_slug === categoryFilter);
+            } else {
+                // If filtering by parent category, show parent + all its subcategories
+                const childSlugs = flattenCategories(categories)
+                    .filter(c => c.parentName === selectedCat.name)
+                    .map(c => c.slug);
+
+                return products.filter(d =>
+                    d.category_slug === categoryFilter ||
+                    childSlugs.includes(d.category_slug)
+                );
+            }
+        })()
         : products;
 
     const totalPages = Math.ceil(totalDesigns / PAGE_SIZE);
@@ -376,11 +415,20 @@ export default function InventoryPage() {
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536]"
+                            className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536] min-w-[200px]"
                         >
                             <option value="">All Categories</option>
-                            {categories.map((cat) => (
-                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                            {categories.map((parent) => (
+                                <React.Fragment key={parent.id}>
+                                    <option value={parent.slug} className="font-bold">
+                                        {parent.name}
+                                    </option>
+                                    {parent.subcategories && parent.subcategories.map((sub) => (
+                                        <option key={sub.id} value={sub.slug}>
+                                            &nbsp;&nbsp;&nbsp;↳ {sub.name}
+                                        </option>
+                                    ))}
+                                </React.Fragment>
                             ))}
                         </select>
                     )}
@@ -392,7 +440,7 @@ export default function InventoryPage() {
                             <>
                                 <span className="text-sm text-[#1A2536]/40 mx-2">|</span>
                                 <span className="text-sm font-bold text-[#1A2536]">{filteredDesigns.length}</span>
-                                <span className="text-sm text-[#1A2536]/60 ml-1">in {categoryFilter}</span>
+                                <span className="text-sm text-[#1A2536]/60 ml-1">in {flattenCategories(categories).find(c => c.slug === categoryFilter)?.name}</span>
                             </>
                         )}
                     </div>
