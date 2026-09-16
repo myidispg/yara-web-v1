@@ -1,5 +1,3 @@
-"use client";
-
 import ProductClient from "@/components/ProductClient";
 import { notFound } from "next/navigation";
 import { generateSEO, generateProductSchema, generateBreadcrumbSchema } from '@/lib/seo';
