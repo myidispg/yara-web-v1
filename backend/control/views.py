@@ -696,6 +696,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         new_price = Product.calculate_price(
             net_weight=new_net_weight,
             diamond_weight=new_diamond_weight,
+            color_stone_weight=new_color_stone_weight,
             karat=new_karat,
             diamond_grade=new_grade,
         )

@@ -292,8 +292,10 @@ class Product(models.Model):
 
     @property
     def making_charges(self):
-        base = self.gold_value + self.diamond_value + self.color_stone_value
-        return base * (RateCard.get().making_charges_percentage / 100)
+        rc = RateCard.get()
+        gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+        making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+        return Decimal(str(self.actual_net_weight)) * Decimal(str(making_per_gram))
 
     @property
     def gst_amount(self):
