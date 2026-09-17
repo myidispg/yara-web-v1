@@ -21,7 +21,7 @@ class Category(models.Model):
             return f"{self.parent.name} > {self.name}"
         return self.name
 
-    RING_FAMILY_SLUGS = ("rings", "solitaires", "color-stone")
+    RING_FAMILY_SLUGS = ("rings",)
 
     @property
     def is_ring_family(self):
@@ -40,6 +40,31 @@ class Category(models.Model):
             return f"{self.parent.name} > {self.name}"
         return self.name
 
+class Tag(models.Model):
+    """Flexible labels applied to designs (solitaire, daily-wear, engagement, etc.)."""
+    GROUP_CHOICES = [
+        ('style', 'Style'),
+        ('occasion', 'Occasion'),
+        ('material', 'Material'),
+        ('collection', 'Collection'),
+    ]
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    group = models.CharField(max_length=20, choices=GROUP_CHOICES, default='style')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['group', 'name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_group_display()})"
+
 class Design(models.Model):
     """The blueprint. Always sellable — pieces without stock are Made-to-Order."""
     BASE_RING_SIZE = 12
@@ -49,7 +74,6 @@ class Design(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     name = models.CharField(max_length=255)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="designs")
-    description = models.TextField(blank=True)
 
     # Reference gold weight in 14Kt. For rings: reference @ size 12.
     base_net_weight_14kt = models.DecimalField(max_digits=6, decimal_places=3)
@@ -58,15 +82,13 @@ class Design(models.Model):
     size_weight_refs = models.JSONField(default=dict, blank=True)
     size_weight_counts = models.JSONField(default=dict, blank=True)
 
+    # Diamond weights - melle is single, others are arrays
     diamond_weight_round_melle = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    pointer_solitaire_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    fancy_cut_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    color_stone_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    pointer_weights = models.JSONField(default=list, blank=True, help_text="Array of pointer/solitaire weights in carats")
+    fancy_weights = models.JSONField(default=list, blank=True, help_text="Array of fancy cut weights in carats")
+    color_stone_weights = models.JSONField(default=list, blank=True, help_text="Array of color stone weights in carats")
 
-    has_solitaire_pointer = models.BooleanField(default=False)
-    has_fancy_cut = models.BooleanField(default=False)
-    has_color_stone = models.BooleanField(default=False)
-
+    tags = models.ManyToManyField(Tag, blank=True, related_name='designs')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -87,7 +109,15 @@ class Design(models.Model):
 
     @property
     def total_diamond_weight(self):
-        return self.diamond_weight_round_melle + self.pointer_solitaire_weight + self.fancy_cut_weight
+        """Calculate total from melle + sum of all pointer/fancy weights."""
+        pointer_total = sum(float(w) for w in self.pointer_weights if w)
+        fancy_total = sum(float(w) for w in self.fancy_weights if w)
+        return float(self.diamond_weight_round_melle) + pointer_total + fancy_total
+
+    @property
+    def color_stone_weight(self):
+        """Sum of all color stone weights."""
+        return sum(float(w) for w in self.color_stone_weights if w)
 
     # ── Size-weight reference engine ────────────────────────────────
     def init_size_refs(self, weight, at_size=None):
@@ -195,7 +225,7 @@ class Product(models.Model):
 
     report_lab = models.CharField(max_length=50, blank=True)
     report_number = models.CharField(max_length=100, blank=True)
-    hallmark_number = models.CharField(max_length=6, blank=True) 
+    hallmark_numbers = models.JSONField(default=list, blank=True, help_text="List of HUID numbers (max 3)")
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="in_stock")
     sold_to_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -206,7 +236,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @classmethod
-    def calculate_price(cls, net_weight, diamond_weight, karat, diamond_grade, rate_card=None):
+    def calculate_price(cls, net_weight, diamond_weight, karat, diamond_grade, color_stone_weight=0, rate_card=None):
         """Pure calculation — no instance needed. Uses current rate card."""
         from catalog.models import RateCard
         rc = rate_card or RateCard.get()
@@ -217,22 +247,30 @@ class Product(models.Model):
         # Diamond rate based on grade
         grade_rate = float(rc.rate_for_grade(diamond_grade))
         
+        # Color stone rate
+        color_stone_rate = float(rc.color_stone_rate_per_carat or 0)
+        
         # Gold value
         gold_value = float(net_weight) * gold_rate
         
         # Diamond value
         diamond_value = float(diamond_weight) * grade_rate
         
+        # Color stone value
+        color_stone_value = float(color_stone_weight) * color_stone_rate
+        
         # Making charges: fixed per gram + % of 24Kt gold
-        # Derive 24Kt from 18Kt (24Kt = 18Kt × 24/18)
         gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
         making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
         making = making_per_gram * float(net_weight)
         
-        # GST
-        gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
+        # Subtotal
+        subtotal = gold_value + diamond_value + color_stone_value + making
         
-        return round(gold_value + diamond_value + making + gst, 2)
+        # GST
+        gst = subtotal * (float(rc.gst_percentage) / 100)
+        
+        return round(subtotal + gst, 2)
     
     def __str__(self):
         return self.item_code
@@ -249,12 +287,15 @@ class Product(models.Model):
 
     @property
     def color_stone_value(self):
-        return Decimal("0.00")
+        rc = RateCard.get()
+        return Decimal(str(self.actual_color_stone_weight)) * Decimal(str(rc.color_stone_rate_per_carat or 0))
 
     @property
     def making_charges(self):
-        base = self.gold_value + self.diamond_value + self.color_stone_value
-        return base * (RateCard.get().making_charges_percentage / 100)
+        rc = RateCard.get()
+        gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+        making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+        return Decimal(str(self.actual_net_weight)) * Decimal(str(making_per_gram))
 
     @property
     def gst_amount(self):
@@ -319,6 +360,10 @@ class RateCard(models.Model):
     auto_fetch_interval_minutes = models.PositiveIntegerField(
         default=30,
         help_text="How often to fetch (in minutes). Set to 1 for testing."
+    )
+    color_stone_rate_per_carat = models.DecimalField(
+        max_digits=10, decimal_places=2, default=500,
+        help_text="Rate per carat for color stones (e.g., rubies, emeralds)"
     )
 
     class Meta:

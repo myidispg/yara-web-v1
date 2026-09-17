@@ -12,7 +12,8 @@ const controlApi = {
   cancelOrder: (id) => api.post(`/control/orders/${id}/cancel/`),
 
   // Designs (blueprints)
-  getProducts: () => api.get("/control/products/"),
+  getProducts: (offset = 0, limit = 24) => api.get(`/control/products/?offset=${offset}&limit=${limit}`),
+  getProductsSummary: () => api.get("/control/products/summary/"),
   getProduct: (id) => api.get(`/control/products/${id}/`),
   createDesign: (data) => api.post("/control/products/", data),
   addInstance: (designId, data) => api.post(`/control/products/${designId}/add_instance/`, data),
@@ -25,19 +26,22 @@ const controlApi = {
   },
   deleteDesign: (designId) => api.delete(`/control/products/${designId}/delete_design/`),
   deleteProduct: (productId) => api.delete(`/control/instances/${productId}/delete_product/`),
-  bulkDesignAction: (ids, action) => api.post(`/control/products/bulk-action/`, { ids, action }),
+  bulkDesignAction: (ids, action, cascade = false) =>
+    api.post("/control/products/bulk-action/", { ids, action, cascade }),
   updateDesign: (id, data) => api.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => api.delete(`/control/products/${designId}/media/${mediaId}/`),
-  // updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
-  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
+  reorderDesignMedia: (designId, mediaIds) =>
+    api.post(`/control/products/${designId}/reorder-media/`, { media_ids: mediaIds }),
 
   // Products (physical pieces)
   getInstances: (params = {}) => api.get("/control/instances/", { params }),
   markSoldOffline: (instanceId) => api.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => api.post(`/control/instances/${instanceId}/return_to_stock/`),
   getProductDetail: (id) => api.get(`/control/instances/${id}/`),
+  updateProduct: (id, data) => api.patch(`/control/instances/${id}/`, data),
   globalSearch: (q) => api.get("/control/global-search/", { params: { q } }),
   previewPrice: (data) => api.post("/control/price-preview/", data),
+  calculatePrice: (data) => api.post("/control/calculate-price/", data),
 
   // Bulk operations on products
   getProductsFlat: () => api.get("/control/instances/flat/"),
@@ -59,6 +63,12 @@ const controlApi = {
   createCategory: (data) => api.post("/control/categories/", data),
   updateCategory: (id, data) => api.patch(`/control/categories/${id}/`, data),
   deleteCategory: (id) => api.delete(`/control/categories/${id}/`),
+
+  // Tags
+  getTags: () => api.get("/control/tags/"),
+  createTag: (data) => api.post("/control/tags/", data),
+  updateTag: (id, data) => api.patch(`/control/tags/${id}/`, data),
+  deleteTag: (id) => api.delete(`/control/tags/${id}/`),
 
   // Customers
   getCustomers: (includeStaff = false) => {

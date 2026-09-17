@@ -15,6 +15,11 @@ staticfiles/
 .env
 .env.production
 .env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
 .venv
 venv/
 ENV/

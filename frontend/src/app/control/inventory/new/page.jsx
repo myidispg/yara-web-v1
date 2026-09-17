@@ -7,227 +7,257 @@ import controlApi from "@/api/controlClient";
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
 
-const RING_SLUGS = ["rings", "solitaires", "color-stone"];
-
+const RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
 const inputCls = "w-full border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536] transition-colors";
 const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-2";
-const sectionCls = "text-[10px] uppercase tracking-[0.2em] font-bold text-[#B86B5A] mb-4 flex items-center gap-2";
 
 export default function NewPage() {
     const router = useRouter();
-    const [mode, setMode] = useState(null);
-    const [step, setStep] = useState(0);
+    const [mode, setMode] = useState("new");
     const [categories, setCategories] = useState([]);
     const [designs, setDesigns] = useState([]);
     const [rateCard, setRateCard] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [files, setFiles] = useState([]);
-    const [preselectedDesignId, setPreselectedDesignId] = useState("");
 
-    const [designForm, setDesignForm] = useState({
-        category: "", name: "", design_code: "", description: "",
-        ref_weight: "", ref_size: "12",
-        melle: "", pointer: "", fancy: "", cstone: "",
-    });
-    const [useNewDesign, setUseNewDesign] = useState(false);
+    const [designCode, setDesignCode] = useState("");
+    const [designName, setDesignName] = useState("");
+    const [categoryId, setCategoryId] = useState("");
     const [existingDesignId, setExistingDesignId] = useState("");
-    const [productForm, setProductForm] = useState({
-        item_code: "",
-        karat: "18Kt", gold_color: "Yellow", ring_size: "", diamond_grade: "",
-        actual_net_weight: "", actual_diamond_weight: "",
-        report_lab: "IGI", report_number: "", hallmark_number: "",
-    });
+    const [searchQuery, setSearchQuery] = useState("");
 
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const m = params.get("mode");
-        if (m === "design" || m === "product") setMode(m);
-    }, []);
+    const [productCode, setProductCode] = useState("");
+    const [karat, setKarat] = useState("14Kt");
+    const [goldColor, setGoldColor] = useState("Yellow");
+    const [ringSize, setRingSize] = useState("");
+    const [netWeight, setNetWeight] = useState("");
+
+    const [melleWeight, setMelleWeight] = useState("");
+    const [pointerWeights, setPointerWeights] = useState([""]);
+    const [fancyWeights, setFancyWeights] = useState([""]);
+    const [colorStoneWeights, setColorStoneWeights] = useState([""]);
+
+    const [diamondGrade, setDiamondGrade] = useState("IJ/SI");
+    const [reportLab, setReportLab] = useState("IGI");
+    const [reportNumber, setReportNumber] = useState("");
+    const [huids, setHuids] = useState([""]);
+
+    const [priceBreakdown, setPriceBreakdown] = useState(null);
+    const [allTags, setAllTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
 
     useEffect(() => {
         (async () => {
             try {
-                const [cats, rc, ds] = await Promise.all([
-                    controlApi.getCategories(), controlApi.getRateCard(), controlApi.getProducts(),
+                const [cats, rc, ds, tagsRes] = await Promise.all([
+                    controlApi.getCategories(),
+                    controlApi.getRateCard(),
+                    controlApi.getProducts(),
+                    controlApi.getTags(),
                 ]);
-                const catData = cats.data.results || cats.data;
-                const rcData = rc.data;
-                const dsData = ds.data.results || ds.data;
-
-                setCategories(catData);
-                setRateCard(rcData);
-                setDesigns(dsData);
-                setProductForm((f) => ({ ...f, diamond_grade: rcData.default_grade || "IJ/SI" }));
-
-                // Check for design_id parameter and auto-select if it exists
-                const params = new URLSearchParams(window.location.search);
-                const dId = params.get("design_id");
-                if (dId) {
-                    const matchingDesign = dsData.find((d) => String(d.id) === dId);
-                    if (matchingDesign) {
-                        setPreselectedDesignId(dId);
-                        setExistingDesignId(dId);
-                        setUseNewDesign(false);
-                        setMode("product"); // Auto-set mode to product when design_id is present
-                    }
-                }
-            } catch (e) { console.error(e); }
+                setCategories(cats.data.results || cats.data);
+                setRateCard(rc.data);
+                setDesigns(ds.data.results || ds.data);
+                setDiamondGrade(rc.data.default_grade || "IJ/SI");
+                const tagsData = tagsRes.data;
+                setAllTags(tagsData?.results || tagsData || []);
+            } catch (e) {
+                console.error(e);
+            }
         })();
     }, []);
 
-    const gradeBands = rateCard ? Object.entries(rateCard.diamond_rates || {}).filter(([, v]) => v).map(([k]) => k) : [];
+    useEffect(() => {
+        calculatePrice();
+    }, [netWeight, melleWeight, pointerWeights, fancyWeights, karat, diamondGrade, rateCard]);
+
+    const toggleTag = (tagId) => {
+        setSelectedTags(prev =>
+            prev.includes(tagId)
+                ? prev.filter(id => id !== tagId)
+                : [...prev, tagId]
+        );
+    };
+
+    const calculatePrice = async () => {
+        if (!rateCard || !netWeight) {
+            setPriceBreakdown(null);
+            return;
+        }
+
+        const melle = parseFloat(melleWeight) || 0;
+        const pointerTotal = pointerWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
+        const fancyTotal = fancyWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
+
+        try {
+            const colorStoneTotal = colorStoneWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
+            const { data } = await controlApi.calculatePrice({
+                net_weight: parseFloat(netWeight),
+                karat,
+                diamond_grade: diamondGrade,
+                diamond_weight_round_melle: melle,
+                pointer_weights: pointerWeights.map(w => parseFloat(w) || 0),
+                fancy_weights: fancyWeights.map(w => parseFloat(w) || 0),
+                color_stone_weight: colorStoneTotal,
+            });
+            setPriceBreakdown(data);
+        } catch (e) {
+            console.error("Price calculation failed:", e);
+        }
+    };
+
     const flatCategories = categories.flatMap((c) => [
         { id: c.id, label: c.name, slug: c.slug, parent_slug: null },
         ...(c.subcategories || []).map((s) => ({ id: s.id, label: `${c.name} › ${s.name}`, slug: s.slug, parent_slug: c.slug })),
     ]);
-    const isRingCat = (cat) => !!cat && (RING_SLUGS.includes(cat.slug) || RING_SLUGS.includes(cat.parent_slug));
-    const selectedCategory = flatCategories.find((c) => String(c.id) === String(designForm.category));
-    const isRingDesign = isRingCat(selectedCategory);
-    const targetDesign = designs.find((d) => String(d.id) === String(existingDesignId));
-    const productDesignIsRing = targetDesign ? !!targetDesign.is_ring : false;
-    const ringContext = mode === "product" ? (useNewDesign ? isRingDesign : productDesignIsRing) : isRingDesign;
 
-    const sum3 = (a, b, c) => (parseFloat(a) || 0) + (parseFloat(b) || 0) + (parseFloat(c) || 0);
-
-    const estimate = (netG, diaCt, karat, grade) => {
-        if (!rateCard || !netG) return 0;
-        const goldRate = karat === "18Kt" ? Number(rateCard.gold_rate_18kt) : Number(rateCard.gold_rate_14kt);
-        const gv = Number(netG) * goldRate;
-        const dv = Number(diaCt || 0) * Number(rateCard.diamond_rates?.[grade || rateCard.default_grade] || 0);
-        const making = (gv + dv) * (Number(rateCard.making_charges_percentage) / 100);
-        const gst = (gv + dv + making) * (Number(rateCard.gst_percentage) / 100);
-        return Math.round(gv + dv + making + gst);
+    const isRingCategory = (catId) => {
+        const cat = flatCategories.find((c) => c.id === parseInt(catId));
+        return cat && (cat.slug === "rings" || cat.parent_slug === "rings");
     };
 
-    const designRefNetAtSize = () => {
-        if (useNewDesign || mode === "design") {
-            const base = parseFloat(designForm.ref_weight) || 0;
-            const refSize = parseInt(designForm.ref_size) || 12;
-            const size = parseInt(productForm.ring_size);
-            let w = base;
-            if (ringContext && size) w = base * Math.pow(1.03, Math.floor((size - refSize) / 2));
-            return w;
-        }
-        if (!targetDesign) return 0;
-        const refs = targetDesign.size_weight_refs || {};
-        const size = productForm.ring_size || "12";
-        return Number(refs[size] ?? targetDesign.base_net_weight_14kt) || 0;
+    const showRingSize = mode === "new" ? isRingCategory(categoryId) :
+        designs.find(d => d.id === parseInt(existingDesignId))?.is_ring;
+
+    const filteredDesigns = searchQuery.length >= 2
+        ? designs.filter(d =>
+            d.design_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            d.name.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 10)
+        : [];
+
+    const handleFiles = (e) => {
+        const newFiles = Array.from(e.target.files).map((file, i) => ({
+            file,
+            id: Date.now() + i,
+            preview: URL.createObjectURL(file),
+        }));
+        setFiles([...files, ...newFiles]);
     };
 
-    const designDiaTotal = () =>
-        mode === "product" && !useNewDesign
-            ? Number(targetDesign?.total_diamond_weight || 0)
-            : sum3(designForm.melle, designForm.pointer, designForm.fancy);
-
-    const liveEstimate = () => {
-        const enteredNet = productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null;
-        const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
-        let net = enteredNet;
-        if (net == null) {
-            net = designRefNetAtSize();
-            if (productForm.karat === "18Kt") net *= 1.2;
-        }
-        const dia = enteredDia > 0 ? enteredDia : designDiaTotal();
-        return estimate(net, dia, productForm.karat, productForm.diamond_grade);
+    const removeFile = (id) => {
+        setFiles(files.filter(f => f.id !== id));
     };
 
-    const designPayload = () => ({
-        name: designForm.name.trim(),
-        design_code: designForm.design_code.trim(),
-        category: Number(designForm.category),
-        description: designForm.description,
-        base_net_weight_14kt: parseFloat(designForm.ref_weight),
-        reference_weight: parseFloat(designForm.ref_weight),
-        reference_size: parseInt(designForm.ref_size) || 12,
-        diamond_weight_round_melle: parseFloat(designForm.melle) || 0,
-        pointer_solitaire_weight: parseFloat(designForm.pointer) || 0,
-        fancy_cut_weight: parseFloat(designForm.fancy) || 0,
-        color_stone_weight: parseFloat(designForm.cstone) || 0,
-        media: [],
-        products: [],
-    });
-
-    const uploadFiles = async (designId) => {
-        for (const f of files) await controlApi.uploadMedia(designId, f);
+    const reorderMedia = (fromIndex, toIndex) => {
+        const updated = [...files];
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
+        setFiles(updated);
     };
 
-    const steps = mode === "design"
-        ? ["Basics", "References", "Media", "Review"]
-        : ["Design", "The Piece", ...(useNewDesign ? ["Media"] : []), "Review"];
-
-    const designBasicsValid = designForm.category && designForm.name.trim() && designForm.design_code.trim();
-    const refsValid = parseFloat(designForm.ref_weight) > 0;
-    const canProceed = () => {
-        if (step === 0) {
-            if (mode === "design") return !!designBasicsValid;
-            if (useNewDesign) return !!designBasicsValid && refsValid;
-            return !!existingDesignId;
-        }
-        if (step === 1) {
-            if (mode === "design") return refsValid;
-            if (ringContext && !productForm.ring_size) return false;
-            return true;
-        }
-        return true;
+    const addPointer = () => setPointerWeights([...pointerWeights, ""]);
+    const removePointer = (i) => setPointerWeights(pointerWeights.filter((_, idx) => idx !== i));
+    const updatePointer = (i, val) => {
+        const updated = [...pointerWeights];
+        updated[i] = val;
+        setPointerWeights(updated);
     };
 
-    const MAX_FILE = 50 * 1024 * 1024;
-    const OK_EXT = ["jpg", "jpeg", "png", "webp", "mp4", "webm", "mov"];
-    const fileProblem = () => {
-        for (const f of files) {
-            const ext = f.name.split(".").pop().toLowerCase();
-            if (!OK_EXT.includes(ext)) return `"${f.name}" is not a supported file type.`;
-            if (f.size > MAX_FILE) return `"${f.name}" is larger than 50MB. Remove or replace it before saving.`;
+    const addFancy = () => setFancyWeights([...fancyWeights, ""]);
+    const removeFancy = (i) => setFancyWeights(fancyWeights.filter((_, idx) => idx !== i));
+    const updateFancy = (i, val) => {
+        const updated = [...fancyWeights];
+        updated[i] = val;
+        setFancyWeights(updated);
+    };
+
+    const addColorStone = () => setColorStoneWeights([...colorStoneWeights, ""]);
+    const removeColorStone = (i) => setColorStoneWeights(colorStoneWeights.filter((_, idx) => idx !== i));
+    const updateColorStone = (i, val) => {
+        const updated = [...colorStoneWeights];
+        updated[i] = val;
+        setColorStoneWeights(updated);
+    };
+
+    const addHuid = () => {
+        if (huids.length < 3) setHuids([...huids, ""]);
+    };
+    const removeHuid = (i) => setHuids(huids.filter((_, idx) => idx !== i));
+    const updateHuid = (i, val) => {
+        // Strip non-alphanumeric characters and force uppercase
+        const cleanVal = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const updated = [...huids];
+        updated[i] = cleanVal;
+        setHuids(updated);
+    };
+
+    const validate = () => {
+        if (mode === "new") {
+            if (!designCode.trim()) return "Design code is required";
+            if (!designName.trim()) return "Design name is required";
+            if (!categoryId) return "Category is required";
+        } else {
+            if (!existingDesignId) return "Please select an existing design";
         }
+        if (!productCode.trim()) return "Product code is required";
+        if (!netWeight) return "Net weight is required";
+        if (!karat) return "Karat is required";
+        if (!goldColor) return "Gold color is required";
+        if (!melleWeight || parseFloat(melleWeight) <= 0) return "Round melle weight is required";
+        if (!diamondGrade) return "Diamond grade is required";
+        if (!reportLab) return "Report lab is required";
+        if (!reportNumber.trim()) return "Report number is required";
+        if (huids.filter(h => h.trim()).length === 0) return "At least one HUID is required";
+        if (showRingSize && !ringSize) return "Ring size is required";
         return null;
     };
 
     const submit = async () => {
-        const problem = fileProblem();
-        if (problem) { setError(problem); return; }
+        const validationError = validate();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
         setSubmitting(true);
         setError("");
+
         try {
-            if (mode === "design") {
-                const { data } = await controlApi.createDesign(designPayload());
-                try {
-                    if (files.length) await uploadFiles(data.id);
-                } catch (upErr) {
-                    await controlApi.deleteDesign(data.id).catch(() => { });
-                    throw upErr;
+            let designId = mode === "existing" ? parseInt(existingDesignId) : null;
+
+            if (mode === "new") {
+                const designData = {
+                    name: designName.trim(),
+                    design_code: designCode.trim(),
+                    category: parseInt(categoryId),
+                    base_net_weight_14kt: parseFloat(netWeight) / (karat === "18Kt" ? 1.2 : 1),
+                    reference_weight: parseFloat(netWeight) / (karat === "18Kt" ? 1.2 : 1),
+                    reference_size: parseInt(ringSize) || 12,
+                    diamond_weight_round_melle: parseFloat(melleWeight) || 0,
+                    pointer_weights: pointerWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    fancy_weights: fancyWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    color_stone_weights: colorStoneWeights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    tags: selectedTags,
+                };
+
+                const { data } = await controlApi.createDesign(designData);
+                designId = data.id;
+
+                for (let i = 0; i < files.length; i++) {
+                    await controlApi.uploadMedia(designId, files[i].file);
                 }
-                router.push("/control/inventory");
-                return;
             }
 
-            let designId = existingDesignId;
-            let createdNew = false;
-            if (useNewDesign) {
-                const { data } = await controlApi.createDesign(designPayload());
-                designId = data.id;
-                createdNew = true;
-            }
-            try {
-                if (files.length && useNewDesign) await uploadFiles(designId);
-                const enteredDia = sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy);
-                await controlApi.addInstance(designId, {
-                    item_code: productForm.item_code,
-                    karat: productForm.karat,
-                    gold_color: productForm.gold_color,
-                    ring_size: productDesignIsRing ? (productForm.ring_size || null) : null,
-                    diamond_grade: productForm.diamond_grade || rateCard?.default_grade,
-                    actual_net_weight: productForm.actual_net_weight ? parseFloat(productForm.actual_net_weight) : null,
-                    actual_diamond_weight: enteredDia > 0 ? enteredDia : null,
-                    actual_color_stone_weight: productForm.a_cstone ? parseFloat(productForm.a_cstone) : 0,
-                    report_lab: productForm.report_lab,
-                    report_number: productForm.report_number,
-                    hallmark_number: productForm.hallmark_number,
-                });
-            } catch (innerErr) {
-                if (createdNew) await controlApi.deleteDesign(designId).catch(() => { });
-                throw innerErr;
-            }
+            const totalDia = (parseFloat(melleWeight) || 0) +
+                pointerWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0) +
+                fancyWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0);
+
+            await controlApi.addInstance(designId, {
+                item_code: productCode.trim(),
+                karat,
+                gold_color: goldColor,
+                ring_size: showRingSize ? ringSize : null,
+                diamond_grade: diamondGrade,
+                actual_net_weight: parseFloat(netWeight),
+                actual_diamond_weight: totalDia > 0 ? totalDia : null,
+                actual_color_stone_weight: colorStoneWeights.reduce((sum, w) => sum + (parseFloat(w) || 0), 0),
+                report_lab: reportLab,
+                report_number: reportNumber,
+                hallmark_numbers: huids.filter(h => h.trim()),
+            });
+
             router.push("/control/inventory");
         } catch (err) {
             const d = err.response?.data;
@@ -236,243 +266,8 @@ export default function NewPage() {
         }
     };
 
-    if (!mode)
-        return (
-            <div className="max-w-3xl mx-auto space-y-8">
-                <button onClick={() => router.push("/control/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to Inventory
-                </button>
-
-                <div>
-                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">create new</span>
-                    <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">What are you adding?</h1>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <button
-                        onClick={() => setMode("design")}
-                        className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] p-8 text-left transition-all hover:shadow-xl group"
-                    >
-                        <div className="w-16 h-16 rounded-2xl bg-[#B86B5A]/10 flex items-center justify-center mb-4 group-hover:bg-[#B86B5A]/20 transition-colors">
-                            <svg className="w-8 h-8 text-[#B86B5A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-2 group-hover:text-[#B86B5A] transition-colors">Add Design</h2>
-                        <p className="text-sm text-[#1A2536]/60">Create a blueprint only. It becomes sellable immediately as Made-to-Order.</p>
-                    </button>
-                    <button
-                        onClick={() => setMode("product")}
-                        className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] p-8 text-left transition-all hover:shadow-xl group"
-                    >
-                        <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mb-4 group-hover:bg-[#D4AF37]/20 transition-colors">
-                            <svg className="w-8 h-8 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </div>
-                        <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-2 group-hover:text-[#B86B5A] transition-colors">Add Product</h2>
-                        <p className="text-sm text-[#1A2536]/60">Add a physical piece from the workshop. Attach it to an existing design or create a new one.</p>
-                    </button>
-                </div>
-            </div>
-        );
-
-    const designFields = (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                    <label className={labelCls}>Category *</label>
-                    <select value={designForm.category} onChange={(e) => setDesignForm({ ...designForm, category: e.target.value })} className={inputCls}>
-                        <option value="">Select category…</option>
-                        {flatCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label className={labelCls}>Design Code *</label>
-                    <input value={designForm.design_code} onChange={(e) => setDesignForm({ ...designForm, design_code: e.target.value })} placeholder="e.g., RG-031" maxLength={50} className={inputCls} />
-                </div>
-            </div>
-            <div>
-                <label className={labelCls}>Design Name *</label>
-                <input value={designForm.name} onChange={(e) => setDesignForm({ ...designForm, name: e.target.value })} placeholder="e.g., Aura Diamond Ring" maxLength={255} className={inputCls} />
-            </div>
-            <div>
-                <label className={labelCls}>Description</label>
-                <textarea rows="4" value={designForm.description} onChange={(e) => setDesignForm({ ...designForm, description: e.target.value })} className={inputCls} />
-            </div>
-        </div>
-    );
-
-    const materialsFields = (
-        <div className="space-y-6">
-            <div>
-                <p className={sectionCls}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
-                    Design References (blueprint for Made-to-Order quotes)
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                        <label className={labelCls}>Net Gold Weight @14Kt (g) *</label>
-                        <input type="number" step="0.001" min="0" max={200} value={designForm.ref_weight} onChange={(e) => setDesignForm({ ...designForm, ref_weight: e.target.value })} className={inputCls} />
-                    </div>
-                    {isRingDesign && (
-                        <div>
-                            <label className={labelCls}>Entered Weight Is For Size</label>
-                            <select value={designForm.ref_size} onChange={(e) => setDesignForm({ ...designForm, ref_size: e.target.value })} className={inputCls}>
-                                {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s === "12" ? "12 (default)" : s}</option>)}
-                            </select>
-                        </div>
-                    )}
-                    <div>
-                        <label className={labelCls}>Round / Melle (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={designForm.melle} onChange={(e) => setDesignForm({ ...designForm, melle: e.target.value })} placeholder="blank = none" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Pointer / Solitaire (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={designForm.pointer} onChange={(e) => setDesignForm({ ...designForm, pointer: e.target.value })} placeholder="blank = none" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Fancy Cut (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={designForm.fancy} onChange={(e) => setDesignForm({ ...designForm, fancy: e.target.value })} placeholder="blank = none" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Color Stone (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={designForm.cstone} onChange={(e) => setDesignForm({ ...designForm, cstone: e.target.value })} placeholder="blank = none" className={inputCls} />
-                    </div>
-                </div>
-                {isRingDesign && <p className="text-xs text-[#1A2536]/50 mt-3">References for all ring sizes will be calculated from this weight using the 3%-per-2-sizes formula.</p>}
-            </div>
-        </div>
-    );
-
-    const pieceFields = (
-        <div className="space-y-6">
-            <div>
-                <p className={sectionCls}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A]"></span>
-                    This Physical Piece (measured)
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label className={labelCls}>Karat</label>
-                        <select value={productForm.karat} onChange={(e) => setProductForm({ ...productForm, karat: e.target.value })} className={inputCls}>
-                            <option>14Kt</option><option>18Kt</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className={labelCls}>Gold Color</label>
-                        <select value={productForm.gold_color} onChange={(e) => setProductForm({ ...productForm, gold_color: e.target.value })} className={inputCls}>
-                            <option>Yellow</option><option>Rose</option><option>White</option>
-                        </select>
-                    </div>
-                    {ringContext && (
-                        <div>
-                            <label className={labelCls}>Ring Size *</label>
-                            <select value={productForm.ring_size} onChange={(e) => setProductForm({ ...productForm, ring_size: e.target.value })} className={inputCls}>
-                                <option value="">Select size…</option>
-                                {["6", "8", "10", "12", "14", "16", "18", "20"].map((s) => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
-                    )}
-                    <div>
-                        <label className={labelCls}>Diamond Grade</label>
-                        <select value={productForm.diamond_grade} onChange={(e) => setProductForm({ ...productForm, diamond_grade: e.target.value })} className={inputCls}>
-                            {gradeBands.map((g) => <option key={g}>{g}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className={labelCls}>Actual Net Weight (g)</label>
-                        <input type="number" step="0.001" min="0" max={200} value={productForm.actual_net_weight} onChange={(e) => setProductForm({ ...productForm, actual_net_weight: e.target.value })} placeholder="blank = design ref" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Actual Melle (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_melle ?? ""} onChange={(e) => setProductForm({ ...productForm, a_melle: e.target.value })} placeholder="blank = design ref" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Actual Pointer (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_pointer ?? ""} onChange={(e) => setProductForm({ ...productForm, a_pointer: e.target.value })} placeholder="blank = design ref" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Actual Fancy (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_fancy ?? ""} onChange={(e) => setProductForm({ ...productForm, a_fancy: e.target.value })} placeholder="blank = design ref" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Actual Color Stone (Ct)</label>
-                        <input type="number" step="0.01" min="0" max={50} value={productForm.a_cstone ?? ""} onChange={(e) => setProductForm({ ...productForm, a_cstone: e.target.value })} placeholder="blank = design ref" className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Diamond Report Lab</label>
-                        <select value={productForm.report_lab} onChange={(e) => setProductForm({ ...productForm, report_lab: e.target.value })} className={inputCls}>
-                            <option>IGI</option><option>GIA</option><option>SGL</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className={labelCls}>Diamond Report Number</label>
-                        <input value={productForm.report_number} onChange={(e) => setProductForm({ ...productForm, report_number: e.target.value })} maxLength={100} className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Product Code (item_code)</label>
-                        <input value={productForm.item_code} onChange={(e) => setProductForm({ ...productForm, item_code: e.target.value })} placeholder="blank = auto-generate" maxLength={100} className={inputCls} />
-                    </div>
-                    <div>
-                        <label className={labelCls}>Hallmark Number</label>
-                        <input value={productForm.hallmark_number} onChange={(e) => setProductForm({ ...productForm, hallmark_number: e.target.value })} maxLength={100} className={inputCls} />
-                    </div>
-                </div>
-            </div>
-            <div className="glass-card-vibrant rounded-2xl border border-[#B86B5A]/30 bg-gradient-to-br from-[#B86B5A]/5 to-transparent p-6 flex items-center justify-between">
-                <p className="text-sm text-[#1A2536]/70">Estimated price (live rates, {productForm.diamond_grade})</p>
-                <p className="text-3xl font-serif-luxury font-extrabold text-[#B86B5A]">{inr(liveEstimate())}</p>
-            </div>
-            <p className="text-xs text-[#1A2536]/50 leading-relaxed">
-                Diamond total = melle + pointer + fancy. Entered weights are stored on this product and folded into the design's size references (running average) for better future estimates. Blank fields fall back to the design references.
-            </p>
-        </div>
-    );
-
-    const mediaStep = (
-        <div className="space-y-4">
-            <label className={labelCls}>Upload Images / Videos</label>
-            <div className="border-2 border-dashed border-[#E5BDB0] rounded-2xl p-8 text-center">
-                <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={(e) => setFiles([...files, ...Array.from(e.target.files)])}
-                    className="hidden"
-                    id="file-upload"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Choose Files
-                </label>
-                <p className="text-xs text-[#1A2536]/50 mt-3">Media is optional. Files upload after the record is created.</p>
-            </div>
-            {files.length > 0 && (
-                <ul className="space-y-2">
-                    {files.map((f, i) => (
-                        <li key={i} className="flex items-center justify-between glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3 text-sm">
-                            <span className="text-[#1A2536]">
-                                {f.name} <span className="text-[#1A2536]/50">({(f.size / 1024).toFixed(0)} KB)</span>
-                            </span>
-                            <button onClick={() => setFiles(files.filter((_, x) => x !== i))} className="text-red-500 hover:text-red-600 font-bold">✕</button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
-
-    const isReviewStep = step === steps.length - 1;
-    const isMediaStep = !isReviewStep && step === 2 && (mode === "design" || useNewDesign);
-
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6 pb-20">
             <button onClick={() => router.push("/control/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -480,148 +275,481 @@ export default function NewPage() {
                 Back to Inventory
             </button>
 
-            {/* Header */}
             <div>
                 <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">create new</span>
-                <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">{mode === "design" ? "Add Design" : "Add Product"}</h1>
+                <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Add Product</h1>
             </div>
 
-            {/* Progress Steps */}
-            <div className="flex flex-wrap items-center gap-2">
-                {steps.map((s, i) => (
-                    <button
-                        key={s}
-                        onClick={() => i < step && setStep(i)}
-                        className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-full transition-all ${i === step
-                                ? "bg-[#1A2536] text-white shadow"
-                                : i < step
-                                    ? "bg-[#B86B5A] text-white"
-                                    : "glass-card-vibrant border border-[#E5BDB0] text-[#1A2536]/50"
-                            }`}
-                    >
-                        <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">{i + 1}</span>
-                        {s}
-                    </button>
-                ))}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <button
+                    onClick={() => setMode("new")}
+                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${mode === "new" ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg" : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"}`}
+                >
+                    Create New Design
+                </button>
+                <button
+                    onClick={() => setMode("existing")}
+                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${mode === "existing" ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg" : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"}`}
+                >
+                    Add to Existing Design
+                </button>
             </div>
 
-            {/* Form Card */}
-            <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
-                {step === 0 && (mode === "design" ? designFields : (
-                    <div className="space-y-6">
-                        {!preselectedDesignId && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => { setUseNewDesign(false); }}
-                                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${!useNewDesign
-                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg"
-                                            : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"
-                                        }`}
-                                >
-                                    Existing Design
-                                </button>
-                                <button
-                                    onClick={() => { setUseNewDesign(true); }}
-                                    className={`p-5 rounded-2xl border-2 text-sm font-semibold transition-all ${useNewDesign
-                                            ? "border-[#1A2536] bg-[#1A2536] text-white shadow-lg"
-                                            : "border-[#E5BDB0] text-[#1A2536] hover:border-[#B86B5A]"
-                                        }`}
-                                >
-                                    Create New Design
-                                </button>
-                            </div>
-                        )}
-                        {useNewDesign ? (
-                            <div className="space-y-6">
-                                {designFields}
-                                {materialsFields}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Design Information</h2>
+
+                        {mode === "new" ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className={labelCls}>Design Code *</label>
+                                    <input value={designCode} onChange={(e) => setDesignCode(e.target.value)} className={inputCls} placeholder="e.g., ER-001" />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Design Name *</label>
+                                    <input value={designName} onChange={(e) => setDesignName(e.target.value)} className={inputCls} placeholder="e.g., Classic Stud Earrings" />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Category *</label>
+                                    <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputCls}>
+                                        <option value="">Select category...</option>
+                                        {flatCategories.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Tags</label>
+                                    {allTags.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag.id}
+                                                    type="button"
+                                                    onClick={() => toggleTag(tag.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${selectedTags.includes(tag.id)
+                                                        ? 'bg-[#1A2536] text-white border-[#1A2536]'
+                                                        : 'border-[#E5BDB0] text-[#1A2536]/70 hover:border-[#B86B5A]'
+                                                        }`}
+                                                >
+                                                    {tag.name}
+                                                    <span className="ml-1 opacity-60">({tag.group_display})</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-[#1A2536]/50">No tags available. Create tags in the Tags section first.</p>
+                                    )}
+                                    {selectedTags.length > 0 && (
+                                        <p className="text-xs text-[#1A2536]/50 mt-2">
+                                            {selectedTags.length} tag{selectedTags.length !== 1 ? 's' : ''} selected
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         ) : (
-                            <div>
-                                <label className={labelCls}>Select Design *</label>
-                                <select value={existingDesignId} onChange={(e) => setExistingDesignId(e.target.value)} className={inputCls} disabled={!!preselectedDesignId}>
-                                    <option value="">Choose a design…</option>
-                                    {designs.map((d) => <option key={d.id} value={d.id}>{d.design_code} — {d.name}</option>)}
-                                </select>
-                                {preselectedDesignId && <p className="text-xs text-[#1A2536]/50 mt-1">Pre-selected from inventory view.</p>}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className={labelCls}>Search Design *</label>
+                                    <input
+                                        value={searchQuery}
+                                        onChange={(e) => {
+                                            setSearchQuery(e.target.value);
+                                            setExistingDesignId("");
+                                        }}
+                                        className={inputCls}
+                                        placeholder="Type design code or name..."
+                                    />
+                                    {filteredDesigns.length > 0 && !existingDesignId && (
+                                        <div className="mt-2 border border-[#E5BDB0] rounded-xl max-h-60 overflow-y-auto">
+                                            {filteredDesigns.map((d) => (
+                                                <button
+                                                    key={d.id}
+                                                    onClick={() => {
+                                                        setExistingDesignId(d.id.toString());
+                                                        setSearchQuery(`${d.design_code} - ${d.name}`);
+                                                    }}
+                                                    className="w-full text-left px-4 py-3 hover:bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40 last:border-0"
+                                                >
+                                                    <p className="font-bold text-[#1A2536]">{d.design_code} - {d.name}</p>
+                                                    <p className="text-xs text-[#1A2536]/60">{d.category_name}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
-                ))}
 
-                {step === 1 && (mode === "design" ? materialsFields : pieceFields)}
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Product Details</h2>
 
-                {isMediaStep && mediaStep}
-
-                {isReviewStep && (
-                    <div className="space-y-4 text-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className={labelCls}>Design</p>
-                                {mode === "design" || useNewDesign ? (
-                                    <>
-                                        <p className="font-serif-luxury text-xl font-semibold text-[#1A2536]">{designForm.name}</p>
-                                        <p className="text-[#1A2536]/60 text-xs mt-1">{selectedCategory?.label} · {designForm.design_code}</p>
-                                        <p className="text-[#1A2536]/60 text-xs mt-1">
-                                            {designForm.ref_weight}g @14Kt {isRingDesign && `(size ${designForm.ref_size})`} ·
-                                            dia {sum3(designForm.melle, designForm.pointer, designForm.fancy).toFixed(2)} Ct
-                                            {(parseFloat(designForm.cstone) || 0) > 0 && ` · stone ${parseFloat(designForm.cstone).toFixed(2)} Ct`}
-                                        </p>
-                                    </>
-                                ) : (
-                                    <p className="font-serif-luxury text-xl font-semibold text-[#1A2536]">
-                                        {targetDesign?.name} <span className="text-sm text-[#1A2536]/50">({targetDesign?.design_code})</span>
-                                    </p>
-                                )}
+                                <label className={labelCls}>Product Code *</label>
+                                <input value={productCode} onChange={(e) => setProductCode(e.target.value)} className={inputCls} placeholder="Unique identifier" />
                             </div>
                             <div>
-                                <p className={labelCls}>Summary</p>
-                                {mode === "product" && (
-                                    <p className="text-[#1A2536]/70 text-xs">
-                                        {productForm.karat} {productForm.gold_color}
-                                        {ringContext && productForm.ring_size && ` · Size ${productForm.ring_size}`} · {productForm.diamond_grade}
-                                    </p>
-                                )}
-                                {mode === "product" && (
-                                    <p className="text-[#1A2536]/70 text-xs mt-1">
-                                        Measured: {productForm.actual_net_weight ? `${productForm.actual_net_weight}g` : "refs"} ·
-                                        dia {sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy) > 0
-                                            ? sum3(productForm.a_melle, productForm.a_pointer, productForm.a_fancy).toFixed(2)
-                                            : "refs"} Ct
-                                    </p>
-                                )}
-                                {(mode === "design" || useNewDesign) && <p className="text-[#1A2536]/70 text-xs mt-1">Media files: {files.length}</p>}
+                                <label className={labelCls}>Karat *</label>
+                                <select value={karat} onChange={(e) => setKarat(e.target.value)} className={inputCls}>
+                                    <option>14Kt</option>
+                                    <option>18Kt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Gold Color *</label>
+                                <select value={goldColor} onChange={(e) => setGoldColor(e.target.value)} className={inputCls}>
+                                    <option>Yellow</option>
+                                    <option>Rose</option>
+                                    <option>White</option>
+                                </select>
+                            </div>
+                            {showRingSize && (
+                                <div>
+                                    <label className={labelCls}>Ring Size *</label>
+                                    <select value={ringSize} onChange={(e) => setRingSize(e.target.value)} className={inputCls}>
+                                        <option value="">Select size...</option>
+                                        {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className={labelCls}>Actual Net Weight (g) *</label>
+                            <input type="number" step="0.001" value={netWeight} onChange={(e) => setNetWeight(e.target.value)} className={inputCls} placeholder="Enter weight" />
+                        </div>
+                    </div>
+
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Diamond Weights</h2>
+
+                        <div>
+                            <label className={labelCls}>Round Melle (Ct) *</label>
+                            <input type="number" step="0.01" value={melleWeight} onChange={(e) => setMelleWeight(e.target.value)} className={inputCls} placeholder="Total melle weight" />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className={labelCls}>Pointer / Solitaire Weights (Ct)</label>
+                            {pointerWeights.map((w, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={w}
+                                        onChange={(e) => updatePointer(i, e.target.value)}
+                                        className={`${inputCls} flex-1`}
+                                        placeholder={`Pointer ${i + 1}`}
+                                    />
+                                    {pointerWeights.length > 1 && (
+                                        <button onClick={() => removePointer(i)} className="px-3 text-red-500 hover:text-red-700">
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button onClick={addPointer} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                + Add Pointer
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className={labelCls}>Fancy Cut Weights (Ct)</label>
+                            {fancyWeights.map((w, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={w}
+                                        onChange={(e) => updateFancy(i, e.target.value)}
+                                        className={`${inputCls} flex-1`}
+                                        placeholder={`Fancy ${i + 1}`}
+                                    />
+                                    {fancyWeights.length > 1 && (
+                                        <button onClick={() => removeFancy(i)} className="px-3 text-red-500 hover:text-red-700">
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button onClick={addFancy} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                + Add Fancy Cut
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className={labelCls}>Color Stone Weights (Ct)</label>
+                            {colorStoneWeights.map((w, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={w}
+                                        onChange={(e) => updateColorStone(i, e.target.value)}
+                                        className={`${inputCls} flex-1`}
+                                        placeholder={`Color Stone ${i + 1}`}
+                                    />
+                                    {colorStoneWeights.length > 1 && (
+                                        <button onClick={() => removeColorStone(i)} className="px-3 text-red-500 hover:text-red-700">
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button onClick={addColorStone} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                + Add Color Stone
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Certification & HUID</h2>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelCls}>Diamond Grade *</label>
+                                <select value={diamondGrade} onChange={(e) => setDiamondGrade(e.target.value)} className={inputCls}>
+                                    {rateCard && Object.entries(rateCard.diamond_rates || {})
+                                        .filter(([, v]) => v)
+                                        .map(([k]) => <option key={k}>{k}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Report Lab *</label>
+                                <select value={reportLab} onChange={(e) => setReportLab(e.target.value)} className={inputCls}>
+                                    <option>IGI</option>
+                                    <option>GIA</option>
+                                    <option>SGL</option>
+                                </select>
+                            </div>
+                            <div className="col-span-2">
+                                <label className={labelCls}>Report Number *</label>
+                                <input value={reportNumber} onChange={(e) => setReportNumber(e.target.value)} className={inputCls} />
                             </div>
                         </div>
-                        {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 font-semibold">{error}</p>}
-                    </div>
-                )}
 
-                <div className="flex justify-between mt-10 pt-6 border-t border-[#E5BDB0]/40">
-                    <button
-                        onClick={() => setStep(Math.max(0, step - 1))}
-                        disabled={step === 0}
-                        className="px-6 py-3 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        ← Back
-                    </button>
-                    {step < steps.length - 1 ? (
-                        <button
-                            onClick={() => setStep(step + 1)}
-                            disabled={!canProceed()}
-                            className="px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow disabled:opacity-40 disabled:cursor-not-allowed"
+                        <div className="space-y-2">
+                            <label className={labelCls}>HUID Numbers (max 3) *</label>
+                            {huids.map((h, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        value={h}
+                                        onChange={(e) => updateHuid(i, e.target.value)}
+                                        className={`${inputCls} flex-1 font-mono tracking-wider`}
+                                        placeholder={`HUID ${i + 1}`}
+                                        autoCapitalize="characters"
+                                        spellCheck="false"
+                                    />
+                                    {huids.length > 1 && (
+                                        <button onClick={() => removeHuid(i)} className="px-3 text-red-500 hover:text-red-700">
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {huids.length < 3 && (
+                                <button onClick={addHuid} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                    + Add HUID
+                                </button>
+                            )}
+                            <p className="text-xs text-[#1A2536]/50">
+                                {huids.filter(h => h.trim()).length}/3 entered
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Media Upload</h2>
+
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*,video/*"
+                            onChange={handleFiles}
+                            className="hidden"
+                            id="file-upload"
+                        />
+                        <label
+                            htmlFor="file-upload"
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                            }}
+                            onDragEnter={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                            }}
+                            onDragLeave={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+
+                                const droppedFiles = Array.from(e.dataTransfer.files);
+                                if (droppedFiles.length > 0) {
+                                    const newFiles = droppedFiles.map((file, i) => ({
+                                        file,
+                                        id: Date.now() + i,
+                                        preview: URL.createObjectURL(file),
+                                    }));
+                                    setFiles(prev => [...prev, ...newFiles]);
+                                }
+                            }}
+                            className="cursor-pointer block border-2 border-dashed border-[#E5BDB0] rounded-2xl p-8 text-center hover:border-[#B86B5A] transition-colors"
                         >
-                            Continue →
-                        </button>
-                    ) : (
+                            <svg className="w-12 h-12 mx-auto text-[#B86B5A] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p className="text-sm font-semibold text-[#1A2536]">Click to upload or drag and drop files here</p>
+                            <p className="text-xs text-[#1A2536]/50 mt-1">PNG, JPG, WEBP, MP4, WEBM up to 50MB</p>
+                        </label>
+
+                        {files.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-[#1A2536]/60 font-semibold uppercase tracking-wider">
+                                    Drag the ⋮⋮ icon to reorder • {files.length} file{files.length !== 1 ? 's' : ''}
+                                </p>
+                                {files.map((f, i) => (
+                                    <div
+                                        key={f.id}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                        }}
+                                        onDragEnter={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                                            const toIndex = i;
+                                            if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+                                                reorderMedia(fromIndex, toIndex);
+                                            }
+                                        }}
+                                        className="flex items-center gap-3 glass-card-vibrant rounded-xl border-2 border-[#E5BDB0] p-3 transition-all"
+                                    >
+                                        <div
+                                            draggable
+                                            onDragStart={(e) => {
+                                                e.dataTransfer.effectAllowed = 'move';
+                                                e.dataTransfer.setData('text/plain', i.toString());
+                                                e.currentTarget.parentElement.classList.add('opacity-50', 'scale-95');
+                                            }}
+                                            onDragEnd={(e) => {
+                                                e.currentTarget.parentElement.classList.remove('opacity-50', 'scale-95');
+                                            }}
+                                            className="cursor-grab active:cursor-grabbing p-2 hover:bg-[#1A2536]/[0.05] rounded-lg transition-colors flex-shrink-0"
+                                        >
+                                            <svg className="w-5 h-5 text-[#1A2536]/40" fill="currentColor" viewBox="0 0 24 24">
+                                                <circle cx="9" cy="6" r="1.5" />
+                                                <circle cx="15" cy="6" r="1.5" />
+                                                <circle cx="9" cy="12" r="1.5" />
+                                                <circle cx="15" cy="12" r="1.5" />
+                                                <circle cx="9" cy="18" r="1.5" />
+                                                <circle cx="15" cy="18" r="1.5" />
+                                            </svg>
+                                        </div>
+
+                                        {f.file.type.startsWith('image/') ? (
+                                            <img src={f.preview} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                                        ) : (
+                                            <div className="w-16 h-16 bg-[#1A2536]/[0.03] rounded-lg flex items-center justify-center text-xs flex-shrink-0">
+                                                <svg className="w-6 h-6 text-[#1A2536]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-[#1A2536] truncate">{f.file.name}</p>
+                                            <p className="text-xs text-[#1A2536]/50">
+                                                {(f.file.size / 1024 / 1024).toFixed(2)} MB • {f.file.type.split('/')[0]}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(f.id)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="lg:col-span-1">
+                    <div className="sticky top-6 space-y-4">
+                        {priceBreakdown && (
+                            <div className="glass-card-vibrant rounded-3xl border border-[#B86B5A]/30 bg-gradient-to-br from-[#B86B5A]/5 to-transparent p-6 space-y-3">
+                                <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">Price Breakdown</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-[#1A2536]/70">Gold Value</span>
+                                        <span className="font-bold">{inr(priceBreakdown.gold_value)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[#1A2536]/70">Diamond Value</span>
+                                        <span className="font-bold">{inr(priceBreakdown.diamond_value)}</span>
+                                    </div>
+                                    {priceBreakdown.color_stone_value > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[#1A2536]/70">Color Stone Value</span>
+                                            <span className="font-bold">{inr(priceBreakdown.color_stone_value)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between">
+                                        <span className="text-[#1A2536]/70">Making Charges</span>
+                                        <span className="font-bold">{inr(priceBreakdown.making_charges)}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-[#E5BDB0] pt-2">
+                                        <span className="text-[#1A2536]/70">Subtotal</span>
+                                        <span className="font-bold">{inr(priceBreakdown.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[#1A2536]/70">GST</span>
+                                        <span className="font-bold">{inr(priceBreakdown.gst_amount)}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t-2 border-[#B86B5A] pt-2">
+                                        <span className="font-bold text-[#1A2536]">Total</span>
+                                        <span className="text-2xl font-serif-luxury font-extrabold text-[#B86B5A]">{inr(priceBreakdown.total)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                                <p className="text-sm text-red-600 font-semibold">{error}</p>
+                            </div>
+                        )}
+
                         <button
                             onClick={submit}
                             disabled={submitting}
-                            className="px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow disabled:opacity-50"
+                            className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-sm font-bold uppercase tracking-wider rounded-full transition-all shadow disabled:opacity-50"
                         >
-                            {submitting ? "Saving…" : mode === "design" ? "Create Design" : "Save Product"}
+                            {submitting ? "Saving..." : "Save Product"}
                         </button>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>
