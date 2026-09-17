@@ -16,13 +16,14 @@ export default function RateCardPage() {
     const [fetching, setFetching] = useState(false);
     const [fetchOutput, setFetchOutput] = useState("");
     const formDirtyRef = useRef(false);
-    const [form, setForm] = useState({ 
-        gold_rate_14kt: "", 
-        gold_rate_18kt: "", 
-        making_fixed_per_gram: "", 
-        making_pct_24kt: "", 
-        gst_percentage: "", 
-        default_grade: "" 
+    const [form, setForm] = useState({
+        gold_rate_14kt: "",
+        gold_rate_18kt: "",
+        making_fixed_per_gram: "",
+        making_pct_24kt: "",
+        gst_percentage: "",
+        default_grade: "",
+        color_stone_rate_per_carat: ""
     });
     const [auto, setAuto] = useState({
         enabled: false,
@@ -55,6 +56,7 @@ export default function RateCardPage() {
                     making_pct_24kt: data.making_pct_24kt?.toString() || "0",
                     gst_percentage: data.gst_percentage.toString(),
                     default_grade: data.default_grade,
+                    color_stone_rate_per_carat: data.color_stone_rate_per_carat?.toString() || "0",
                 });
                 setAuto({
                     enabled: !!data.auto_fetch_enabled,
@@ -77,6 +79,20 @@ export default function RateCardPage() {
 
     const activeBands = bands.filter((b) => b.name && b.rate);
 
+    const handleFetchNow = async () => {
+        setFetching(true);
+        setFetchOutput("");
+        try {
+            const { data } = await controlApi.fetchRatesNow();
+            setFetchOutput(data.output || "Fetch completed successfully!");
+            await load(); // Reload the rates and history
+        } catch (err) {
+            setFetchOutput("Failed: " + (err.response?.data?.error || err.message));
+        } finally {
+            setFetching(false);
+        }
+    };
+
     const handleSaveClick = async () => {
         setSaving(true);
         try {
@@ -88,12 +104,14 @@ export default function RateCardPage() {
                 gst_percentage: parseFloat(form.gst_percentage),
                 default_grade: form.default_grade,
                 diamond_rates: Object.fromEntries(bands.filter((b) => b.name).map((b) => [b.name, parseFloat(b.rate) || 0])),
+                color_stone_rate_per_carat: parseFloat(form.color_stone_rate_per_carat) || 0,
                 auto_fetch_enabled: auto.enabled,
                 auto_fetch_interval_minutes: parseInt(auto.interval) || 30,
                 increment_percentage: parseFloat(auto.increment) || 0.50,
                 change_threshold_type: auto.thresholdType,
                 change_threshold_percentage: parseFloat(auto.thresholdPct) || 0.50,
                 change_threshold_amount: parseFloat(auto.thresholdAmt) || 500,
+                update_mode: 'sync', // THIS TRIGGERS THE BULK PRICE RECALCULATION
             };
             await controlApi.updateRateCard(payload);
             formDirtyRef.current = false;
@@ -120,13 +138,38 @@ export default function RateCardPage() {
                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">pricing configuration</span>
                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Rate Card</h1>
                 </div>
-                {lastRefreshed && (
-                    <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
-                        <span className="text-xs text-[#1A2536]/60">Auto-refreshed: </span>
-                        <span className="text-xs font-bold text-[#1A2536]">{lastRefreshed.toLocaleTimeString("en-IN")}</span>
-                    </div>
-                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                        type="button"
+                        onClick={handleFetchNow}
+                        disabled={fetching || saving}
+                        className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {fetching ? (
+                            <>
+                                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Fetching...
+                            </>
+                        ) : "Fetch Rates Now"}
+                    </button>
+                    {lastRefreshed && (
+                        <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                            <span className="text-xs text-[#1A2536]/60">Last loaded: </span>
+                            <span className="text-xs font-bold text-[#1A2536]">{lastRefreshed.toLocaleTimeString("en-IN")}</span>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {fetchOutput && (
+                <div className={`glass-card-vibrant rounded-2xl border p-4 ${fetchOutput.startsWith("Failed") ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+                    <pre className={`whitespace-pre-wrap text-xs font-mono ${fetchOutput.startsWith("Failed") ? "text-red-700" : "text-emerald-800"}`}>
+                        {fetchOutput}
+                    </pre>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Live Rates Card */}
@@ -214,6 +257,18 @@ export default function RateCardPage() {
                         <select value={form.default_grade} onChange={(e) => setForm({ ...form, default_grade: e.target.value })} className={inputCls}>
                             {activeBands.map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
                         </select>
+                    </div>
+                    {/* Color Stone charges */}
+                    <div>
+                        <label className={labelCls}>Color Stone Rate (₹ per Carat)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={form.color_stone_rate_per_carat || 0}
+                            onChange={(e) => setForm({ ...form, color_stone_rate_per_carat: e.target.value })}
+                            className={inputCls}
+                            placeholder="e.g., 5000"
+                        />
                     </div>
 
                     <button type="button" onClick={handleSaveClick} disabled={saving} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">

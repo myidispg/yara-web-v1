@@ -34,8 +34,11 @@ export default function AuthPage() {
     );
 
     const parseErr = (err) => {
-        const data = err.response?.data ?? {};
+        const data = err.response?.data;
+        if (!data) return "Something went wrong. Please try again.";
         if (typeof data === 'string') return data;
+        if (data.detail) return data.detail;
+        if (data.non_field_errors) return data.non_field_errors.join(" ");
         return Object.values(data).flat().join(" ") || "Something went wrong. Please try again.";
     };
 
@@ -44,7 +47,6 @@ export default function AuthPage() {
         setBusy(true); setError("");
         try {
             await login(loginForm.identifier, loginForm.password);
-            router.push(nextPath, { replace: true });
         } catch (err) {
             setError(parseErr(err));
             setBusy(false);
@@ -70,7 +72,7 @@ export default function AuthPage() {
                 phone: regForm.phone,
                 password: regForm.password,
             });
-            router.push(nextPath, { replace: true });
+            // No need for router.push - the register function calls login which handles reload
         } catch (err) {
             setError(parseErr(err));
             setBusy(false);

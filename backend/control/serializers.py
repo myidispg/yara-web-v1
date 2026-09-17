@@ -3,9 +3,10 @@ import secrets
 from rest_framework import serializers
 
 from accounts.models import User
-from catalog.models import Category, Design, ProductMedia, Product, RateCard, RING_SIZES, GoldRateHistory, Notification
+from catalog.models import ( Category, Design, ProductMedia, Product, RateCard,
+                             RING_SIZES, GoldRateHistory, Notification, Tag )
 from orders.models import Order, OrderItem, Invoice
-from catalog.serializers import ProductMediaSerializer
+from catalog.serializers import ProductMediaSerializer, TagSerializer
 
 from .models import AuditLog
 
@@ -36,7 +37,7 @@ class StaffProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'item_code', 'karat', 'gold_color', 'ring_size', 'diamond_grade',
                   'status', 'price', 'actual_net_weight', 'actual_diamond_weight',
-                  'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_number',
+                  'actual_color_stone_weight', 'report_lab', 'report_number', 'hallmark_numbers',
                   'sold_at', 'sold_in_order_number', 'sold_in_order_id', 'sold_to_email',
                   'created_at', 'design_id', 'design_code', 'design_name', 'category_name',
                   'gold_value', 'diamond_value', 'making_charges', 'gst_amount']
@@ -64,6 +65,26 @@ class StaffProductSerializer(serializers.ModelSerializer):
     def get_gst_amount(self, obj):
         return float(obj.gst_amount)
 
+class DesignSummarySerializer(serializers.ModelSerializer):
+    """Lightweight serializer for lists/categories — no nested products."""
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    instance_count = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Design
+        fields = ['id', 'name', 'design_code', 'category_slug', 'category_name',
+                  'instance_count', 'thumbnail', 'is_active']
+
+    def get_instance_count(self, obj):
+        return obj.products.count()
+
+    def get_thumbnail(self, obj):
+        first_image = obj.media.filter(kind='image').order_by('sort_order').first()
+        if first_image:
+            return {'url': first_image.url, 'kind': first_image.kind}
+        return None
 
 class StaffDesignSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name')
@@ -74,16 +95,17 @@ class StaffDesignSerializer(serializers.ModelSerializer):
     instance_count = serializers.SerializerMethodField()
     in_stock_count = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Design
-        fields = ['id', 'design_code', 'slug', 'name', 'description', 'category',
+        fields = ['id', 'design_code', 'slug', 'name', 'category',
                   'category_name', 'category_slug', 'is_ring', 'is_active',
                   'base_net_weight_14kt', 'size_weight_refs', 'size_weight_counts',
                   'total_diamond_weight', 'diamond_weight_round_melle',
-                  'pointer_solitaire_weight', 'fancy_cut_weight', 'color_stone_weight',
+                  'pointer_weights', 'fancy_weights', 'color_stone_weights',
                   'products', 'instance_count', 'in_stock_count', 'base_price',
-                  'created_at', 'media']
+                  'created_at', 'media', 'tags']
 
     def get_base_price(self, obj):
         inst = obj.products.filter(status='in_stock').order_by('price').first()
@@ -106,13 +128,15 @@ class StaffDesignSerializer(serializers.ModelSerializer):
 
 class DesignUpdateSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.filter(is_active=True), required=False, default=list
+    )
 
     class Meta:
         model = Design
-        fields = ['name', 'design_code', 'description', 'category', 'is_active',
-                  'diamond_weight_round_melle', 'pointer_solitaire_weight',
-                  'fancy_cut_weight', 'color_stone_weight']
-
+        fields = ['name', 'design_code', 'category', 'is_active',
+                  'base_net_weight_14kt', 'diamond_weight_round_melle', 'pointer_weights',
+                  'fancy_weights', 'color_stone_weights', 'tags']
 
 class StaffCategorySerializer(serializers.ModelSerializer):
     product_count = serializers.SerializerMethodField()
@@ -136,9 +160,9 @@ class RateCardSerializer(serializers.ModelSerializer):
         model = RateCard
         fields = ['id', 'gold_rate_14kt', 'gold_rate_18kt', 'diamond_rates', 'default_grade',
                   'making_charges_percentage', 'making_fixed_per_gram', 'making_pct_24kt', 
-                  'gst_percentage', 'updated_at', 'auto_fetch_enabled', 'increment_percentage', 
-                  'change_threshold_type', 'change_threshold_percentage', 'change_threshold_amount', 
-                  'last_auto_run_at', 'auto_fetch_interval_minutes']
+                  'gst_percentage', 'color_stone_rate_per_carat', 'updated_at', 'auto_fetch_enabled', 
+                  'increment_percentage', 'change_threshold_type', 'change_threshold_percentage', 
+                  'change_threshold_amount', 'last_auto_run_at', 'auto_fetch_interval_minutes']
 
 
 class GoldRateHistorySerializer(serializers.ModelSerializer):
@@ -161,7 +185,7 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
     design_name = serializers.CharField(source='instance.design.name', read_only=True)
     is_mto_pending = serializers.BooleanField(read_only=True)
     item_code = serializers.CharField(source='instance.item_code', read_only=True)
-    hallmark_number = serializers.CharField(source='instance.hallmark_number', read_only=True)
+    hallmark_numbers = serializers.ListField(source='instance.hallmark_numbers', read_only=True)
     report_number = serializers.CharField(source='instance.report_number', read_only=True)
     karat = serializers.CharField(source='instance.karat', read_only=True)
     gold_color = serializers.CharField(source='instance.gold_color', read_only=True)
@@ -171,7 +195,7 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
                   'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name',
-                  'is_mto_pending', 'item_code', 'hallmark_number', 'report_number', 'karat', 'gold_color', 'diamond_grade']
+                  'is_mto_pending', 'item_code', 'hallmark_numbers', 'report_number', 'karat', 'gold_color', 'diamond_grade']
 
     def get_total_price(self, obj):
         return float(obj.line_total) if obj.line_total else float(obj.unit_price) * int(obj.quantity)
@@ -262,13 +286,10 @@ def create_product_for_design(design, inst, rc):
     if grade not in rc.grade_choices():
         grade = rc.default_grade
 
-    # Use user-provided item_code or auto-generate
-    user_item_code = (inst.get('item_code') or '').strip()
-    if user_item_code:
-        item_code = user_item_code
-    else:
-        item_code = (f"{design.design_code}-{karat[:2]}{inst['gold_color'][0]}-"
-                     f"{size or 'OS'}-{secrets.token_hex(2).upper()}")
+    # Item code is now REQUIRED - no auto-generation
+    item_code = (inst.get('item_code') or '').strip()
+    if not item_code:
+        raise ValueError("Product code (item_code) is required.")
     
     # Calculate price with new making formula
     gold_rate = float(rc.gold_rate_14kt) if karat == '14Kt' else float(rc.gold_rate_18kt)
@@ -276,14 +297,16 @@ def create_product_for_design(design, inst, rc):
     
     gold_value = net * gold_rate
     diamond_value = dia * grade_rate
+    color_stone_weight = float(inst.get('actual_color_stone_weight') or 0)
+    color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
     
-    # NEW: Making = (fixed per gram + % of 24Kt gold) × net weight
+    # Making = (fixed per gram + % of 24Kt gold) × net weight
     gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
     making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
     making = making_per_gram * net
-    
-    gst = (gold_value + diamond_value + making) * (float(rc.gst_percentage) / 100)
-    price = round(gold_value + diamond_value + making + gst, 2)
+    subtotal = gold_value + diamond_value + color_stone_value + making
+    gst = subtotal * (float(rc.gst_percentage) / 100)
+    price = round(subtotal + gst, 2)
         
     product = Product.objects.create(
         design=design, item_code=item_code, karat=karat, gold_color=inst['gold_color'],
@@ -293,10 +316,10 @@ def create_product_for_design(design, inst, rc):
         actual_color_stone_weight=float(inst.get('actual_color_stone_weight') or 0),
         report_lab=inst.get('report_lab', ''), 
         report_number=inst.get('report_number', ''),
-        hallmark_number=inst.get('hallmark_number', '')
+        hallmark_numbers=inst.get('hallmark_numbers', [])  # Changed to hallmark_numbers (list)
     )
 
-    # PRESERVED: Weight recording logic
+    # Weight recording logic
     net_14kt = net / 1.2 if karat == "18Kt" else net
     if design.is_ring and size:
         design.record_actual_weight(size, net_14kt)
@@ -311,7 +334,7 @@ class MediaInputSerializer(serializers.Serializer):
 
 
 class ProductInputSerializer(serializers.Serializer):
-    item_code = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    item_code = serializers.CharField(max_length=100, required=True)  # Changed to required=True
     karat = serializers.ChoiceField(choices=['14Kt', '18Kt'])
     gold_color = serializers.ChoiceField(choices=['Yellow', 'Rose', 'White'])
     ring_size = serializers.CharField(max_length=10, required=False, allow_null=True, allow_blank=True)
@@ -321,23 +344,38 @@ class ProductInputSerializer(serializers.Serializer):
     actual_color_stone_weight = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
     report_lab = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
     report_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
-    hallmark_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    hallmark_numbers = serializers.ListField(
+        child=serializers.CharField(max_length=10, allow_blank=True),
+        required=False,
+        default=list
+    )
 
     def validate_item_code(self, value):
-        if value and Product.objects.filter(item_code=value).exists():
+        if not value or not value.strip():
+            raise serializers.ValidationError("Product code is required.")
+        if Product.objects.filter(item_code=value).exists():
             raise serializers.ValidationError("This product code already exists in the database.")
-        return value
+        return value.strip()
+
+    def validate_hallmark_numbers(self, value):
+        # Filter out empty strings
+        cleaned = [h.strip() for h in value if h and h.strip()]
+        if len(cleaned) > 3:
+            raise serializers.ValidationError("Maximum 3 HUID numbers are allowed per product.")
+        # Check for duplicates within the list
+        if len(cleaned) != len(set(cleaned)):
+            raise serializers.ValidationError("Duplicate HUID numbers found.")
+        # Check if any HUID already exists on another product
+        for huid in cleaned:
+            if Product.objects.filter(hallmark_numbers__contains=[huid]).exists():
+                raise serializers.ValidationError(f"HUID '{huid}' already exists on another product.")
+        return cleaned
 
     def validate_ring_size(self, value):
         if value in (None, ""):
             return value
         if str(value) not in RING_SIZES:
             raise serializers.ValidationError(f"Ring size must be one of: {', '.join(RING_SIZES)}.")
-        return value
-
-    def validate_hallmark_number(self, value):
-        if value and Product.objects.filter(hallmark_number=value).exists():
-            raise serializers.ValidationError("This hallmark number already exists on another product.")
         return value
 
     def validate(self, data):
@@ -360,51 +398,65 @@ class DesignCreateSerializer(serializers.ModelSerializer):
     products = ProductInputSerializer(many=True, required=False, default=list)
     reference_weight = serializers.DecimalField(max_digits=6, decimal_places=3, required=False, allow_null=True)
     reference_size = serializers.IntegerField(required=False, default=12)
+    pointer_weights = serializers.ListField(
+        child=serializers.DecimalField(max_digits=5, decimal_places=2),
+        required=False, default=list
+    )
+    fancy_weights = serializers.ListField(
+        child=serializers.DecimalField(max_digits=5, decimal_places=2),
+        required=False, default=list
+    )
+    color_stone_weights = serializers.ListField(
+        child=serializers.DecimalField(max_digits=5, decimal_places=2),
+        required=False, default=list
+    )
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Tag.objects.filter(is_active=True), required=False, default=list
+    )
 
     class Meta:
         model = Design
-        fields = ['id', 'name', 'design_code', 'category', 'description',
+        fields = ['id', 'name', 'design_code', 'category',
                   'base_net_weight_14kt', 'reference_weight', 'reference_size',
-                  'diamond_weight_round_melle', 'pointer_solitaire_weight',
-                  'fancy_cut_weight', 'color_stone_weight', 'media', 'products']
+                  'diamond_weight_round_melle', 'pointer_weights', 'fancy_weights',
+                  'color_stone_weights', 'media', 'products', 'tags']
 
     def create(self, validated_data):
         from django.db import transaction
-        
-        # Pop nested fields BEFORE creating the Design
+
         media_list = validated_data.pop('media', [])
         products_list = validated_data.pop('products', [])
         ref_w = validated_data.pop('reference_weight', None)
         ref_s = validated_data.pop('reference_size', 12) or 12
-        category = validated_data['category']
+        tags_list = validated_data.pop('tags', [])
+
+        pointer_weights = [float(w) for w in validated_data.pop('pointer_weights', []) if w]
+        fancy_weights = [float(w) for w in validated_data.pop('fancy_weights', []) if w]
+        color_stone_weights = [float(w) for w in validated_data.pop('color_stone_weights', []) if w]
 
         with transaction.atomic():
-            # Auto-set material flags from weights
-            validated_data['has_solitaire_pointer'] = float(validated_data.get('pointer_solitaire_weight') or 0) > 0
-            validated_data['has_fancy_cut'] = float(validated_data.get('fancy_cut_weight') or 0) > 0
-            validated_data['has_color_stone'] = float(validated_data.get('color_stone_weight') or 0) > 0
+            validated_data['pointer_weights'] = pointer_weights
+            validated_data['fancy_weights'] = fancy_weights
+            validated_data['color_stone_weights'] = color_stone_weights
 
-            # Create the design
             design = Design.objects.create(**validated_data)
 
-            # Initialize weight references (per-size for rings, single base for others)
+            # M2M: set tags after creation
+            if tags_list:
+                design.tags.set(tags_list)
+
             if design.is_ring:
                 design.init_size_refs(float(ref_w or design.base_net_weight_14kt), at_size=ref_s)
             else:
                 design.init_base_ref(float(ref_w or design.base_net_weight_14kt))
             design.save()
 
-            # Create media
             rc = RateCard.get()
             for order, m in enumerate(media_list, start=1):
                 ProductMedia.objects.create(
-                    design=design, 
-                    url=m['url'], 
-                    kind=m['kind'], 
-                    sort_order=order
+                    design=design, url=m['url'], kind=m['kind'], sort_order=order
                 )
 
-            # Create physical products
             for inst in products_list:
                 create_product_for_design(design, inst, rc)
 

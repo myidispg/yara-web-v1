@@ -14,6 +14,7 @@ const navItems = [
   { label: "Invoices", href: "/control/invoices", icon: "▤" },
   { label: "Inventory", href: "/control/inventory", icon: "▥" },
   { label: "Categories", href: "/control/categories", icon: "▦" },
+  { label: "Tags", href: "/control/tags", icon: "▧" },
   { label: "Rate Card", href: "/control/rate-card", icon: "◇" },
   { label: "Customers", href: "/control/customers", icon: "◎" },
   { label: "Import/Export", href: "/control/import-export", icon: "⬡" },
@@ -28,9 +29,19 @@ export default function ControlLayout({ children }) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
+  const [activeItem, setActiveItem] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const searchRef = useRef(null);
-  const clearSearch = () => { setSearchQuery(""); setSearchResults(null); };
+  const clearSearch = () => { setSearchQuery(""); setSearchResults(null); setActiveItem(null); };
+
+  // Flatten results for easy keyboard navigation
+  const flatResults = searchResults ? [
+    ...searchResults.products.map(p => ({ type: 'product', id: p.id, href: `/control/inventory/products/${p.id}` })),
+    ...searchResults.designs.map(d => ({ type: 'design', id: d.id, href: `/control/inventory?design=${d.id}` })),
+    ...searchResults.orders.map(o => ({ type: 'order', id: o.id, href: `/control/orders/${o.id}` })),
+    ...searchResults.customers.map(c => ({ type: 'customer', id: c.id, href: `/control/customers/${c.id}` })),
+    ...(searchResults.invoices || []).map(inv => ({ type: 'invoice', id: inv.id, href: `/control/orders/${inv.order}` })),
+  ] : [];
 
   useEffect(() => {
     if (searchQuery.length < 2) { setSearchResults(null); return; }
@@ -74,7 +85,7 @@ export default function ControlLayout({ children }) {
           <div className="flex items-center gap-2 mt-1.5">
             <span className="h-[1px] bg-gradient-to-r from-transparent via-[#E5BDB0] to-[#E5BDB0] flex-1"></span>
             <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
-              <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7"/>
+              <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7" />
             </svg>
             <span className="h-[1px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
           </div>
@@ -91,15 +102,13 @@ export default function ControlLayout({ children }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => window.dispatchEvent(new CustomEvent("control-nav", { detail: item.href }))}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
-                  active
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active
                     ? "bg-[#B86B5A] text-white font-bold shadow-lg"
                     : "text-white/80 hover:bg-white/5 hover:text-white"
-                }`}
+                  }`}
               >
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-                  active ? "bg-white/20" : "bg-white/5"
-                }`}>
+                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${active ? "bg-white/20" : "bg-white/5"
+                  }`}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -167,7 +176,30 @@ export default function ControlLayout({ children }) {
                   type="text"
                   placeholder="Search item code, hallmark, cert, design…"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setActiveItem(null); }}
+                  onKeyDown={(e) => {
+                    if (!flatResults.length) return;
+                    const currentIndex = flatResults.findIndex(r => r.type === activeItem?.type && r.id === activeItem?.id);
+
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      const nextIndex = currentIndex < flatResults.length - 1 ? currentIndex + 1 : 0;
+                      setActiveItem(flatResults[nextIndex]);
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      const prevIndex = currentIndex > 0 ? currentIndex - 1 : flatResults.length - 1;
+                      setActiveItem(flatResults[prevIndex]);
+                    } else if (e.key === "Enter" && activeItem) {
+                      e.preventDefault();
+                      const target = flatResults.find(r => r.type === activeItem.type && r.id === activeItem.id);
+                      if (target) {
+                        router.push(target.href);
+                        clearSearch();
+                      }
+                    } else if (e.key === "Escape") {
+                      clearSearch();
+                    }
+                  }}
                   className="w-full pl-11 pr-4 py-2.5 text-sm border border-[#E5BDB0] rounded-full bg-white focus:outline-none focus:border-[#1A2536] transition-colors"
                 />
               </div>
@@ -177,7 +209,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Products</p>
                       {searchResults.products.map((p) => (
-                        <Link key={`p-${p.id}`} href={`/control/inventory/products/${p.id}`} onClick={clearSearch} className="block px-4 py-2.5 hover:bg-[#1A2536]/[0.03] text-sm border-b border-[#E5BDB0]/20 last:border-0">
+                        <Link key={`p-${p.id}`} href={`/control/inventory/products/${p.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'product' && activeItem?.id === p.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{p.item_code}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{p.hallmark_number || p.report_number || "—"} · {p.status}</p>
                         </Link>
@@ -188,7 +220,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Designs</p>
                       {searchResults.designs.map((d) => (
-                        <Link key={`d-${d.id}`} href={`/control/inventory?design=${d.id}`} onClick={clearSearch} className="block px-4 py-2.5 hover:bg-[#1A2536]/[0.03] text-sm border-b border-[#E5BDB0]/20 last:border-0">
+                        <Link key={`d-${d.id}`} href={`/control/inventory?design=${d.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'design' && activeItem?.id === d.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold text-[#1A2536]">{d.name}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{d.design_code} · {d.category_name}</p>
                         </Link>
@@ -199,7 +231,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Orders</p>
                       {searchResults.orders.map((o) => (
-                        <Link key={`o-${o.id}`} href={`/control/orders/${o.id}`} onClick={clearSearch} className="block px-4 py-2.5 hover:bg-[#1A2536]/[0.03] text-sm border-b border-[#E5BDB0]/20 last:border-0">
+                        <Link key={`o-${o.id}`} href={`/control/orders/${o.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'order' && activeItem?.id === o.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{o.order_number}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{o.customer_name} · {o.status}</p>
                         </Link>
@@ -210,7 +242,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Customers</p>
                       {searchResults.customers.map((c) => (
-                        <Link key={`c-${c.id}`} href={`/control/customers/${c.id}`} onClick={clearSearch} className="block px-4 py-2.5 hover:bg-[#1A2536]/[0.03] text-sm border-b border-[#E5BDB0]/20 last:border-0">
+                        <Link key={`c-${c.id}`} href={`/control/customers/${c.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'customer' && activeItem?.id === c.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold text-[#1A2536]">{`${c.first_name} ${c.last_name}`.trim() || c.email}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{c.email}{c.phone ? ` · ${c.phone}` : ""}</p>
                         </Link>
@@ -221,7 +253,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Invoices</p>
                       {searchResults.invoices.map((inv) => (
-                        <Link key={`inv-${inv.id}`} href={`/control/orders/${inv.order}`} onClick={clearSearch} className="block px-4 py-2.5 hover:bg-[#1A2536]/[0.03] text-sm border-b border-[#E5BDB0]/20 last:border-0">
+                        <Link key={`inv-${inv.id}`} href={`/control/orders/${inv.order}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'invoice' && activeItem?.id === inv.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{inv.invoice_number}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{inv.customer_name} · ₹{inv.total}</p>
                         </Link>

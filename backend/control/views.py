@@ -11,6 +11,7 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 
 from rest_framework.permissions import AllowAny
 from django.db.models import Max
@@ -21,7 +22,9 @@ from rest_framework.pagination import LimitOffsetPagination
 
 from accounts.models import User
 from accounts.permissions import IsStaff
-from catalog.models import Category, Design, Product, ProductMedia, RateCard, GoldRateHistory, Notification
+from catalog.models import (Category, Design, Product, ProductMedia, RateCard,
+                             GoldRateHistory, Notification, Tag)
+from catalog.serializers import TagSerializer
 from orders.models import Order, Invoice
 
 from .models import AuditLog
@@ -335,10 +338,33 @@ class DesignViewSet(viewsets.ModelViewSet):
         design = self.get_object()
         ser = ProductInputSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
+        
+        # Debug: verify hallmark_numbers is being received
+        hallmark_numbers = ser.validated_data.get('hallmark_numbers', [])
+        print(f"[DEBUG] Received hallmark_numbers: {hallmark_numbers}")
+        
         product = create_product_for_design(design, ser.validated_data, RateCard.get())
-        return Response({'status': 'success', 'instance_id': product.id,
-                         'item_code': product.item_code, 'price': float(product.price)},
-                        status=status.HTTP_201_CREATED)
+        
+        # Verify it was saved
+        print(f"[DEBUG] Saved product hallmark_numbers: {product.hallmark_numbers}")
+        
+        return Response({
+            'status': 'success', 
+            'instance_id': product.id,
+            'item_code': product.item_code, 
+            'price': float(product.price),
+            'hallmark_numbers': product.hallmark_numbers
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Lightweight list for categories page — no nested products."""
+        from .serializers import DesignSummarySerializer
+        queryset = Design.objects.all().select_related('category').prefetch_related(
+            'media', 'products'
+        ).order_by('-id')
+        serializer = DesignSummarySerializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def upload_media(self, request, pk=None):
@@ -393,29 +419,83 @@ class DesignViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-action')
     def bulk_action(self, request):
-        ids = request.data.get('ids') or []
-        action_name = request.data.get('action')
-        if not isinstance(ids, list) or not ids:
-            return Response({'error': 'Provide a list of design ids.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if action_name not in ('activate', 'deactivate', 'delete'):
-            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        designs = list(Design.objects.filter(id__in=ids))
-        processed, skipped = [], []
-        for d in designs:
-            if action_name in ('activate', 'deactivate'):
-                d.is_active = (action_name == 'activate')
-                d.save(update_fields=['is_active'])
-                processed.append(d.design_code)
-            else:  # delete
-                if d.products.exists():
-                    skipped.append({'id': d.id, 'item_code': d.design_code,
-                                    'reason': f'has {d.products.count()} product(s) — delete products first'})
-                    continue
-                processed.append(d.design_code)
-                d.delete()
-        return Response({'processed': processed, 'skipped': skipped})
+        from django.db import transaction
+        from django.db.models import ProtectedError
+        from catalog.models import Design
+        
+        ids = request.data.get('ids', [])
+        action = request.data.get('action')
+        cascade = request.data.get('cascade', False)
+        
+        if not ids or not action:
+            return Response({'error': 'ids and action required'}, status=400)
+        
+        designs = Design.objects.filter(id__in=ids)
+        processed = []
+        skipped = []
+        protected_products = []
+        
+        if action == 'delete':
+            with transaction.atomic():
+                for design in designs:
+                    product_count = design.products.count()
+                    
+                    if product_count == 0:
+                        # No products, safe to delete
+                        design.delete()
+                        processed.append(design.id)
+                    elif not cascade:
+                        # Has products but cascade not requested
+                        skipped.append({
+                            'id': design.id,
+                            'item_code': design.design_code,
+                            'reason': f'Has {product_count} product(s). Select "Delete All" to include products.'
+                        })
+                    else:
+                        # Cascade requested - try to delete all products first
+                        products = list(design.products.all())
+                        delete_failed = False
+                        
+                        for product in products:
+                            try:
+                                product.delete()
+                            except ProtectedError:
+                                protected_products.append({
+                                    'item_code': product.item_code,
+                                    'design_code': design.design_code,
+                                    'reason': 'Product is part of an order and cannot be deleted'
+                                })
+                                delete_failed = True
+                        
+                        if delete_failed:
+                            # Some products couldn't be deleted, skip the design too
+                            skipped.append({
+                                'id': design.id,
+                                'item_code': design.design_code,
+                                'reason': f'Cannot delete design: {len([p for p in protected_products if p["design_code"] == design.design_code])} product(s) are part of orders'
+                            })
+                        else:
+                            # All products deleted successfully, now delete the design
+                            design.delete()
+                            processed.append(design.id)
+        elif action == 'activate':
+            for design in designs:
+                design.is_active = True
+                design.save(update_fields=['is_active'])
+                processed.append(design.id)
+        elif action == 'deactivate':
+            for design in designs:
+                design.is_active = False
+                design.save(update_fields=['is_active'])
+                processed.append(design.id)
+        else:
+            return Response({'error': f'Unknown action: {action}'}, status=400)
+        
+        response_data = {'processed': processed, 'skipped': skipped}
+        if protected_products:
+            response_data['protected_products'] = protected_products
+        
+        return Response(response_data)
 
     # Import/Export CSV
     @action(detail=False, methods=['get'], url_path='import-template')
@@ -501,8 +581,11 @@ class DesignViewSet(viewsets.ModelViewSet):
             cn = (row.get('report_number') or '').strip()
             if cn and Product.objects.filter(report_lab=cl, report_number=cn).exists():
                 errs.append(f'Report {cl} #{cn} already exists')
-            hm = (row.get('hallmark_number') or '').strip()
-            if hm and Product.objects.filter(hallmark_number=hm).exists():
+            # Change this line:
+            hm = (row.get('hallmark_number') or '').strip().upper()
+            if hm and not hm.isalnum():
+                errs.append(f'Hallmark "{hm}" must be alphanumeric (letters and numbers only)')
+            elif hm and Product.objects.filter(hallmark_numbers__contains=[hm]).exists():
                 errs.append(f'Hallmark "{hm}" already exists')
 
             if errs:
@@ -532,7 +615,7 @@ class DesignViewSet(viewsets.ModelViewSet):
                     actual_net_weight=r['net'], actual_diamond_weight=r['dia_total'],
                     actual_color_stone_weight=r['cstone'],
                     report_lab=r['cert_lab'], report_number=r['cert_number'],
-                    hallmark_number=r['hallmark'])
+                    hallmark_numbers=[r['hallmark']] if r['hallmark'] else [])
                 created_codes.append(p.item_code)
                 net_14kt = r['net'] / 1.2 if r['karat'] == '18Kt' else r['net']
                 if r['design'].is_ring and r['ring_size']:
@@ -548,7 +631,7 @@ class DesignViewSet(viewsets.ModelViewSet):
         w = csv.writer(response)
         w.writerow(['item_code', 'design_code', 'design_name', 'category', 'karat', 'gold_color',
                     'ring_size', 'diamond_grade', 'actual_net_weight', 'actual_diamond_weight',
-                    'report_lab', 'report_number', 'hallmark_number', 'price', 'status'])
+                    'report_lab', 'report_number', 'hallmark_numbers', 'price', 'status'])
         qs = Product.objects.select_related('design', 'design__category').all()
         ids = request.query_params.get('ids')
         if ids:
@@ -558,9 +641,33 @@ class DesignViewSet(viewsets.ModelViewSet):
             w.writerow([p.item_code, p.design.design_code, p.design.name, p.design.category.name,
                         p.karat, p.gold_color, p.ring_size or '', p.diamond_grade,
                         float(p.actual_net_weight), float(p.actual_diamond_weight),
-                        p.report_lab, p.report_number, p.hallmark_number,
+                        p.report_lab, p.report_number, 
+                        ','.join(p.hallmark_numbers or []),
                         float(p.price), p.status])
         return response
+
+    @action(detail=True, methods=['post'], url_path='reorder-media')
+    def reorder_media(self, request, pk=None):
+        """Reorder all media items at once. Expects { media_ids: [id1, id2, id3] }."""
+        design = self.get_object()
+        media_ids = request.data.get('media_ids', [])
+
+        if not media_ids:
+            return Response({'error': 'media_ids is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate all IDs belong to this design
+        existing_ids = set(design.media.values_list('id', flat=True))
+        if set(media_ids) != existing_ids:
+            return Response({'error': 'media_ids must contain all media IDs for this design'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Update sort_order based on position in the array
+        from django.db import transaction
+        with transaction.atomic():
+            for idx, media_id in enumerate(media_ids, start=1):
+                design.media.filter(id=media_id).update(sort_order=idx)
+
+        return Response({'status': 'success', 'count': len(media_ids)})
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
@@ -591,6 +698,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         new_price = Product.calculate_price(
             net_weight=new_net_weight,
             diamond_weight=new_diamond_weight,
+            color_stone_weight=new_color_stone_weight,
             karat=new_karat,
             diamond_grade=new_grade,
         )
@@ -650,7 +758,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'status': p.status,
             'price': float(p.price),
             'actual_net_weight': float(p.actual_net_weight),
-            'hallmark_number': p.hallmark_number,
+            'hallmark_numbers': p.hallmark_numbers,
         } for p in products])
 
     @action(detail=False, methods=['post'], url_path='bulk-action')
@@ -689,14 +797,23 @@ class ProductViewSet(viewsets.ModelViewSet):
                 p.save()
                 processed.append(p.item_code)
             else:  # delete
+                # Check if product was ever part of an order
+                from orders.models import OrderItem
+                has_order_history = OrderItem.objects.filter(instance=p).exists()
+                
+                if has_order_history:
+                    skipped.append({'id': p.id, 'item_code': p.item_code,
+                                    'reason': 'cannot delete — product was part of an order (preserved for history)'})
+                    continue
+                
                 if p.status != 'in_stock':
                     skipped.append({'id': p.id, 'item_code': p.item_code,
                                     'reason': f'cannot delete status "{p.status}" — return to stock first'})
                     continue
+                
                 processed.append(p.item_code)
                 p.delete()
         return Response({'processed': processed, 'skipped': skipped})
-
 
 class RateCardView(APIView):
     permission_classes = [IsStaff]
@@ -1051,9 +1168,10 @@ class GlobalSearchView(APIView):
             Q(design_code__icontains=q) | Q(name__icontains=q)
         ).select_related('category')[:10]
 
+        # FIX: Search in hallmark_numbers array
         products = Product.objects.filter(
             Q(item_code__icontains=q) |
-            Q(hallmark_number__icontains=q) |
+            Q(hallmark_numbers__icontains=q) |
             Q(report_number__icontains=q)
         ).select_related('design', 'design__category')[:10]
 
@@ -1080,7 +1198,7 @@ class GlobalSearchView(APIView):
             'customers': StaffUserSerializer(customers, many=True).data,
             'invoices': StaffInvoiceSerializer(invoices, many=True).data,
         })
-
+    
 class PricePreviewView(APIView):
     """Returns calculated price for a given product with hypothetical changes."""
     permission_classes = [IsStaff]
@@ -1094,12 +1212,14 @@ class PricePreviewView(APIView):
         
         karat = request.data.get('karat', product.karat)
         grade = request.data.get('diamond_grade', product.diamond_grade)
+        color_stone_weight = request.data.get('color_stone_weight', product.actual_color_stone_weight)
         
         price = Product.calculate_price(
             net_weight=product.actual_net_weight,
             diamond_weight=product.actual_diamond_weight,
             karat=karat,
             diamond_grade=grade,
+            color_stone_weight=color_stone_weight,
         )
         return Response({'price': price})
 
@@ -1231,3 +1351,72 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
         response = HttpResponse(buffer.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{filename}.zip"'
         return response
+
+class TagViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsStaff]
+    queryset = Tag.objects.all().order_by('group', 'name')
+    serializer_class = TagSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Don't delete tags that have designs — deactivate instead
+        if instance.designs.count() > 0:
+            raise ValidationError(
+                f"Cannot delete '{instance.name}': {instance.designs.count()} designs use this tag. "
+                f"Remove the tag from designs first, or deactivate it."
+            )
+        instance.delete()
+
+
+class CalculatePriceView(APIView):
+    """Calculate price with full breakdown."""
+    permission_classes = [IsStaff]
+    
+    def post(self, request):
+        net_g = float(request.data.get('net_weight', 0))
+        karat = request.data.get('karat', '18Kt')
+        grade = request.data.get('diamond_grade', 'IJ/SI')
+        color_stone_weight = float(request.data.get('color_stone_weight', 0))
+        
+        melle = float(request.data.get('diamond_weight_round_melle', 0))
+        pointer_weights = request.data.get('pointer_weights', [])
+        fancy_weights = request.data.get('fancy_weights', [])
+        
+        pointer_total = sum(float(w) for w in pointer_weights if w)
+        fancy_total = sum(float(w) for w in fancy_weights if w)
+        total_dia = melle + pointer_total + fancy_total
+        
+        rc = RateCard.get()
+        
+        gold_rate = float(rc.gold_rate_18kt if karat == '18Kt' else rc.gold_rate_14kt)
+        gold_value = net_g * gold_rate
+        
+        grade_rate = float(rc.rate_for_grade(grade))
+        diamond_value = total_dia * grade_rate
+        
+        color_stone_rate = float(rc.color_stone_rate_per_carat or 0)
+        color_stone_value = color_stone_weight * color_stone_rate
+        
+        # Making charges using new formula
+        gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+        making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+        making_charges = making_per_gram * net_g
+        
+        subtotal = gold_value + diamond_value + color_stone_value + making_charges
+        
+        gst_pct = float(rc.gst_percentage) / 100
+        gst_amount = subtotal * gst_pct
+        
+        total = subtotal + gst_amount
+        
+        return Response({
+            'gold_value': round(gold_value, 2),
+            'diamond_value': round(diamond_value, 2),
+            'color_stone_value': round(color_stone_value, 2),
+            'making_charges': round(making_charges, 2),
+            'subtotal': round(subtotal, 2),
+            'gst_amount': round(gst_amount, 2),
+            'total': round(total, 2),
+        })

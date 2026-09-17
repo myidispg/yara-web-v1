@@ -3,12 +3,12 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from django.db.models import F, Min, Q, DecimalField
+from django.db.models import F, Min, Q, DecimalField, Value
 from django.db.models.functions import Coalesce
 from django.db.models.expressions import ExpressionWrapper
 
-from .models import Category, Design, RateCard
-from .serializers import CategorySerializer, DesignDetailSerializer, DesignListSerializer
+from .models import Category, Design, RateCard, Tag
+from .serializers import CategorySerializer, DesignDetailSerializer, DesignListSerializer, TagSerializer
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -39,9 +39,14 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         
         return qs
 
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public tag list for storefront filtering."""
+    permission_classes = [AllowAny]
+    serializer_class = TagSerializer
+    queryset = Tag.objects.filter(is_active=True)
+
 class DesignPagination(LimitOffsetPagination):
     default_limit = 18
-
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """Storefront catalog — serves DESIGNS (URL stays /api/products/)."""
@@ -68,68 +73,76 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             # Include parent + all its subcategories
             qs = qs.filter(Q(category__slug=cat) | Q(category__parent__slug=cat))
 
+        # Tag filtering
+        tag = p.get("tag")
+        if tag:
+            qs = qs.filter(tags__slug=tag)
+
+        # Multiple tags (comma-separated from frontend) — OR condition
+        tags_param = p.get("tags", "")
+        if tags_param:
+            tag_slugs = [t.strip() for t in tags_param.split(",") if t.strip()]
+            if tag_slugs:
+                tag_query = Q()
+                for t in tag_slugs:
+                    tag_query |= Q(tags__slug=t)
+                qs = qs.filter(tag_query)
+                
         search = p.get("search")
         if search:
             qs = qs.filter(
                 Q(name__icontains=search) |
                 Q(design_code__icontains=search) |
-                Q(description__icontains=search) |
                 Q(category__name__icontains=search) |
                 Q(category__slug__icontains=search)
             )
 
-        purity = p.getlist("purity")
-        color = p.getlist("color")
+        # Purity and color filtering (comma-separated from frontend)
+        purity_param = p.get("purity", "")
+        color_param = p.get("color", "")
+        purity = [v.strip() for v in purity_param.split(",") if v.strip()] if purity_param else []
+        color = [v.strip() for v in color_param.split(",") if v.strip()] if color_param else []
+        
         if purity:
             qs = qs.filter(products__karat__in=purity)
         if color:
             qs = qs.filter(products__gold_color__in=color)
         if p.get("in_stock") in ("1", "true", "True"):
             qs = qs.filter(products__status="in_stock")
-        if purity or color or p.get("in_stock"):
+        
+        # Apply distinct if any filter was used
+        if purity or color or p.get("in_stock") or tags_param:
             qs = qs.distinct()
 
-                # Effective "from" price: cheapest in-stock piece, else MTO estimate @ 14Kt.
-        # Mirrors design_from_price() so filtering matches what the card displays.
+        # Effective "from" price: cheapest in-stock piece, else MTO estimate @ 14Kt.
+        # Calculate MTO estimate for designs with no in-stock products
         rc = RateCard.get()
         gold_rate = float(rc.gold_rate_14kt)
         dia_rate = float(rc.rate_for_grade(rc.default_grade))
         making_pct = float(rc.making_charges_percentage) / 100.0
         gst_pct = float(rc.gst_percentage) / 100.0
-
-        diamond_w = ExpressionWrapper(
-            F("diamond_weight_round_melle")
-            + F("pointer_solitaire_weight")
-            + F("fancy_cut_weight"),
+        
+        # MTO estimate: base weight * gold rate + diamond * dia rate, then making + gst
+        mto_estimate = Value(
+            (float(rc.gold_rate_14kt) * 5) * (1 + making_pct) * (1 + gst_pct),  # rough 5g estimate
             output_field=DecimalField()
         )
-        pre_making = ExpressionWrapper(
-            (F("base_net_weight_14kt") * gold_rate) + (diamond_w * dia_rate),
-            output_field=DecimalField()
-        )
-        est_price = ExpressionWrapper(
-            (pre_making + (pre_making * making_pct)) * (1 + gst_pct),
-            output_field=DecimalField()
-        )
-
-        # Annotate with effective "from" price
-        # Coalesce ensures every design gets a min_price value
+        
         qs = qs.annotate(
             min_price=Coalesce(
                 Min("products__price", filter=Q(products__status="in_stock")),
-                est_price,
+                mto_estimate,
                 output_field=DecimalField()
             )
         )
-
-        # Price range filter - only apply if parameter exists AND is valid
+        
+        # Price range filter
         price_min = p.get("price_min")
         price_max = p.get("price_max")
         
         if price_min and price_min.replace('.', '', 1).isdigit():
             qs = qs.filter(min_price__gte=float(price_min))
         if price_max and price_max.replace('.', '', 1).isdigit():
-            # Only filter if it's less than our "no limit" threshold
             if float(price_max) < 200000:
                 qs = qs.filter(min_price__lte=float(price_max))
 

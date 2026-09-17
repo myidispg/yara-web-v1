@@ -12,7 +12,14 @@ async function getProduct(slug) {
       cache: "no-store" // Ensures we always get fresh stock data
     });
     if (!res.ok) return null;
-    return res.json();
+    
+    const product = await res.json();
+    
+    // The backend DesignDetailSerializer already includes parent_category_slug 
+    // at the root level of the JSON response. We don't need to extract it manually.
+    // (product.category is just an ID, so manual extraction was overwriting it with null!)
+    
+    return product;
   } catch {
     return null;
   }

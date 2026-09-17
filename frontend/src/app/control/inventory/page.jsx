@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
 const inr = (n) =>
@@ -22,18 +22,30 @@ export default function InventoryPage() {
     const [products, setProducts] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [view, setView] = useState("designs");
+    const [viewMode, setViewMode] = useState("list");
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
 
     const [checked, setChecked] = useState([]);
     const [checkedDesigns, setCheckedDesigns] = useState([]);
     const [statusFilter, setStatusFilter] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState("");
+    const [categories, setCategories] = useState([]);
     const [bulkBusy, setBulkBusy] = useState(false);
     const [bulkResult, setBulkResult] = useState(null);
 
+    const [designChecked, setDesignChecked] = useState([]);
+    const [deleteModal, setDeleteModal] = useState(null);
+
+    const [page, setPage] = useState(1);
+    const [totalDesigns, setTotalDesigns] = useState(0);
+    const [totalProducts, setTotalProducts] = useState(0);
+    const PAGE_SIZE = 24;
+
     useEffect(() => {
-        loadDesigns();
+        loadDesigns(1);
         loadFlat();
+        loadCategories();
     }, []);
 
     useEffect(() => {
@@ -44,10 +56,14 @@ export default function InventoryPage() {
         return () => window.removeEventListener("control-nav", handler);
     }, []);
 
-    const loadDesigns = async () => {
+    const loadDesigns = async (pageNum = 1) => {
         try {
-            const { data } = await controlApi.getProducts();
-            setProducts(data.results || data);
+            const offset = (pageNum - 1) * PAGE_SIZE;
+            const { data } = await controlApi.getProducts(offset, PAGE_SIZE);
+
+            setProducts(data.results || []);
+            setTotalDesigns(data.count || 0);
+            setPage(pageNum);
         } catch (err) {
             console.error("Failed to load designs:", err);
         } finally {
@@ -59,25 +75,65 @@ export default function InventoryPage() {
         try {
             const { data } = await controlApi.getProductsFlat();
             setAllProducts(data);
+            setTotalProducts(data.length || 0);
         } catch (err) {
             console.error("Failed to load products:", err);
         }
     };
 
-    const viewDesign = async (id) => {
+    const loadCategories = async () => {
+        try {
+            const { data } = await controlApi.getCategories();
+            setCategories(data.results || data);
+        } catch (err) {
+            console.error("Failed to load categories:", err);
+        }
+    };
+
+    const flattenCategories = (cats) => {
+        const flat = [];
+        cats.forEach(parent => {
+            flat.push({ id: parent.id, name: parent.name, slug: parent.slug, isSubcategory: false });
+            if (parent.subcategories && parent.subcategories.length > 0) {
+                parent.subcategories.forEach(sub => {
+                    flat.push({
+                        id: sub.id,
+                        name: sub.name,
+                        slug: sub.slug,
+                        isSubcategory: true,
+                        parentName: parent.name
+                    });
+                });
+            }
+        });
+        return flat;
+    };
+
+    const viewDesign = async (id, pushUrl = true) => {
         try {
             const { data } = await controlApi.getProduct(id);
             setSelected(data);
+            setDesignChecked([]);
+            // Push URL state so browser back button works
+            if (pushUrl) {
+                router.push(`/control/inventory?design=${id}`, { scroll: false });
+            }
         } catch (err) {
             console.error("Failed to load design:", err);
         }
     };
 
+    const searchParams = useSearchParams();
+
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const designId = params.get("design");
-        if (designId) viewDesign(designId);
-    }, []);
+        const designId = searchParams.get("design");
+        if (designId) {
+            viewDesign(designId, false);
+        } else {
+            setSelected(null);
+            setDesignChecked([]);
+        }
+    }, [searchParams]);
 
     const markSoldOffline = async (productId) => {
         if (!confirm("Mark this product as SOLD OFFLINE (showroom sale)?")) return;
@@ -117,7 +173,7 @@ export default function InventoryPage() {
         try {
             await controlApi.deleteDesign(selected.id);
             setSelected(null);
-            await loadDesigns();
+            await loadDesigns(page);
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to delete design');
         }
@@ -146,7 +202,7 @@ export default function InventoryPage() {
             setBulkResult(data);
             setChecked([]);
             await loadFlat();
-            await loadDesigns();
+            await loadDesigns(page);
             if (selected) await viewDesign(selected.id);
         } catch (err) {
             alert(err.response?.data?.error || "Bulk action failed");
@@ -169,26 +225,134 @@ export default function InventoryPage() {
         }
     };
 
-    const runDesignBulk = async (actionName) => {
-        const labels = {
-            activate: `Activate ${checkedDesigns.length} design(s) (show on storefront)?`,
-            deactivate: `Deactivate ${checkedDesigns.length} design(s) (hide from storefront)?`,
-            delete: `Permanently DELETE ${checkedDesigns.length} design(s)? Designs with products will be skipped.`,
-        };
-        if (!confirm(labels[actionName])) return;
+    const openDeleteModal = () => {
+        const designsWithProducts = checkedDesigns
+            .map(id => products.find(d => d.id === id))
+            .filter(d => d && d.instance_count > 0);
+        const totalProductsInModal = designsWithProducts.reduce((sum, d) => sum + d.instance_count, 0);
+
+        setDeleteModal({
+            designsWithProducts: designsWithProducts.length,
+            totalProducts: totalProductsInModal,
+            hasProducts: designsWithProducts.length > 0,
+        });
+    };
+
+    const confirmDelete = async (cascade) => {
+        setDeleteModal(null);
         setBulkBusy(true);
         setBulkResult(null);
         try {
-            const { data } = await controlApi.bulkDesignAction(checkedDesigns, actionName);
+            const { data } = await controlApi.bulkDesignAction(checkedDesigns, 'delete', cascade);
             setBulkResult(data);
             setCheckedDesigns([]);
-            await loadDesigns();
+            await loadDesigns(page);
         } catch (err) {
             alert(err.response?.data?.error || "Bulk action failed");
         } finally {
             setBulkBusy(false);
         }
     };
+
+    const confirmActivateDeactivate = async (actionName) => {
+        const labels = {
+            activate: `Activate ${checkedDesigns.length} design(s) (show on storefront)?`,
+            deactivate: `Deactivate ${checkedDesigns.length} design(s) (hide from storefront)?`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        setBulkResult(null);
+        try {
+            const { data } = await controlApi.bulkDesignAction(checkedDesigns, actionName, false);
+            setBulkResult(data);
+            setCheckedDesigns([]);
+            await loadDesigns(page);
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const runDesignBulk = async (actionName) => {
+        if (actionName === 'delete') {
+            openDeleteModal();
+        } else {
+            confirmActivateDeactivate(actionName);
+        }
+    };
+
+    const designAllChecked = selected &&
+        selected.products.length > 0 &&
+        selected.products.every((p) => designChecked.includes(p.id));
+
+    const toggleDesignCheck = (id) =>
+        setDesignChecked((c) => c.includes(id) ? c.filter((x) => x !== id) : [...c, id]);
+
+    const toggleDesignAll = () =>
+        setDesignChecked(designAllChecked ? [] : (selected?.products || []).map((p) => p.id));
+
+    const runDesignProductBulk = async (actionName) => {
+        const labels = {
+            mark_sold_offline: `Mark ${designChecked.length} product(s) as SOLD OFFLINE?`,
+            return_to_stock: `Return ${designChecked.length} product(s) to stock?`,
+            delete: `Permanently DELETE ${designChecked.length} product(s) from this design?`,
+        };
+        if (!confirm(labels[actionName])) return;
+        setBulkBusy(true);
+        setBulkResult(null); // Clear previous result
+        try {
+            const { data } = await controlApi.bulkProductAction(designChecked, actionName);
+            setBulkResult(data);
+            setDesignChecked([]);
+            await viewDesign(selected.id);
+            await loadFlat();
+        } catch (err) {
+            alert(err.response?.data?.error || "Bulk action failed");
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const exportDesignSelected = async () => {
+        try {
+            const { data } = await controlApi.exportSelectedProducts(designChecked);
+            const url = URL.createObjectURL(data);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `products-${selected.design_code}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert("Export failed");
+        }
+    };
+
+    const filteredDesigns = categoryFilter
+        ? (() => {
+            // Find the selected category in our flattened list
+            const selectedCat = flattenCategories(categories).find(c => c.slug === categoryFilter);
+
+            if (!selectedCat) return products;
+
+            if (selectedCat.isSubcategory) {
+                // If filtering by subcategory, only show that subcategory's products
+                return products.filter(d => d.category_slug === categoryFilter);
+            } else {
+                // If filtering by parent category, show parent + all its subcategories
+                const childSlugs = flattenCategories(categories)
+                    .filter(c => c.parentName === selectedCat.name)
+                    .map(c => c.slug);
+
+                return products.filter(d =>
+                    d.category_slug === categoryFilter ||
+                    childSlugs.includes(d.category_slug)
+                );
+            }
+        })()
+        : products;
+
+    const totalPages = Math.ceil(totalDesigns / PAGE_SIZE);
 
     if (loading) return (
         <div className="flex items-center justify-center py-24">
@@ -219,9 +383,57 @@ export default function InventoryPage() {
                             All Products
                         </button>
                     </div>
+
+                    {view === "designs" && !selected && (
+                        <div className="glass-card-vibrant rounded-full border border-[#E5BDB0] p-1 flex">
+                            <button
+                                onClick={() => setViewMode("grid")}
+                                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${viewMode === "grid" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                            >
+                                Grid
+                            </button>
+                            <button
+                                onClick={() => setViewMode("list")}
+                                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${viewMode === "list" ? "bg-[#1A2536] text-white" : "text-[#1A2536]/60 hover:text-[#1A2536]"}`}
+                            >
+                                List
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Category Filter */}
+                    {view === "designs" && !selected && (
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="border border-[#E5BDB0] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-[#1A2536] min-w-[200px]"
+                        >
+                            <option value="">All Categories</option>
+                            {categories.map((parent) => (
+                                <React.Fragment key={parent.id}>
+                                    <option value={parent.slug} className="font-bold">
+                                        {parent.name}
+                                    </option>
+                                    {parent.subcategories && parent.subcategories.map((sub) => (
+                                        <option key={sub.id} value={sub.slug}>
+                                            &nbsp;&nbsp;&nbsp;↳ {sub.name}
+                                        </option>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </select>
+                    )}
+
                     <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
-                        <span className="text-sm font-bold text-[#1A2536]">{products.length}</span>
-                        <span className="text-sm text-[#1A2536]/60 ml-1">designs</span>
+                        <span className="text-sm font-bold text-[#1A2536]">{totalDesigns}</span>
+                        <span className="text-sm text-[#1A2536]/60 ml-1">total designs</span>
+                        {categoryFilter && (
+                            <>
+                                <span className="text-sm text-[#1A2536]/40 mx-2">|</span>
+                                <span className="text-sm font-bold text-[#1A2536]">{filteredDesigns.length}</span>
+                                <span className="text-sm text-[#1A2536]/60 ml-1">in {flattenCategories(categories).find(c => c.slug === categoryFilter)?.name}</span>
+                            </>
+                        )}
                     </div>
                     <Link href="/control/inventory/new?mode=product" className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
                         + Add Product
@@ -234,8 +446,18 @@ export default function InventoryPage() {
 
             {view === "products" ? (
                 <div className="space-y-4">
-                    {/* Bulk action bar */}
                     <div className="flex flex-wrap items-center gap-3">
+                        <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                            <span className="text-sm font-bold text-[#1A2536]">{totalProducts}</span>
+                            <span className="text-sm text-[#1A2536]/60 ml-1">total products</span>
+                            {statusFilter && (
+                                <>
+                                    <span className="text-sm text-[#1A2536]/40 mx-2">|</span>
+                                    <span className="text-sm font-bold text-[#1A2536]">{visibleProducts.length}</span>
+                                    <span className="text-sm text-[#1A2536]/60 ml-1">filtered</span>
+                                </>
+                            )}
+                        </div>
                         <select
                             value={statusFilter}
                             onChange={(e) => { setStatusFilter(e.target.value); setChecked([]); }}
@@ -247,7 +469,6 @@ export default function InventoryPage() {
                             <option value="sold_offline">Sold (Offline)</option>
                             <option value="reserved">Reserved</option>
                         </select>
-                        <span className="text-sm text-[#1A2536]/60">{visibleProducts.length} products</span>
                         {checked.length > 0 && (
                             <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
                                 <span className="text-xs font-bold text-[#1A2536]">{checked.length} selected</span>
@@ -311,7 +532,11 @@ export default function InventoryPage() {
                                                     <p className="font-bold text-[#1A2536]">{p.design_name}</p>
                                                     <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">{p.design_code}</p>
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || "—"}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70 font-mono text-xs">
+                                                    {p.hallmark_numbers?.length > 0
+                                                        ? p.hallmark_numbers.map((h, i) => <div key={i}>{h}</div>)
+                                                        : "—"}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">
                                                     {p.karat} {p.gold_color}
                                                     {p.ring_size && ` · Size ${p.ring_size}`}
@@ -340,14 +565,17 @@ export default function InventoryPage() {
                 </div>
             ) : selected ? (
                 <div className="space-y-6">
-                    <button onClick={() => setSelected(null)} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+                    <button onClick={() => {
+                        setSelected(null);
+                        setDesignChecked([]);
+                        router.push('/control/inventory', { scroll: false });
+                    }} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                         Back to Inventory
                     </button>
 
-                    {/* Design Header Card */}
                     <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
                         <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
                             <div>
@@ -357,6 +585,15 @@ export default function InventoryPage() {
                                     <span className="font-mono font-bold">{selected.design_code}</span> · {selected.category_name}
                                     {!selected.is_active && <span className="ml-2 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-bold uppercase border border-red-200">Inactive</span>}
                                 </p>
+                                {selected.tags && selected.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {selected.tags.map(tag => (
+                                            <span key={tag.id} className="px-3 py-1 rounded-full bg-[#B86B5A]/10 text-[#B86B5A] text-[10px] font-bold uppercase tracking-wider border border-[#B86B5A]/20">
+                                                {tag.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex gap-2">
                                 <Link href={`/control/inventory/${selected.id}/edit`} className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
@@ -447,31 +684,65 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         )}
-
-                        {selected.description && (
-                            <div className="text-sm text-[#1A2536]/70 leading-relaxed border-t border-[#E5BDB0]/40 pt-4">
-                                {selected.description}
-                            </div>
-                        )}
                     </div>
 
-                    {/* Products Table */}
                     <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
-                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between">
+                        <div className="px-6 py-4 border-b border-[#E5BDB0]/40 bg-[#1A2536]/[0.02] flex items-center justify-between flex-wrap gap-3">
                             <h3 className="font-serif-luxury text-lg font-semibold text-[#1A2536]">
                                 Products <span className="text-[#B86B5A]">({selected.products.length})</span>
                             </h3>
-                            <Link
-                                href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
-                                className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
-                            >
-                                + Add Product
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                {designChecked.length > 0 && (
+                                    <div className="flex items-center gap-2 glass-card-vibrant rounded-full px-4 py-2 border border-[#E5BDB0]">
+                                        <span className="text-xs font-bold text-[#1A2536]">{designChecked.length} selected</span>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("mark_sold_offline")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Mark Sold</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("return_to_stock")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Return</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={exportDesignSelected} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Export</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => runDesignProductBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                        <span className="text-[#E5BDB0]">|</span>
+                                        <button onClick={() => setDesignChecked([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
+                                    </div>
+                                )}
+                                <Link
+                                    href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
+                                    className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
+                                >
+                                    + Add Product
+                                </Link>
+                            </div>
                         </div>
+                        {/* Bulk Result Display for Design Products */}
+                        {bulkResult && (
+                            <div className="mx-6 mt-4 glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-4 text-sm">
+                                <p className="font-bold text-[#1A2536]">
+                                    Done: {bulkResult.processed.length} processed
+                                    {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                                </p>
+                                {bulkResult.skipped.length > 0 && (
+                                    <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
+                                        {bulkResult.skipped.map((s) => (
+                                            <li key={s.id}>• {s.item_code}: {s.reason}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="bg-[#1A2536]/[0.03]">
+                                        <th className="px-4 py-3 w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={designAllChecked}
+                                                onChange={toggleDesignAll}
+                                                className="w-4 h-4 accent-[#B86B5A]"
+                                            />
+                                        </th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Item Code</th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Hallmark</th>
                                         <th className="text-left px-6 py-3 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Variant</th>
@@ -488,8 +759,20 @@ export default function InventoryPage() {
                                         const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
                                         return (
                                             <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                                <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={designChecked.includes(p.id)}
+                                                        onChange={() => toggleDesignCheck(p.id)}
+                                                        className="w-4 h-4 accent-[#B86B5A]"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 font-mono text-sm font-bold text-[#B86B5A]">{p.item_code}</td>
-                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70">{p.hallmark_number || '—'}</td>
+                                                <td className="px-6 py-4 text-sm text-[#1A2536]/70 font-mono text-xs">
+                                                    {p.hallmark_numbers?.length > 0
+                                                        ? p.hallmark_numbers.map((h, i) => <div key={i}>{h}</div>)
+                                                        : '—'}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-[#1A2536]/70">
                                                     {p.karat} {p.gold_color}
                                                     {p.ring_size && ` · Size ${p.ring_size}`}
@@ -534,9 +817,8 @@ export default function InventoryPage() {
                         </div>
                     </div>
                 </div>
-            ) : (
+            ) : viewMode === "list" ? (
                 <div className="space-y-4">
-                    {/* Bulk action bar for designs */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
                             <input
@@ -549,7 +831,7 @@ export default function InventoryPage() {
                                 )}
                                 className="w-4 h-4 accent-[#B86B5A]"
                             />
-                            <span className="text-sm text-[#1A2536]/60">Select all</span>
+                            <span className="text-sm text-[#1A2536]/60">Select all (this page)</span>
                         </div>
                         {checkedDesigns.length > 0 && (
                             <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
@@ -571,6 +853,7 @@ export default function InventoryPage() {
                             <p className="font-bold text-[#1A2536]">
                                 Done: {bulkResult.processed.length} processed
                                 {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                                {bulkResult.protected_products && bulkResult.protected_products.length > 0 && ` · ${bulkResult.protected_products.length} protected`}
                             </p>
                             {bulkResult.skipped.length > 0 && (
                                 <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
@@ -579,11 +862,203 @@ export default function InventoryPage() {
                                     ))}
                                 </ul>
                             )}
+                            {bulkResult.protected_products && bulkResult.protected_products.length > 0 && (
+                                <ul className="mt-2 text-xs text-amber-700 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.protected_products.map((p, i) => (
+                                        <li key={i}>⚠️ {p.item_code}: {p.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">
+                                        <th className="px-4 py-3.5 w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                                                onChange={() => setCheckedDesigns(
+                                                    products.every((d) => checkedDesigns.includes(d.id))
+                                                        ? []
+                                                        : products.map((d) => d.id)
+                                                )}
+                                                className="w-4 h-4 accent-[#B86B5A]"
+                                            />
+                                        </th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Image</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Design</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Category</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Products</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">In Stock</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">From Price</th>
+                                        <th className="text-left px-6 py-3.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredDesigns.map((d) => (
+                                        <tr key={d.id} onClick={() => viewDesign(d.id)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checkedDesigns.includes(d.id)}
+                                                    onChange={() => setCheckedDesigns((c) => c.includes(d.id) ? c.filter((x) => x !== d.id) : [...c, d.id])}
+                                                    className="w-4 h-4 accent-[#B86B5A]"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#1A2536]/[0.03]">
+                                                    {d.media && d.media.length > 0 && d.media[0].kind === "image" ? (
+                                                        <img
+                                                            src={d.media[0].url}
+                                                            alt={d.name}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.onerror = null;
+                                                                e.currentTarget.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[#1A2536]/30 text-[9px]">No img</div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-bold text-[#1A2536]">{d.name}</p>
+                                                <p className="text-xs text-[#1A2536]/60 font-mono mt-0.5">{d.design_code}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">{d.category_name}</td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-extrabold text-[#1A2536]">{d.instance_count}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-extrabold text-emerald-600">{d.in_stock_count}</p>
+                                            </td>
+                                            <td className="px-6 py-4 font-extrabold text-[#B86B5A]">{inr(d.base_price)}</td>
+                                            <td className="px-6 py-4">
+                                                {d.is_active ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Active
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredDesigns.length === 0 && (
+                                        <tr><td colSpan="8" className="px-6 py-16 text-center">
+                                            <p className="font-serif-luxury text-xl text-[#1A2536] mb-2">No designs found</p>
+                                            <p className="text-sm text-[#1A2536]/50">
+                                                {categoryFilter ? `No designs in "${categoryFilter}" category.` : "No designs yet."}
+                                            </p>
+                                        </td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-4">
+                            <button
+                                onClick={() => loadDesigns(page - 1)}
+                                disabled={page === 1}
+                                className="px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            >
+                                ← Previous
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => loadDesigns(pageNum)}
+                                        className={`w-8 h-8 text-xs font-bold rounded-full transition-all ${page === pageNum
+                                            ? 'bg-[#1A2536] text-white'
+                                            : 'border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536]/[0.03]'
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => loadDesigns(page + 1)}
+                                disabled={page === totalPages}
+                                className="px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            >
+                                Next →
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={products.length > 0 && products.every((d) => checkedDesigns.includes(d.id))}
+                                onChange={() => setCheckedDesigns(
+                                    products.every((d) => checkedDesigns.includes(d.id))
+                                        ? []
+                                        : products.map((d) => d.id)
+                                )}
+                                className="w-4 h-4 accent-[#B86B5A]"
+                            />
+                            <span className="text-sm text-[#1A2536]/60">Select all (this page)</span>
+                        </div>
+                        {checkedDesigns.length > 0 && (
+                            <div className="flex items-center gap-2 ml-auto glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                                <span className="text-xs font-bold text-[#1A2536]">{checkedDesigns.length} selected</span>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("activate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Activate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("deactivate")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536] hover:text-[#B86B5A] disabled:opacity-40">Deactivate</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => runDesignBulk("delete")} disabled={bulkBusy} className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 disabled:opacity-40">Delete</button>
+                                <span className="text-[#E5BDB0]">|</span>
+                                <button onClick={() => setCheckedDesigns([])} className="text-[10px] font-bold uppercase tracking-wider text-[#1A2536]/50 hover:text-[#1A2536]">Clear</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {bulkResult && (
+                        <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-4 text-sm">
+                            <p className="font-bold text-[#1A2536]">
+                                Done: {bulkResult.processed.length} processed
+                                {bulkResult.skipped.length > 0 && ` · ${bulkResult.skipped.length} skipped`}
+                                {bulkResult.protected_products && bulkResult.protected_products.length > 0 && ` · ${bulkResult.protected_products.length} protected`}
+                            </p>
+                            {bulkResult.skipped.length > 0 && (
+                                <ul className="mt-2 text-xs text-[#1A2536]/60 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.skipped.map((s) => (
+                                        <li key={s.id}>• {s.item_code}: {s.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
+                            {bulkResult.protected_products && bulkResult.protected_products.length > 0 && (
+                                <ul className="mt-2 text-xs text-amber-700 space-y-1 max-h-32 overflow-y-auto">
+                                    {bulkResult.protected_products.map((p, i) => (
+                                        <li key={i}>⚠️ {p.item_code}: {p.reason}</li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {products.map((d) => (
+                        {filteredDesigns.map((d) => (
                             <div key={d.id} onClick={() => viewDesign(d.id)} className="relative glass-card-vibrant rounded-3xl border border-[#E5BDB0] hover:border-[#B86B5A] cursor-pointer transition-all hover:shadow-xl overflow-hidden group">
                                 <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-full p-1.5" onClick={(e) => e.stopPropagation()}>
                                     <input
@@ -637,6 +1112,98 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-4">
+                            <button
+                                onClick={() => loadDesigns(page - 1)}
+                                disabled={page === 1}
+                                className="px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            >
+                                ← Previous
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => loadDesigns(pageNum)}
+                                        className={`w-8 h-8 text-xs font-bold rounded-full transition-all ${page === pageNum
+                                            ? 'bg-[#1A2536] text-white'
+                                            : 'border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536]/[0.03]'
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => loadDesigns(page + 1)}
+                                disabled={page === totalPages}
+                                className="px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            >
+                                Next →
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Delete Design Modal */}
+            {deleteModal && (
+                <div className="fixed inset-0 z-50 bg-[#1A2536]/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDeleteModal(null)}>
+                    <div onClick={(e) => e.stopPropagation()} className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8 w-full max-w-md space-y-6 shadow-2xl">
+                        <div>
+                            <span className="font-cursive text-2xl text-red-500 block -mb-1">confirm deletion</span>
+                            <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">
+                                Delete {checkedDesigns.length} Design{checkedDesigns.length !== 1 ? "s" : ""}?
+                            </h2>
+                        </div>
+
+                        {deleteModal.hasProducts ? (
+                            <div className="space-y-4">
+                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                                    <p className="text-sm font-bold text-amber-800 mb-1">⚠️ Some designs contain products</p>
+                                    <p className="text-xs text-amber-700">
+                                        {deleteModal.designsWithProducts} design{deleteModal.designsWithProducts !== 1 ? "s" : ""} contain a total of {deleteModal.totalProducts} product{deleteModal.totalProducts !== 1 ? "s" : ""}.
+                                    </p>
+                                </div>
+                                <p className="text-sm text-[#1A2536]/70">How would you like to proceed?</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-[#1A2536]/70">
+                                This will permanently delete {checkedDesigns.length} design{checkedDesigns.length !== 1 ? "s" : ""}. This action cannot be undone.
+                            </p>
+                        )}
+
+                        <div className="flex flex-col gap-3">
+                            {deleteModal.hasProducts && (
+                                <button
+                                    onClick={() => confirmDelete(true)}
+                                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow"
+                                >
+                                    Delete All ({deleteModal.totalProducts} products included)
+                                </button>
+                            )}
+                            <button
+                                onClick={() => confirmDelete(false)}
+                                className={`w-full py-3 border-2 border-red-500 text-red-600 hover:bg-red-50 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${deleteModal.hasProducts ? "" : "bg-red-600 hover:bg-red-700 text-white border-red-600"}`}
+                            >
+                                {deleteModal.hasProducts
+                                    ? `Delete Designs Only (skip ${deleteModal.designsWithProducts} with products)`
+                                    : "Delete"
+                                }
+                            </button>
+                            <button
+                                onClick={() => setDeleteModal(null)}
+                                className="w-full py-3 border-2 border-[#E5BDB0] text-[#1A2536] hover:bg-[#1A2536]/[0.03] text-xs font-bold uppercase tracking-wider rounded-full transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

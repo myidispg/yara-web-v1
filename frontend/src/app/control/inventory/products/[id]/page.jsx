@@ -24,20 +24,24 @@ export default function ControlProductPage() {
     const router = useRouter();
     const [p, setP] = useState(null);
     const [design, setDesign] = useState(null);
+    const [rateCard, setRateCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showEdit, setShowEdit] = useState(false);
     const [editForm, setEditForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [previewPrice, setPreviewPrice] = useState(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     const load = async () => {
         try {
             const { data } = await controlApi.getProductDetail(id);
             setP(data);
-            if (data.design) {
-                const d = await controlApi.getProduct(data.design);
+            if (data.design_id) {
+                const d = await controlApi.getProduct(data.design_id);
                 setDesign(d.data || d);
             }
+            const rc = await controlApi.getRateCard();
+            setRateCard(rc.data);
         } catch (e) {
             console.error("Failed to load product:", e);
         } finally {
@@ -80,16 +84,69 @@ export default function ControlProductPage() {
             actual_color_stone_weight: p.actual_color_stone_weight || "",
             report_lab: p.report_lab || "",
             report_number: p.report_number || "",
-            hallmark_number: p.hallmark_number || "",
+            hallmark_numbers: p.hallmark_numbers?.length ? [...p.hallmark_numbers] : [""],
             status: p.status,
+            melle_weight: design?.diamond_weight_round_melle || "",
+            pointer_weights: design?.pointer_weights?.length ? [...design.pointer_weights] : [""],
+            fancy_weights: design?.fancy_weights?.length ? [...design.fancy_weights] : [""],
+            color_stone_weights: design?.color_stone_weights?.length ? [...design.color_stone_weights] : [""],
         });
+        setIsDirty(false);
         setShowEdit(true);
+    };
+
+    // Single helper: updates form AND marks dirty
+    const updateForm = (updates) => {
+        setEditForm(prev => ({ ...prev, ...updates }));
+        setIsDirty(true);
+    };
+
+    // Close handler: confirms if unsaved changes exist
+    const handleClose = () => {
+        if (isDirty && !confirm("You have unsaved changes. Discard them?")) {
+            return;
+        }
+        setShowEdit(false);
+        setIsDirty(false);
+    };
+
+    // Array helpers — all now mark dirty
+    const addHuid = () => {
+        if (editForm.hallmark_numbers.length < 3) {
+            updateForm({ hallmark_numbers: [...editForm.hallmark_numbers, ""] });
+        }
+    };
+    const removeHuid = (i) => {
+        if (editForm.hallmark_numbers.length > 1) {
+            updateForm({ hallmark_numbers: editForm.hallmark_numbers.filter((_, idx) => idx !== i) });
+        }
+    };
+    const updateHuid = (i, val) => {
+        // Strip non-alphanumeric characters and force uppercase
+        const cleanVal = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const updated = [...editForm.hallmark_numbers];
+        updated[i] = cleanVal;
+        updateForm({ hallmark_numbers: updated });
+    };
+
+    const addField = (field) => {
+        updateForm({ [field]: [...editForm[field], ""] });
+    };
+    const removeField = (field, i) => {
+        if (editForm[field].length > 1) {
+            updateForm({ [field]: editForm[field].filter((_, idx) => idx !== i) });
+        }
+    };
+    const updateField = (field, i, val) => {
+        const updated = [...editForm[field]];
+        updated[i] = val;
+        updateForm({ [field]: updated });
     };
 
     const saveEdit = async () => {
         setSaving(true);
         try {
-            const payload = {
+            await controlApi.updateProduct(p.id, {
                 item_code: editForm.item_code.trim(),
                 karat: editForm.karat,
                 gold_color: editForm.gold_color,
@@ -100,11 +157,25 @@ export default function ControlProductPage() {
                 actual_color_stone_weight: parseFloat(editForm.actual_color_stone_weight) || 0,
                 report_lab: editForm.report_lab.trim(),
                 report_number: editForm.report_number.trim(),
-                hallmark_number: editForm.hallmark_number.trim(),
+                hallmark_numbers: editForm.hallmark_numbers.filter(h => h.trim()),
                 status: editForm.status,
-            };
-            await controlApi.updateProduct(p.id, payload);
+            });
+
+            if (design) {
+                await controlApi.updateDesign(design.id, {
+                    name: design.name,
+                    design_code: design.design_code,
+                    category: design.category,
+                    is_active: design.is_active,
+                    diamond_weight_round_melle: parseFloat(editForm.melle_weight) || 0,
+                    pointer_weights: editForm.pointer_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    fancy_weights: editForm.fancy_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                    color_stone_weights: editForm.color_stone_weights.map(w => parseFloat(w) || 0).filter(w => w > 0),
+                });
+            }
+
             setShowEdit(false);
+            setIsDirty(false);
             await load();
         } catch (err) {
             alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
@@ -140,6 +211,7 @@ export default function ControlProductPage() {
 
     const st = STATUS[p.status] || { label: p.status, cls: "bg-gray-100 text-gray-700" };
     const isRing = design?.is_ring || false;
+    const huids = p.hallmark_numbers || [];
 
     const Row = ({ label, value }) => (
         <div className="flex justify-between gap-4 text-sm py-1.5">
@@ -176,7 +248,6 @@ export default function ControlProductPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Specifications */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Specifications</h3>
                     <Row label="Design" value={<Link className="text-gold-dark hover:text-ink" href={`/control/inventory?design=${p.design_id}`}>{p.design_code}</Link>} />
@@ -184,11 +255,14 @@ export default function ControlProductPage() {
                     <Row label="Gold Colour" value={p.gold_color} />
                     <Row label="Ring Size" value={p.ring_size || "—"} />
                     <Row label="Diamond Grade" value={p.diamond_grade} />
-                    <Row label="Hallmark (HUID)" value={p.hallmark_number || "—"} />
+                    <Row label="Hallmark (HUID)" value={
+                        huids.length > 0
+                            ? <div className="text-right">{huids.map((h, i) => <div key={i} className="text-xs font-mono">{h}</div>)}</div>
+                            : "—"
+                    } />
                     <Row label="Diamond Report" value={p.report_number ? `${p.report_lab} #${p.report_number}` : "—"} />
                 </div>
 
-                {/* Weights & Pricing */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Weights & Pricing</h3>
                     <Row label="Net Weight" value={`${Number(p.actual_net_weight).toFixed(3)} g`} />
@@ -203,7 +277,6 @@ export default function ControlProductPage() {
                     <Row label="Final Price" value={<span className="font-semibold text-base">{inr(p.price)}</span>} />
                 </div>
 
-                {/* Lifecycle */}
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Lifecycle</h3>
                     <Row label="Added on cPanel" value={fmt(p.created_at)} />
@@ -218,7 +291,6 @@ export default function ControlProductPage() {
                 </div>
             </div>
 
-            {/* Media Gallery */}
             {design?.media && design.media.length > 0 && (
                 <div className="mt-8 bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Product Media</h3>
@@ -238,25 +310,33 @@ export default function ControlProductPage() {
 
             {/* Edit Modal */}
             {showEdit && editForm && (
-                <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={() => setShowEdit(false)}>
+                <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" onClick={handleClose}>
                     <div className="bg-white rounded-xl border border-line p-8 shadow-hero w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <h2 className="font-serif text-2xl mb-6">Edit {p.item_code}</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="font-serif text-2xl">Edit {p.item_code}</h2>
+                            {isDirty && (
+                                <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                                    Unsaved changes
+                                </span>
+                            )}
+                        </div>
 
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code</label>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Item Code *</label>
                                     <input
                                         value={editForm.item_code}
-                                        onChange={(e) => setEditForm({ ...editForm, item_code: e.target.value })}
+                                        onChange={(e) => updateForm({ item_code: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                        required
                                     />
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Status</label>
                                     <select
                                         value={editForm.status}
-                                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                        onChange={(e) => updateForm({ status: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     >
                                         <option value="in_stock">In Stock</option>
@@ -270,20 +350,20 @@ export default function ControlProductPage() {
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Karat</label>
-                                    <select value={editForm.karat} onChange={(e) => setEditForm({ ...editForm, karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    <select value={editForm.karat} onChange={(e) => updateForm({ karat: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                         {KARAT_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Gold Colour</label>
-                                    <select value={editForm.gold_color} onChange={(e) => setEditForm({ ...editForm, gold_color: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    <select value={editForm.gold_color} onChange={(e) => updateForm({ gold_color: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                         {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 {isRing && (
                                     <div>
                                         <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Ring Size</label>
-                                        <select value={editForm.ring_size} onChange={(e) => setEditForm({ ...editForm, ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        <select value={editForm.ring_size} onChange={(e) => updateForm({ ring_size: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
                                             <option value="">No size</option>
                                             {RING_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
                                         </select>
@@ -298,7 +378,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.001"
                                         value={editForm.actual_net_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_net_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_net_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -308,7 +388,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.01"
                                         value={editForm.actual_diamond_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_diamond_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_diamond_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -318,7 +398,7 @@ export default function ControlProductPage() {
                                         type="number"
                                         step="0.01"
                                         value={editForm.actual_color_stone_weight}
-                                        onChange={(e) => setEditForm({ ...editForm, actual_color_stone_weight: e.target.value })}
+                                        onChange={(e) => updateForm({ actual_color_stone_weight: e.target.value })}
                                         className="w-full border border-line rounded-lg px-4 py-3 text-sm"
                                     />
                                 </div>
@@ -326,7 +406,11 @@ export default function ControlProductPage() {
 
                             <div>
                                 <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Grade</label>
-                                <input value={editForm.diamond_grade} onChange={(e) => setEditForm({ ...editForm, diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IJ/SI" />
+                                <select value={editForm.diamond_grade} onChange={(e) => updateForm({ diamond_grade: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                    {rateCard && Object.entries(rateCard.diamond_rates || {})
+                                        .filter(([, v]) => v)
+                                        .map(([k]) => <option key={k} value={k}>{k}</option>)}
+                                </select>
                             </div>
 
                             <div>
@@ -340,23 +424,146 @@ export default function ControlProductPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Lab</label>
-                                    <input value={editForm.report_lab} onChange={(e) => setEditForm({ ...editForm, report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., IGI, GIA" />
+                                    <select value={editForm.report_lab} onChange={(e) => updateForm({ report_lab: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm">
+                                        <option>IGI</option><option>GIA</option><option>SGL</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Diamond Report Number</label>
-                                    <input value={editForm.report_number} onChange={(e) => setEditForm({ ...editForm, report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
+                                    <input value={editForm.report_number} onChange={(e) => updateForm({ report_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., 123456789" />
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Hallmark (HUID)</label>
-                                <input value={editForm.hallmark_number} onChange={(e) => setEditForm({ ...editForm, hallmark_number: e.target.value })} className="w-full border border-line rounded-lg px-4 py-3 text-sm" placeholder="e.g., HMK-001" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">HUID Numbers (max 3)</label>
+                                {editForm.hallmark_numbers.map((h, i) => (
+                                    <div key={i} className="flex gap-2">
+                                        <input
+                                            value={h}
+                                            onChange={(e) => updateHuid(i, e.target.value)}
+                                            className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1 font-mono tracking-wider"
+                                            placeholder={`HUID ${i + 1}`}
+                                            autoCapitalize="characters"
+                                            spellCheck="false"
+                                        />
+                                        {editForm.hallmark_numbers.length > 1 && (
+                                            <button type="button" onClick={() => removeHuid(i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                {editForm.hallmark_numbers.length < 3 && (
+                                    <button type="button" onClick={addHuid} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add HUID
+                                    </button>
+                                )}
+                                <p className="text-[10px] text-ink/50">
+                                    {editForm.hallmark_numbers.filter(h => h.trim()).length}/3 entered
+                                </p>
+                            </div>
+
+                            <div className="border-t border-line pt-6">
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-4">Design Diamond Weights (blueprint)</p>
+
+                                <div className="mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Round Melle (Ct)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editForm.melle_weight}
+                                        onChange={(e) => updateForm({ melle_weight: e.target.value })}
+                                        className="w-full border border-line rounded-lg px-4 py-3 text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-2 mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Pointer / Solitaire Weights (Ct)</label>
+                                    {editForm.pointer_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('pointer_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Pointer ${i + 1}`}
+                                            />
+                                            {editForm.pointer_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('pointer_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('pointer_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Pointer
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2 mb-4">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Fancy Cut Weights (Ct)</label>
+                                    {editForm.fancy_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('fancy_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Fancy ${i + 1}`}
+                                            />
+                                            {editForm.fancy_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('fancy_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('fancy_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Fancy Cut
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-semibold text-ink/60 block mb-2">Color Stone Weights (Ct)</label>
+                                    {editForm.color_stone_weights.map((w, i) => (
+                                        <div key={i} className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={w}
+                                                onChange={(e) => updateField('color_stone_weights', i, e.target.value)}
+                                                className="w-full border border-line rounded-lg px-4 py-3 text-sm flex-1"
+                                                placeholder={`Color Stone ${i + 1}`}
+                                            />
+                                            {editForm.color_stone_weights.length > 1 && (
+                                                <button type="button" onClick={() => removeField('color_stone_weights', i)} className="px-3 text-red-500 hover:text-red-700 flex-shrink-0">
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addField('color_stone_weights')} className="text-xs text-gold-dark font-semibold hover:text-ink">
+                                        + Add Color Stone
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setShowEdit(false)} className="btn-outline flex-1">Cancel</button>
-                            <button onClick={saveEdit} disabled={saving} className="btn-solid flex-1">
+                            <button
+                                onClick={handleClose}
+                                className="flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white transition-all"
+                            >Cancel</button>
+                            <button
+                                onClick={saveEdit}
+                                disabled={saving || !isDirty}
+                                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow ${saving || !isDirty
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    : 'bg-[#1A2536] hover:bg-[#111A29] text-white cursor-pointer'
+                                    }`}
+                            >
                                 {saving ? "Saving…" : "Save Changes"}
                             </button>
                         </div>

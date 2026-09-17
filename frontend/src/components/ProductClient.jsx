@@ -41,7 +41,6 @@ export default function ProductClient({ product }) {
     const [purity, setPurity] = useState(null);
     const [color, setColor] = useState(null);
     const [size, setSize] = useState(null);
-    const [showAllMedia, setShowAllMedia] = useState(false);
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [added, setAdded] = useState(false);
     const [zoomedImage, setZoomedImage] = useState(null);
@@ -100,13 +99,14 @@ export default function ProductClient({ product }) {
     };
 
     const media = product.media ?? [];
-    const desktopMedia = showAllMedia ? media : media.slice(0, 6);
     const allProducts = product.products ?? [];
     const inStockProducts = allProducts.filter((i) => i.status === "in_stock");
-    const isRing =
-        allProducts.some((i) => i.ring_size) ||
-        ["rings", "solitaires"].includes(product.category_slug) ||
-        /\b(rings?|solitaires?)\b/i.test(product.category_name || "");
+    const isRing = (() => {
+        const mainCategory = product.category_slug;
+        const parentCategory = product.parent_category_slug;
+        return ["rings", "solitaires"].includes(mainCategory) ||
+            ["rings", "solitaires"].includes(parentCategory);
+    })();
 
     const cheapestInStock = inStockProducts.length
         ? inStockProducts.reduce((a, b) => (Number(a.price) <= Number(b.price) ? a : b))
@@ -131,17 +131,19 @@ export default function ProductClient({ product }) {
     const defaultGrade = rc.default_grade ?? "IJ/SI";
     const activeGrade = activeProduct?.diamond_grade ?? defaultGrade;
 
-    let price, breakdown, netWeight, diaWeight;
+    let price, breakdown, netWeight, diaWeight, colorStoneWeight;
     if (activeProduct) {
         price = Number(activeProduct.price);
         breakdown = {
             gold_value: Number(activeProduct.gold_value ?? 0),
             diamond_value: Number(activeProduct.diamond_value ?? 0),
+            color_stone_value: Number(activeProduct.color_stone_value ?? 0),
             making_charges: Number(activeProduct.making_charges ?? 0),
             gst_amount: Number(activeProduct.gst_amount ?? 0),
         };
         netWeight = Number(activeProduct.actual_net_weight).toFixed(3);
         diaWeight = Number(activeProduct.actual_diamond_weight).toFixed(2);
+        colorStoneWeight = Number(activeProduct.actual_color_stone_weight).toFixed(2);
     } else {
         const refs = product.size_weight_refs ?? {};
         let baseWeight;
@@ -157,14 +159,32 @@ export default function ProductClient({ product }) {
 
         const goldRate = activePurity === "18Kt" ? rc.gold_rate_18kt : rc.gold_rate_14kt;
         const diaRate = rc.diamond_rates?.[defaultGrade] ?? 0;
+
         const goldValue = baseWeight * Number(goldRate ?? 0);
-        const diaValue = Number(product.total_diamond_weight) * Number(diaRate);
-        const making = (goldValue + diaValue) * (Number(rc.making_charges_percentage ?? 0) / 100);
-        const gst = (goldValue + diaValue + making) * (Number(rc.gst_percentage ?? 0) / 100);
-        price = Math.round(goldValue + diaValue + making + gst);
-        breakdown = { gold_value: Math.round(goldValue), diamond_value: Math.round(diaValue), making_charges: Math.round(making), gst_amount: Math.round(gst) };
+        const diaValue = Number(product.total_diamond_weight || 0) * Number(diaRate);
+
+        const colorStoneRate = Number(rc.color_stone_rate_per_carat ?? 0);
+        const colorStoneValue = Number(product.color_stone_weight || 0) * colorStoneRate;
+
+        // New making formula (Fixed + % of 24kt)
+        const goldRate24kt = Number(rc.gold_rate_18kt ?? 0) * (24.0 / 18.0);
+        const makingPerGram = Number(rc.making_fixed_per_gram ?? 0) + (Number(rc.making_pct_24kt ?? 0) / 100) * goldRate24kt;
+        const making = baseWeight * makingPerGram;
+
+        const subtotal = goldValue + diaValue + colorStoneValue + making;
+        const gst = subtotal * (Number(rc.gst_percentage ?? 0) / 100);
+
+        price = Math.round(subtotal + gst);
+        breakdown = {
+            gold_value: Math.round(goldValue),
+            diamond_value: Math.round(diaValue),
+            color_stone_value: Math.round(colorStoneValue),
+            making_charges: Math.round(making),
+            gst_amount: Math.round(gst)
+        };
         netWeight = baseWeight.toFixed(3);
-        diaWeight = Number(product.total_diamond_weight).toFixed(2);
+        diaWeight = Number(product.total_diamond_weight || 0).toFixed(2);
+        colorStoneWeight = Number(product.color_stone_weight || 0).toFixed(2);
     }
 
     const selection = { karat: activePurity, gold_color: activeColor, ring_size: activeSize, price };
@@ -304,87 +324,84 @@ export default function ProductClient({ product }) {
             <div className="grid lg:grid-cols-2 gap-0 lg:gap-12">
                 {/* ── LEFT: Media Gallery ── */}
                 <div>
-                    {/* Desktop Grid */}
-                    <div className="hidden lg:grid grid-cols-2 gap-1.5">
-                        {desktopMedia.map((m, i) => (
-                            <div key={i} className="relative overflow-hidden bg-cream aspect-square">
-                                {m.kind === "video" ? (
-                                    <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
-                                ) : failedImages.has(m.url) ? (
-                                    <ImageFallback onClick={() => setZoomedImage(m)} />
-                                ) : (
-                                    <Image
-                                        src={m.url}
-                                        alt={`${product.name} — media ${i + 1}`}
-                                        fill
-                                        placeholder="blur"
-                                        blurDataURL={BLUR_DATA}
-                                        sizes="(max-width: 1024px) 50vw, 33vw"
-                                        onError={() => handleImageError(m.url)}
-                                        className="object-cover transition-transform duration-500 hover:scale-[1.02] cursor-zoom-in"
-                                        onClick={() => setZoomedImage(m)}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                    {media.length > 6 && (
-                        <button onClick={() => setShowAllMedia(!showAllMedia)} className="hidden lg:flex w-full items-center justify-center gap-2 py-4 mt-2 bg-white text-[#1A2536] text-xs uppercase tracking-[0.16em] font-bold rounded-xl border border-[#E5BDB0] hover:bg-[#1A2536] hover:text-white hover:border-[#1A2536] transition-all">
-                            {showAllMedia ? "Show Less" : `Show More (${media.length - 6} more)`}
-                        </button>
-                    )}
+                    <div className="mb-6">
+                        {/* Desktop Grid - Always show all media */}
+                        <div className="hidden lg:grid grid-cols-2 gap-1.5">
+                            {product.media && product.media.map((m, i) => (
+                                <div key={i} className="relative overflow-hidden bg-cream aspect-square">
+                                    {m.kind === "video" ? (
+                                        <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                    ) : failedImages.has(m.url) ? (
+                                        <ImageFallback onClick={() => setZoomedImage(m)} />
+                                    ) : (
+                                        <Image
+                                            src={m.url}
+                                            alt={`${product.name} — media ${i + 1}`}
+                                            fill
+                                            placeholder="blur"
+                                            blurDataURL={BLUR_DATA}
+                                            sizes="(max-width: 1024px) 50vw, 33vw"
+                                            onError={() => handleImageError(m.url)}
+                                            className="object-cover transition-transform duration-500 hover:scale-[1.02] cursor-zoom-in"
+                                            onClick={() => setZoomedImage(m)}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
 
-                    {/* Mobile Carousel */}
-                    <div className="lg:hidden">
-                        <div className="relative">
-                            <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
-                                {media.map((m, i) => (
-                                    <div key={i} className="w-full shrink-0 snap-center relative h-[380px] md:h-[460px]">
-                                        {m.kind === "video" ? (
-                                            <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
-                                        ) : failedImages.has(m.url) ? (
-                                            <ImageFallback onClick={() => setZoomedImage(m)} heightClass="h-[380px] md:h-[460px]" />
-                                        ) : (
-                                            <Image
-                                                src={m.url}
-                                                alt={product.name}
-                                                fill
-                                                placeholder="blur"
-                                                blurDataURL={BLUR_DATA}
-                                                sizes="100vw"
-                                                onError={() => handleImageError(m.url)}
-                                                className="object-cover cursor-zoom-in"
-                                                onClick={() => setZoomedImage(m)}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {media.length > 1 && (
-                                <>
-                                    <button onClick={() => scrollToSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                                    </button>
-                                    <button onClick={() => scrollToSlide(Math.min(media.length - 1, currentSlide + 1))} disabled={currentSlide === media.length - 1} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                                    </button>
-                                </>
-                            )}
-
-                            {media.length > 1 && (
-                                <div className="flex justify-center gap-2 mt-4">
-                                    {media.map((_, i) => (
-                                        <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Go to slide ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentSlide ? "bg-[#B86B5A] w-8" : "bg-[#1A2536]/20 hover:bg-[#1A2536]/40 w-2"}`} />
+                        {/* Mobile Carousel */}
+                        <div className="lg:hidden">
+                            <div className="relative">
+                                <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                                    {media.map((m, i) => (
+                                        <div key={i} className="w-full shrink-0 snap-center relative h-[380px] md:h-[460px]">
+                                            {m.kind === "video" ? (
+                                                <video src={m.url} onError={(e) => (e.currentTarget.style.display = "none")} className="w-full h-full object-cover bg-[#1A2536]" controls muted loop playsInline preload="metadata" />
+                                            ) : failedImages.has(m.url) ? (
+                                                <ImageFallback onClick={() => setZoomedImage(m)} heightClass="h-[380px] md:h-[460px]" />
+                                            ) : (
+                                                <Image
+                                                    src={m.url}
+                                                    alt={product.name}
+                                                    fill
+                                                    placeholder="blur"
+                                                    blurDataURL={BLUR_DATA}
+                                                    sizes="100vw"
+                                                    onError={() => handleImageError(m.url)}
+                                                    className="object-cover cursor-zoom-in"
+                                                    onClick={() => setZoomedImage(m)}
+                                                />
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
-                            )}
-                            {media.length > 1 && (
-                                <div className="text-center mt-2 text-xs text-[#1A2536]/50">{currentSlide + 1} of {media.length}</div>
-                            )}
+
+                                {media.length > 1 && (
+                                    <>
+                                        <button onClick={() => scrollToSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                                        </button>
+                                        <button onClick={() => scrollToSlide(Math.min(media.length - 1, currentSlide + 1))} disabled={currentSlide === media.length - 1} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                                        </button>
+                                    </>
+                                )}
+
+                                {media.length > 1 && (
+                                    <div className="flex justify-center gap-2 mt-4">
+                                        {media.map((_, i) => (
+                                            <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Go to slide ${i + 1}`} className={`h-2 rounded-full transition-all ${i === currentSlide ? "bg-[#B86B5A] w-8" : "bg-[#1A2536]/20 hover:bg-[#1A2536]/40 w-2"}`} />
+                                        ))}
+                                    </div>
+                                )}
+                                {media.length > 1 && (
+                                    <div className="text-center mt-2 text-xs text-[#1A2536]/50">{currentSlide + 1} of {media.length}</div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </div> {/* <-- THIS CLOSING DIV WAS MISSING, FIXING THE LAYOUT! */}
 
                 {/* ── RIGHT: Product Details ── */}
                 <div className="px-8 py-10 lg:py-12 lg:pl-10 xl:pr-20 space-y-6">
@@ -428,6 +445,9 @@ export default function ProductClient({ product }) {
                             <div className="pt-3 border-t border-[#E5BDB0]/40 space-y-2.5">
                                 <BreakRow label={`Gold (${activePurity}, ${netWeight}g)`} value={breakdown.gold_value} />
                                 <BreakRow label={`Natural Diamond (${diaWeight} Ct, ${activeGrade})`} value={breakdown.diamond_value} />
+                                {breakdown.color_stone_value > 0 && (
+                                    <BreakRow label={`Color Stone (${colorStoneWeight} Ct)`} value={breakdown.color_stone_value} />
+                                )}
                                 <BreakRow label="Making Charges" value={breakdown.making_charges} />
                                 <BreakRow label={`GST (${rc.gst_percentage || 3}%)`} value={breakdown.gst_amount} />
                                 <div className="flex items-center justify-between text-sm border-t border-[#E5BDB0]/40 pt-2.5">
