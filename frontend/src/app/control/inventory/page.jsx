@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
 const inr = (n) =>
@@ -123,26 +123,17 @@ export default function InventoryPage() {
         }
     };
 
+    const searchParams = useSearchParams();
+
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const designId = params.get("design");
-        if (designId) viewDesign(designId, false); // Don't push URL on initial load
-
-        // Handle browser back button
-        const handlePopState = () => {
-            const newParams = new URLSearchParams(window.location.search);
-            const newDesignId = newParams.get("design");
-            if (!newDesignId) {
-                setSelected(null);
-                setDesignChecked([]);
-            } else {
-                viewDesign(newDesignId, false);
-            }
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
+        const designId = searchParams.get("design");
+        if (designId) {
+            viewDesign(designId, false);
+        } else {
+            setSelected(null);
+            setDesignChecked([]);
+        }
+    }, [searchParams]);
 
     const markSoldOffline = async (productId) => {
         if (!confirm("Mark this product as SOLD OFFLINE (showroom sale)?")) return;
