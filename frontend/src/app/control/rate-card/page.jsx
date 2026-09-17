@@ -79,6 +79,20 @@ export default function RateCardPage() {
 
     const activeBands = bands.filter((b) => b.name && b.rate);
 
+    const handleFetchNow = async () => {
+        setFetching(true);
+        setFetchOutput("");
+        try {
+            const { data } = await controlApi.fetchRatesNow();
+            setFetchOutput(data.output || "Fetch completed successfully!");
+            await load(); // Reload the rates and history
+        } catch (err) {
+            setFetchOutput("Failed: " + (err.response?.data?.error || err.message));
+        } finally {
+            setFetching(false);
+        }
+    };
+
     const handleSaveClick = async () => {
         setSaving(true);
         try {
@@ -124,13 +138,38 @@ export default function RateCardPage() {
                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">pricing configuration</span>
                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">Rate Card</h1>
                 </div>
-                {lastRefreshed && (
-                    <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
-                        <span className="text-xs text-[#1A2536]/60">Auto-refreshed: </span>
-                        <span className="text-xs font-bold text-[#1A2536]">{lastRefreshed.toLocaleTimeString("en-IN")}</span>
-                    </div>
-                )}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                        type="button"
+                        onClick={handleFetchNow}
+                        disabled={fetching || saving}
+                        className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {fetching ? (
+                            <>
+                                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Fetching...
+                            </>
+                        ) : "Fetch Rates Now"}
+                    </button>
+                    {lastRefreshed && (
+                        <div className="glass-card-vibrant rounded-full px-5 py-2.5 border border-[#E5BDB0]">
+                            <span className="text-xs text-[#1A2536]/60">Last loaded: </span>
+                            <span className="text-xs font-bold text-[#1A2536]">{lastRefreshed.toLocaleTimeString("en-IN")}</span>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {fetchOutput && (
+                <div className={`glass-card-vibrant rounded-2xl border p-4 ${fetchOutput.startsWith("Failed") ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+                    <pre className={`whitespace-pre-wrap text-xs font-mono ${fetchOutput.startsWith("Failed") ? "text-red-700" : "text-emerald-800"}`}>
+                        {fetchOutput}
+                    </pre>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Live Rates Card */}
