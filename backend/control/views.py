@@ -929,6 +929,30 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
             'total_spent': float(active.aggregate(s=Sum('total'))['s'] or 0),
         })
 
+    @action(detail=True, methods=['post'])
+    def deactivate_user(self, request, pk=None):
+        user = self.get_object()
+        
+        # Safety checks
+        if user.is_staff:
+            return Response({'error': 'Cannot deactivate staff accounts.'}, status=status.HTTP_400_BAD_REQUEST)
+        if user.id == request.user.id:
+            return Response({'error': 'You cannot deactivate your own account.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # SOFT DELETE: Preserve financial records but lock the account
+        user.is_active = False             # Django's built-in lock (blocks all logins)
+        user.set_unusable_password()       # Kills password login
+        user.google_id = None              # Kills Google login
+        user.phone = None                  # Kills SMS OTP login & prevents future OTP spam
+        user.save()
+        
+        # Clean up pending OTPs
+        from accounts.models import OTP
+        if user.email:
+            OTP.objects.filter(target_value=user.email).delete()
+        
+        return Response({'status': 'deactivated'})
+
 
 class GoldRateHistoryView(APIView):
     permission_classes = [IsStaff]
