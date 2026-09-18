@@ -38,6 +38,13 @@ class CookieTokenRefreshView(APIView):
         if not refresh_token: return Response({"detail": "Refresh token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             refresh = RefreshToken(refresh_token)
+            # Block refresh for deactivated users
+            user_id = refresh.payload.get('user_id')
+            from accounts.models import User
+            user = User.objects.filter(id=user_id, is_active=True).first()
+            if not user:
+                return Response({"detail": "Account deactivated"}, status=status.HTTP_401_UNAUTHORIZED)
+            
             response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
             response.set_cookie("access", str(refresh.access_token), max_age=int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
             if settings.SIMPLE_JWT.get("ROTATE_REFRESH_TOKENS", False):
@@ -53,6 +60,13 @@ class CPanelCookieTokenRefreshView(APIView):
         if not refresh_token: return Response({"detail": "Refresh token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
             refresh = RefreshToken(refresh_token)
+            # Block refresh for deactivated users
+            user_id = refresh.payload.get('user_id')
+            from accounts.models import User
+            user = User.objects.filter(id=user_id, is_active=True).first()
+            if not user:
+                return Response({"detail": "Account deactivated"}, status=status.HTTP_401_UNAUTHORIZED)
+            
             response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
             response.set_cookie("cpanel_access", str(refresh.access_token), max_age=int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
             if settings.SIMPLE_JWT.get("ROTATE_REFRESH_TOKENS", False):

@@ -16,7 +16,7 @@ from .models import AuditLog
 class StaffUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'is_staff', 'date_joined']
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone', 'is_staff', 'is_active', 'date_joined']
 
 
 class StaffProductSerializer(serializers.ModelSerializer):

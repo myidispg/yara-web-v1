@@ -88,7 +88,8 @@ const controlApi = {
   createTag: (data) => cpanelAxios.post("/control/tags/", data),
   updateTag: (id, data) => cpanelAxios.patch(`/control/tags/${id}/`, data),
   deleteTag: (id) => cpanelAxios.delete(`/control/tags/${id}/`),
-  deactivateUser: (id) => cpanelAxios.post(`/control/customers/${id}/deactivate_user/`),
+    deactivateUser: (id) => cpanelAxios.post(`/control/customers/${id}/deactivate_user/`),
+  activateUser: (id) => cpanelAxios.post(`/control/customers/${id}/activate_user/`),
   getCustomers: (includeStaff = false) => {
     const params = includeStaff ? { include_staff: 'true' } : {};
     return cpanelAxios.get("/control/customers/", { params });

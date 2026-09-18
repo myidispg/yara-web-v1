@@ -953,6 +953,16 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
         
         return Response({'status': 'deactivated'})
 
+    @action(detail=True, methods=['post'])
+    def activate_user(self, request, pk=None):
+        user = self.get_object()
+        if user.is_active:
+            return Response({'error': 'User is already active.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.is_active = True
+        user.save()
+        return Response({'status': 'activated'})
+
 
 class GoldRateHistoryView(APIView):
     permission_classes = [IsStaff]
