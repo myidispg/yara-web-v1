@@ -8,13 +8,27 @@ export default function CustomersPage() {
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showStaff, setShowStaff] = useState(false);
+    const [showDeactivated, setShowDeactivated] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
 
     const handleDeactivate = async (id, identifier) => {
         if (!confirm(`Are you sure you want to deactivate the account for ${identifier}?\n\nThey will be locked out immediately, but their order history and invoices will be preserved.`)) return;
-        setDeletingId(id); // Reusing the same state variable for UI loading state
+        setDeletingId(id);
         try {
             await controlApi.deactivateUser(id);
+            window.location.reload();
+        } catch (err) {
+            alert("Failed: " + (err.response?.data?.error || err.message));
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleActivate = async (id, identifier) => {
+        if (!confirm(`Reactivate the account for ${identifier}? They will be able to log in again.`)) return;
+        setDeletingId(id);
+        try {
+            await controlApi.activateUser(id);
             window.location.reload();
         } catch (err) {
             alert("Failed: " + (err.response?.data?.error || err.message));
@@ -40,7 +54,11 @@ export default function CustomersPage() {
 
     const staffCount = allUsers.filter((c) => c.is_staff).length;
     const customerCount = allUsers.filter((c) => !c.is_staff).length;
-    const displayedUsers = showStaff ? allUsers : allUsers.filter((c) => !c.is_staff);
+    const displayedUsers = allUsers.filter((c) => {
+        if (!showStaff && c.is_staff) return false;
+        if (!showDeactivated && !c.is_active) return false;
+        return true;
+    });
 
     if (loading) return (
         <div className="flex items-center justify-center py-24">
@@ -68,17 +86,27 @@ export default function CustomersPage() {
                 </div>
             </div>
 
-            {/* Staff Toggle */}
-            <label className="flex items-center gap-3 cursor-pointer select-none glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3 w-fit">
-                <input
-                    type="checkbox"
-                    checked={showStaff}
-                    onChange={(e) => setShowStaff(e.target.checked)}
-                    className="w-5 h-5 accent-[#B86B5A]"
-                />
-                <span className="text-sm font-semibold text-[#1A2536]">Show staff accounts in table</span>
-            </label>
-
+            {/* Toggles */}
+            <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-3 cursor-pointer select-none glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3 w-fit">
+                    <input
+                        type="checkbox"
+                        checked={showStaff}
+                        onChange={(e) => setShowStaff(e.target.checked)}
+                        className="w-5 h-5 accent-[#B86B5A]"
+                    />
+                    <span className="text-sm font-semibold text-[#1A2536]">Show staff accounts</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer select-none glass-card-vibrant rounded-xl border border-[#E5BDB0] px-4 py-3 w-fit">
+                    <input
+                        type="checkbox"
+                        checked={showDeactivated}
+                        onChange={(e) => setShowDeactivated(e.target.checked)}
+                        className="w-5 h-5 accent-[#B86B5A]"
+                    />
+                    <span className="text-sm font-semibold text-[#1A2536]">Show deactivated accounts</span>
+                </label>
+            </div>
             {/* Customers Table */}
             <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] overflow-hidden">
                 <div className="overflow-x-auto">
@@ -108,6 +136,11 @@ export default function CustomersPage() {
                                             <p className="font-bold text-[#1A2536]">
                                                 {[customer.first_name, customer.last_name].filter(Boolean).join(" ") || "—"}
                                             </p>
+                                            {!customer.is_active && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200 mt-1">
+                                                    Deactivated
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-[#1A2536]/70">{customer.email}</td>
                                         <td className="px-6 py-4 text-sm text-[#1A2536]/70">{customer.phone || "—"}</td>
@@ -143,7 +176,13 @@ export default function CustomersPage() {
                                                             {deletingId === customer.id ? "..." : "Deactivate"}
                                                         </button>
                                                     ) : (
-                                                        <span className="text-[10px] uppercase tracking-wider text-[#1A2536]/40 font-bold">Deactivated</span>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleActivate(customer.id, customer.email || customer.phone); }}
+                                                            disabled={deletingId === customer.id}
+                                                            className="text-xs text-emerald-600 font-bold uppercase tracking-wider hover:underline disabled:opacity-50"
+                                                        >
+                                                            {deletingId === customer.id ? "..." : "Activate"}
+                                                        </button>
                                                     )
                                                 )}
                                             </div>

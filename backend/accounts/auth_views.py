@@ -92,9 +92,10 @@ class VerifyOTPView(APIView):
         # Find or create user
         user = User.objects.filter(email=email).first()
         
-        # Block deactivated users
+        # AUTO-REACTIVATION: If they prove they own the email via OTP, let them back in!
         if user and not user.is_active:
-            return Response({'error': 'This account has been deactivated.'}, status=status.HTTP_403_FORBIDDEN)
+            user.is_active = True
+            user.save()
             
         created = False
         
@@ -189,13 +190,14 @@ class GoogleAuthView(APIView):
 
         # Find or create user
         user = User.objects.filter(google_id=google_id).first()
-        if user and not user.is_active:
-            return Response({'error': 'This account has been deactivated.'}, status=status.HTTP_403_FORBIDDEN)
         if not user:
             user = User.objects.filter(email=email).first()
             if user:
                 # Link existing email account to Google
                 user.google_id = google_id
+                # AUTO-REACTIVATION: Google login proves identity, let them back in!
+                if not user.is_active:
+                    user.is_active = True
                 user.is_email_verified = True
                 user.save()
             else:
@@ -207,6 +209,11 @@ class GoogleAuthView(APIView):
                     last_name=last_name,
                     is_email_verified=True
                 )
+        else:
+            # Existing Google user logging in - AUTO-REACTIVATION
+            if not user.is_active:
+                user.is_active = True
+                user.save()
         
         # Set HttpOnly Cookies
         response = Response({
