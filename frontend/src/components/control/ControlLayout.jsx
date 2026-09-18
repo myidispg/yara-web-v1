@@ -103,8 +103,8 @@ export default function ControlLayout({ children }) {
                 href={item.href}
                 onClick={() => window.dispatchEvent(new CustomEvent("control-nav", { detail: item.href }))}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active
-                    ? "bg-[#B86B5A] text-white font-bold shadow-lg"
-                    : "text-white/80 hover:bg-white/5 hover:text-white"
+                  ? "bg-[#B86B5A] text-white font-bold shadow-lg"
+                  : "text-white/80 hover:bg-white/5 hover:text-white"
                   }`}
               >
                 <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${active ? "bg-white/20" : "bg-white/5"
@@ -136,7 +136,15 @@ export default function ControlLayout({ children }) {
               View Site
             </button>
             <button
-              onClick={() => { logout(); router.push("/"); }}
+              onClick={async () => {
+                try {
+                  await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/cpanel-logout/`, {
+                    method: 'POST',
+                    credentials: 'include'
+                  });
+                } catch { }
+                window.location.href = "/cpanel-login";
+              }}
               className="text-[10px] font-bold uppercase tracking-wider bg-[#B86B5A] hover:bg-[#A05A4A] px-3 py-2 rounded-lg transition-colors"
             >
               Logout
