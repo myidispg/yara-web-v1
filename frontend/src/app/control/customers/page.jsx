@@ -8,6 +8,20 @@ export default function CustomersPage() {
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showStaff, setShowStaff] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
+
+    const handleDeactivate = async (id, identifier) => {
+        if (!confirm(`Are you sure you want to deactivate the account for ${identifier}?\n\nThey will be locked out immediately, but their order history and invoices will be preserved.`)) return;
+        setDeletingId(id); // Reusing the same state variable for UI loading state
+        try {
+            await controlApi.deactivateUser(id);
+            window.location.reload();
+        } catch (err) {
+            alert("Failed: " + (err.response?.data?.error || err.message));
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     useEffect(() => {
         loadUsers();
@@ -112,12 +126,27 @@ export default function CustomersPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Link
-                                                href={`/control/customers/${customer.id}`}
-                                                className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
-                                            >
-                                                View Profile →
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-4">
+                                                <Link
+                                                    href={`/control/customers/${customer.id}`}
+                                                    className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
+                                                >
+                                                    View
+                                                </Link>
+                                                {!customer.is_staff && (
+                                                    customer.is_active ? (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDeactivate(customer.id, customer.email || customer.phone); }}
+                                                            disabled={deletingId === customer.id}
+                                                            className="text-xs text-red-600 font-bold uppercase tracking-wider hover:underline disabled:opacity-50"
+                                                        >
+                                                            {deletingId === customer.id ? "..." : "Deactivate"}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] uppercase tracking-wider text-[#1A2536]/40 font-bold">Deactivated</span>
+                                                    )
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

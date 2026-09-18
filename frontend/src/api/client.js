@@ -32,8 +32,11 @@ api.interceptors.response.use(
         // Retry the original request
         return api(original);
       } catch {
-        // Refresh failed, redirect to auth page
-        if (window.location.pathname !== "/auth") {
+        // Refresh failed, redirect to auth page (unless we are on a public login page)
+        const publicPaths = ["/auth", "/cpanel-login"];
+        const isPublicPath = publicPaths.some(path => window.location.pathname.startsWith(path));
+
+        if (!isPublicPath) {
           const next = window.location.pathname !== "/" ? window.location.pathname : "";
           window.location.href = next ? `/auth?next=${encodeURIComponent(next)}` : "/auth";
         }
@@ -51,6 +54,9 @@ api.updateProfile = (data) => api.patch("/auth/me/", data);
 
 // Auth
 api.logout = () => api.post("/auth/logout/");
+api.sendOtp = (email) => api.post("/auth/send-otp/", { email });
+api.verifyOtp = (payload) => api.post("/auth/verify-otp/", payload);
+api.googleAuth = (credential) => api.post("/auth/google/", { credential });
 
 // Addresses
 api.getAddresses = () => api.get("/addresses/");

@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import { Cormorant_Garamond, Plus_Jakarta_Sans, Alex_Brush } from 'next/font/google';
 import { generateSEO, generateOrganizationSchema } from '@/lib/seo';
 
+import GoogleProvider from '@/components/GoogleProvider';
+
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -51,6 +53,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased">
+        <GoogleProvider>
         <Providers>
           <Navbar />
           <main className="min-h-screen">
@@ -58,6 +61,7 @@ export default function RootLayout({ children }) {
           </main>
           <Footer />
         </Providers>
+        </GoogleProvider>
       </body>
     </html>
   );

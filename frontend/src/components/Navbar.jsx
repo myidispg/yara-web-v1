@@ -26,9 +26,6 @@ export default function Navbar() {
     const initialPathRef = useRef(null);
     const isControl = pathname.startsWith("/control");
 
-    // Don't render navbar on control panel
-    if (isControl) return null;
-
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [query, setQuery] = useState("");
@@ -88,6 +85,9 @@ export default function Navbar() {
         // 3. Push the route
         router.push(`/search?q=${encodeURIComponent(query.trim())}`);
     };
+
+    // Don't render navbar on control panel (MUST be after all hooks!)
+    if (isControl) return null;
 
     return (
         <header className="sticky top-0 z-40">

@@ -71,6 +71,7 @@ const controlApi = {
   deleteTag: (id) => api.delete(`/control/tags/${id}/`),
 
   // Customers
+  deactivateUser: (id) => api.post(`/control/customers/${id}/deactivate_user/`),
   getCustomers: (includeStaff = false) => {
     const params = includeStaff ? { include_staff: 'true' } : {};
     return api.get("/control/customers/", { params });
