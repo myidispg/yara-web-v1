@@ -89,19 +89,19 @@ class VerifyOTPView(APIView):
         if otp.code != code:
             return Response({'error': 'Invalid code.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # OTP is valid!
-        otp.is_verified = True
-        otp.save()
-
         # Find or create user
         user = User.objects.filter(email=email).first()
+        
+        # Block deactivated users
         if user and not user.is_active:
             return Response({'error': 'This account has been deactivated.'}, status=status.HTTP_403_FORBIDDEN)
+            
         created = False
         
         if not user:
             # New user! We require first_name to create the account
             if not first_name:
+                # Return error but DO NOT mark OTP as verified yet, so Step 3 can use it
                 return Response({'error': 'First name is required for new accounts'}, status=status.HTTP_400_BAD_REQUEST)
             
             user = User.objects.create_user(
@@ -116,6 +116,10 @@ class VerifyOTPView(APIView):
             if not user.is_email_verified:
                 user.is_email_verified = True
                 user.save()
+
+        # OTP is fully verified and user is successfully resolved!
+        otp.is_verified = True
+        otp.save()
 
         # Set HttpOnly Cookies instead of returning tokens in JSON
         response = Response({
