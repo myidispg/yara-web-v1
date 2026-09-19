@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import SafeImage from "@/components/SafeImage";
+import PhoneVerificationModal from "@/components/PhoneVerificationModal";
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -15,6 +16,24 @@ export default function CartPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
+    const [showPhoneModal, setShowPhoneModal] = useState(false);
+
+    const handleCheckout = () => {
+        // If user is logged in but phone is not verified, intercept!
+        if (user && !user.is_phone_verified) {
+            setShowPhoneModal(true);
+            return;
+        }
+
+        // If verified (or not logged in yet), proceed to checkout or auth
+        router.push(user ? "/checkout" : "/auth?next=/checkout");
+    };
+
+    const handlePhoneVerified = () => {
+        setShowPhoneModal(false);
+        // Take them straight to checkout. The AuthContext will fetch the fresh profile on the next page.
+        window.location.href = "/checkout";
+    };
 
     useEffect(() => {
         setMounted(true);
@@ -197,7 +216,7 @@ export default function CartPage() {
                         </div>
 
                         <button
-                            onClick={() => router.push(user ? "/checkout" : "/auth?next=/checkout")}
+                            onClick={handleCheckout}
                             className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2"
                         >
                             <span>Proceed To Secure Checkout</span>
@@ -221,6 +240,12 @@ export default function CartPage() {
                     </aside>
                 </div>
             </div>
+
+            <PhoneVerificationModal
+                isOpen={showPhoneModal}
+                onClose={() => setShowPhoneModal(false)}
+                onSuccess={handlePhoneVerified}
+            />
         </div>
     );
 }
