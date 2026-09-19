@@ -1454,3 +1454,9 @@ class CalculatePriceView(APIView):
             'gst_amount': round(gst_amount, 2),
             'total': round(total, 2),
         })
+
+class StaffMeView(APIView):
+    """Returns the currently logged-in staff user using cpanel_access cookie"""
+    permission_classes = [IsStaff]
+    def get(self, request):
+        return Response(StaffUserSerializer(request.user).data)

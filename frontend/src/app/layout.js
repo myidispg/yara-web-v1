@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Cormorant_Garamond, Plus_Jakarta_Sans, Alex_Brush } from 'next/font/google';
 import { generateSEO, generateOrganizationSchema } from '@/lib/seo';
+import { StaffAuthProvider } from "@/context/StaffAuthContext";
 
 import GoogleProvider from '@/components/GoogleProvider';
 
@@ -54,13 +55,15 @@ export default function RootLayout({ children }) {
       </head>
       <body className="antialiased">
         <GoogleProvider>
-        <Providers>
-          <Navbar />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-        </Providers>
+          <StaffAuthProvider>
+            <Providers>
+              <Navbar />
+              <main className="min-h-screen">
+                {children}
+              </main>
+              <Footer />
+            </Providers>
+          </StaffAuthProvider>
         </GoogleProvider>
       </body>
     </html>

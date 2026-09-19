@@ -2,14 +2,14 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { StaffAuthProvider } from "@/context/StaffAuthContext";
 import { useStaffAuth } from "@/hooks/useStaffAuth";
 import ControlLayout from "@/components/control/ControlLayout";
 
-export default function ControlPanelLayout({ children }) {
+function ControlPanelGuard({ children }) {
   const { authorized } = useStaffAuth();
   const pathname = usePathname();
 
-  // Force a consistent tab title on every control panel page
   useEffect(() => {
     document.title = "Control Panel | YA-RA";
   }, [pathname]);
@@ -18,11 +18,19 @@ export default function ControlPanelLayout({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-ink/60">Checking authorization...</p>
+          <p className="text-[#1A2536]/60">Checking authorization...</p>
         </div>
       </div>
     );
   }
 
   return <ControlLayout>{children}</ControlLayout>;
+}
+
+export default function ControlPanelLayoutWrapper({ children }) {
+  return (
+    <StaffAuthProvider>
+      <ControlPanelGuard>{children}</ControlPanelGuard>
+    </StaffAuthProvider>
+  );
 }
