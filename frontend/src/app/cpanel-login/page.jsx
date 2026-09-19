@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useStaffAuthContext } from "@/context/StaffAuthContext";
 import api from "@/api/client";
 
 export default function ControlLoginPage() {
-    const { user } = useAuth();
+    const { user } = useStaffAuthContext();
     const router = useRouter();
     const [form, setForm] = useState({ identifier: "", password: "" });
     const [error, setError] = useState("");

@@ -1,11 +1,10 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useStaffAuthContext } from "@/context/StaffAuthContext";
 
 export function useStaffAuth() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useStaffAuthContext();
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
 
@@ -13,7 +12,7 @@ export function useStaffAuth() {
     if (loading) return;
     
     if (!user) {
-      router.push("/auth?next=/control");
+      router.push("/cpanel-login");
       return;
     }
     
