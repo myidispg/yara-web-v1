@@ -8,14 +8,14 @@ import { useGoogleLogin } from "@react-oauth/google";
 import api from "@/api/client";
 
 export default function AuthPage() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const nextPath = searchParams.get("next") ?? "/";
 
     // ── 1. ALL useState HOOKS ──
     const [mounted, setMounted] = useState(false);
-    const [step, setStep] = useState(1); 
+    const [step, setStep] = useState(1);
     const [email, setEmail] = useState("");
     const [otp, setOtp] = useState("");
     const [firstName, setFirstName] = useState("");
@@ -32,8 +32,8 @@ export default function AuthPage() {
     }, [step]);
 
     useEffect(() => {
-        if (mounted && user) router.push(nextPath, { replace: true });
-    }, [user, mounted, router, nextPath]);
+        if (!loading && user) router.replace(nextPath || "/");
+    }, [user, loading, router, nextPath]);
 
     useEffect(() => {
         if (countdown > 0) {
@@ -51,9 +51,9 @@ export default function AuthPage() {
                     headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
                 });
                 const profile = await res.json();
-                
+
                 const { data } = await api.googleAuth(tokenResponse.access_token);
-                
+
                 if (!data.user.first_name) {
                     setEmail(profile.email);
                     setIsNewUser(true);
@@ -100,7 +100,7 @@ export default function AuthPage() {
         setBusy(true); setError("");
         try {
             const { data } = await api.verifyOtp({ email, code: otp });
-            
+
             if (data.is_new_user) {
                 setIsNewUser(true);
                 setStep(3);
@@ -172,7 +172,7 @@ export default function AuthPage() {
                 {/* Right Form Panel */}
                 <div className="flex items-center justify-center px-6 sm:px-8 lg:px-12 py-12 bg-white">
                     <div className="w-full max-w-md">
-                        
+
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl mb-6 font-semibold text-center">
                                 {error}
@@ -191,13 +191,13 @@ export default function AuthPage() {
                                 <form onSubmit={handleSendOtp} className="space-y-4">
                                     <div>
                                         <label className={labelCls}>Email Address</label>
-                                        <input 
-                                            required 
-                                            type="email" 
-                                            className={inputCls} 
+                                        <input
+                                            required
+                                            type="email"
+                                            className={inputCls}
                                             placeholder="you@example.com"
-                                            value={email} 
-                                            onChange={(e) => setEmail(e.target.value)} 
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             autoFocus
                                         />
                                     </div>
@@ -222,10 +222,10 @@ export default function AuthPage() {
                                     className="w-full py-3.5 border border-[#E5BDB0] hover:bg-[#1A2536]/[0.03] text-[#1A2536] text-sm font-bold rounded-full transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                     </svg>
                                     Continue with Google
                                 </button>
@@ -239,22 +239,22 @@ export default function AuthPage() {
                                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">check your inbox</span>
                                     <h1 className="font-serif-luxury text-3xl font-normal text-[#1A2536]">Enter Verification Code</h1>
                                     <p className="text-sm text-[#1A2536]/60 mt-2">
-                                        We sent a 6-digit code to <br/>
+                                        We sent a 6-digit code to <br />
                                         <span className="font-bold text-[#1A2536]">{email}</span>
                                     </p>
                                 </div>
 
                                 <form onSubmit={handleVerifyOtp} className="space-y-6">
                                     <div>
-                                        <input 
-                                            required 
-                                            type="text" 
+                                        <input
+                                            required
+                                            type="text"
                                             inputMode="numeric"
                                             maxLength={6}
-                                            className="w-full bg-white border border-[#E5BDB0] rounded-xl px-4 py-4 text-2xl text-center tracking-[0.5em] font-mono font-bold text-[#1A2536] focus:outline-none focus:border-[#1A2536] transition-colors" 
+                                            className="w-full bg-white border border-[#E5BDB0] rounded-xl px-4 py-4 text-2xl text-center tracking-[0.5em] font-mono font-bold text-[#1A2536] focus:outline-none focus:border-[#1A2536] transition-colors"
                                             placeholder="• • • • • •"
-                                            value={otp} 
-                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} 
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                             autoFocus
                                         />
                                     </div>
@@ -275,7 +275,7 @@ export default function AuthPage() {
                                         <button onClick={handleSendOtp} className="text-[#B86B5A] font-bold hover:underline">Resend Code</button>
                                     )}
                                 </div>
-                                
+
                                 <button onClick={() => setStep(1)} className="w-full text-center text-xs text-[#1A2536]/50 hover:text-[#1A2536] font-bold uppercase tracking-wider">
                                     ← Change Email
                                 </button>
@@ -302,7 +302,7 @@ export default function AuthPage() {
                                             <input className={inputCls} value={lastName} onChange={(e) => setLastName(e.target.value)} />
                                         </div>
                                     </div>
-                                    
+
                                     <button
                                         type="submit"
                                         disabled={busy || !firstName}
