@@ -46,7 +46,18 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "first_name", "last_name", "name", "email", "phone", 
                   "gender", "date_of_birth", "date_joined", "is_staff", "addresses"]
-        read_only_fields = ["email", "phone", "date_joined", "is_staff"]
+        # Removed "phone" from read_only_fields so users can update it
+        read_only_fields = ["email", "date_joined", "is_staff"]
+
+    def validate_phone(self, value):
+        import re
+        if value:
+            if not re.fullmatch(r"[6-9]\d{9}", value):
+                raise serializers.ValidationError("Enter a valid 10-digit Indian mobile number.")
+            # Check if phone is already taken by another user
+            if User.objects.filter(phone=value).exclude(id=self.instance.id).exists():
+                raise serializers.ValidationError("This phone number is already in use.")
+        return value
 
     def get_name(self, obj):
         return obj.get_full_name() or obj.email
@@ -55,6 +66,14 @@ class UserSerializer(serializers.ModelSerializer):
         from orders.serializers import AddressSerializer
         addresses = obj.addresses.all().order_by('-is_default', '-id')
         return AddressSerializer(addresses, many=True).data
+
+    def update(self, instance, validated_data):
+        new_phone = validated_data.get('phone')
+        # If they change their phone number, mark it as unverified until they do SMS OTP
+        if new_phone and new_phone != instance.phone:
+            instance.is_phone_verified = False
+            
+        return super().update(instance, validated_data)
 
 class LoginSerializer(TokenObtainPairSerializer):
     """Accepts {"login": "<email or phone>", "password": "..."} and issues JWTs."""

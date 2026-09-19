@@ -35,6 +35,7 @@ api.interceptors.response.use(
 );
 
 api.getProfile = () => api.get("/auth/me/");
+api.updateProfile = (data) => api.patch("/auth/me/", data);
 api.logout = () => api.post("/auth/logout/");
 api.sendOtp = (email) => api.post("/auth/send-otp/", { email });
 api.verifyOtp = (payload) => api.post("/auth/verify-otp/", payload);
