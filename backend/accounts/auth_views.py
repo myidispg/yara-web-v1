@@ -70,62 +70,96 @@ class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get('email', '').strip().lower()
-        code = request.data.get('code', '').strip()
+        id_token = request.data.get('idToken')
         first_name = request.data.get('first_name', '').strip()
         last_name = request.data.get('last_name', '').strip()
+        email = request.data.get('email', '').strip().lower()
+        email_otp = request.data.get('email_otp', '').strip()  # NEW: Email OTP code
 
-        if not email or not code:
-            return Response({'error': 'Email and code are required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not id_token:
+            return Response({'error': 'ID token is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            otp = OTP.objects.filter(target_type='email', target_value=email, is_verified=False).latest('created_at')
-        except OTP.DoesNotExist:
-            return Response({'error': 'No active OTP found. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+        decoded = verify_firebase_token(id_token)
+        if not decoded:
+            return Response({'error': 'Invalid or expired Firebase token'}, status=status.HTTP_400_BAD_REQUEST)
 
-        otp.attempts += 1
-        otp.save()
+        firebase_phone = decoded.get('phone_number', '')
+        phone = firebase_phone.replace('+91', '').replace(' ', '').replace('-', '')
 
-        if not otp.is_valid:
-            return Response({'error': 'OTP is expired or exceeded attempts.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone:
+            return Response({'error': 'Could not extract phone number'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if otp.code != code:
-            return Response({'error': 'Invalid code.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Find or create user
-        user = User.objects.filter(email=email).first()
-        
-        # AUTO-REACTIVATION: If they prove they own the email via OTP, let them back in!
-        if user and not user.is_active:
-            user.is_active = True
-            user.save()
-            
+        user = User.objects.filter(phone=phone).first()
         created = False
-        
+
+        # If email is provided, verify it via email OTP
+        email_verified = False
+        if email:
+            if not email_otp:
+                return Response({
+                    'status': 'needs_email_otp',
+                    'email': email
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify the email OTP
+            try:
+                otp_obj = OTP.objects.filter(
+                    target_type='email', 
+                    target_value=email, 
+                    is_verified=False
+                ).latest('created_at')
+                
+                otp_obj.attempts += 1
+                otp_obj.save()
+                
+                if not otp_obj.is_valid or otp_obj.code != email_otp:
+                    return Response({'error': 'Invalid or expired email verification code'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                otp_obj.is_verified = True
+                otp_obj.save()
+                email_verified = True
+            except OTP.DoesNotExist:
+                return Response({'error': 'No active email OTP found. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+
         if not user:
-            # New user! We require first_name to create the account
             if not first_name:
-                # Return error but DO NOT mark OTP as verified yet, so Step 3 can use it
-                return Response({'error': 'First name is required for new accounts'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status': 'needs_details', 
+                    'phone': phone
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if this email is already registered to another user
+            if email and User.objects.filter(email=email).exists():
+                return Response({'error': 'An account with this email already exists. Please use a different email or sign in.'}, status=status.HTTP_400_BAD_REQUEST)
             
             user = User.objects.create_user(
-                email=email,
+                phone=phone,
+                email=email if email else None,
                 first_name=first_name,
                 last_name=last_name,
-                is_email_verified=True
+                is_phone_verified=True,
+                is_email_verified=email_verified
             )
             created = True
         else:
-            # Existing user logging in
-            if not user.is_email_verified:
+            if not user.is_active:
+                user.is_active = True
+            
+            if not user.is_phone_verified:
+                user.is_phone_verified = True
+                
+            # Update email if provided and verified (and not already set)
+            if email and email_verified:
+                if user.email and user.email != email:
+                    # Check if new email belongs to another user
+                    if User.objects.filter(email=email).exclude(id=user.id).exists():
+                        return Response({'error': 'This email is already used by another account.'}, status=status.HTTP_400_BAD_REQUEST)
+                user.email = email
                 user.is_email_verified = True
-                user.save()
+                
+            user.save()
 
-        # OTP is fully verified and user is successfully resolved!
-        otp.is_verified = True
-        otp.save()
-
-        # Set HttpOnly Cookies instead of returning tokens in JSON
+        refresh = RefreshToken.for_user(user)
         response = Response({
             'status': 'success',
             'is_new_user': created,
@@ -135,30 +169,14 @@ class VerifyOTPView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'phone': user.phone,
-                'is_phone_verified': user.is_phone_verified
+                'is_phone_verified': user.is_phone_verified,
+                'is_email_verified': user.is_email_verified,
+                'is_active': user.is_active
             }
         })
         
-        refresh = RefreshToken.for_user(user)
-        response.set_cookie(
-            "access", 
-            str(refresh.access_token), 
-            max_age=int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()), 
-            httponly=True, 
-            secure=not settings.DEBUG, 
-            samesite="Lax", 
-            path="/"
-        )
-        response.set_cookie(
-            "refresh", 
-            str(refresh), 
-            max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()), 
-            httponly=True, 
-            secure=not settings.DEBUG, 
-            samesite="Lax", 
-            path="/"
-        )
-        
+        response.set_cookie("access", str(refresh.access_token), max_age=int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
+        response.set_cookie("refresh", str(refresh), max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
         return response
 
 
