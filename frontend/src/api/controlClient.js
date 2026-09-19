@@ -1,12 +1,10 @@
 import axios from "axios";
 
-// 1. Create a dedicated Axios instance for the cPanel
 const cpanelAxios = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
   withCredentials: true,
 });
 
-// 2. cPanel specific 401 interceptor (Calls cpanel-refresh instead of refresh)
 cpanelAxios.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -15,26 +13,27 @@ cpanelAxios.interceptors.response.use(
       typeof window !== "undefined" &&
       err.response?.status === 401 &&
       !original._retry &&
-      !original.url.includes("/auth/login/") &&
       !original.url.includes("/auth/cpanel-refresh/") &&
-      !original.url.includes("/auth/cpanel-logout/")
+      !original.url.includes("/auth/login/")
     ) {
       original._retry = true;
       try {
         await cpanelAxios.post("/auth/cpanel-refresh/");
         return cpanelAxios(original);
-      } catch {
+      } catch (refreshErr) {
         if (window.location.pathname !== "/cpanel-login") {
           window.location.href = "/cpanel-login";
         }
+        return Promise.reject(refreshErr);
       }
     }
     return Promise.reject(err);
   }
 );
 
-// 3. Map all cPanel methods to use cpanelAxios instead of the global api
 const controlApi = {
+  _login: (payload) => cpanelAxios.post("/auth/login/", payload),
+  getStaffProfile: () => cpanelAxios.get("/control/me/"),
   getDashboard: () => cpanelAxios.get("/control/dashboard/"),
   getOrders: () => cpanelAxios.get("/control/orders/"),
   getOrder: (id) => cpanelAxios.get(`/control/orders/${id}/`),
@@ -46,21 +45,13 @@ const controlApi = {
   getProduct: (id) => cpanelAxios.get(`/control/products/${id}/`),
   createDesign: (data) => cpanelAxios.post("/control/products/", data),
   addInstance: (designId, data) => cpanelAxios.post(`/control/products/${designId}/add_instance/`, data),
-  uploadMedia: (designId, file) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    return cpanelAxios.post(`/control/products/${designId}/upload_media/`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
+  uploadMedia: (designId, file) => { const fd = new FormData(); fd.append("file", file); return cpanelAxios.post(`/control/products/${designId}/upload_media/`, fd, { headers: { "Content-Type": "multipart/form-data" } }); },
   deleteDesign: (designId) => cpanelAxios.delete(`/control/products/${designId}/delete_design/`),
   deleteProduct: (productId) => cpanelAxios.delete(`/control/instances/${productId}/delete_product/`),
-  bulkDesignAction: (ids, action, cascade = false) =>
-    cpanelAxios.post("/control/products/bulk-action/", { ids, action, cascade }),
+  bulkDesignAction: (ids, action, cascade = false) => cpanelAxios.post("/control/products/bulk-action/", { ids, action, cascade }),
   updateDesign: (id, data) => cpanelAxios.patch(`/control/products/${id}/`, data),
   deleteMedia: (designId, mediaId) => cpanelAxios.delete(`/control/products/${designId}/media/${mediaId}/`),
-  reorderDesignMedia: (designId, mediaIds) =>
-    cpanelAxios.post(`/control/products/${designId}/reorder-media/`, { media_ids: mediaIds }),
+  reorderDesignMedia: (designId, mediaIds) => cpanelAxios.post(`/control/products/${designId}/reorder-media/`, { media_ids: mediaIds }),
   getInstances: (params = {}) => cpanelAxios.get("/control/instances/", { params }),
   markSoldOffline: (instanceId) => cpanelAxios.post(`/control/instances/${instanceId}/mark_sold_offline/`),
   returnToStock: (instanceId) => cpanelAxios.post(`/control/instances/${instanceId}/return_to_stock/`),
@@ -71,8 +62,7 @@ const controlApi = {
   calculatePrice: (data) => cpanelAxios.post("/control/calculate-price/", data),
   getProductsFlat: () => cpanelAxios.get("/control/instances/flat/"),
   bulkProductAction: (ids, action) => cpanelAxios.post("/control/instances/bulk-action/", { ids, action }),
-  exportSelectedProducts: (ids) =>
-    cpanelAxios.get(`/control/products/export-products/?ids=${ids.join(",")}`, { responseType: "blob" }),
+  exportSelectedProducts: (ids) => cpanelAxios.get(`/control/products/export-products/?ids=${ids.join(",")}`, { responseType: "blob" }),
   getRateCard: () => cpanelAxios.get("/control/rate-card/"),
   updateRateCard: (data) => cpanelAxios.put("/control/rate-card/", data),
   getRateHistory: () => cpanelAxios.get("/control/rate-history/"),
@@ -90,18 +80,9 @@ const controlApi = {
   deleteTag: (id) => cpanelAxios.delete(`/control/tags/${id}/`),
   deactivateUser: (id) => cpanelAxios.post(`/control/customers/${id}/deactivate_user/`),
   activateUser: (id) => cpanelAxios.post(`/control/customers/${id}/activate_user/`),
-  getCustomers: (includeStaff = false) => {
-    const params = includeStaff ? { include_staff: 'true' } : {};
-    return cpanelAxios.get("/control/customers/", { params });
-  },
+  getCustomers: (includeStaff = false) => cpanelAxios.get("/control/customers/", { params: includeStaff ? { include_staff: 'true' } : {} }),
   getCustomerFull: (id) => cpanelAxios.get(`/control/customers/${id}/full/`),
-  importProducts: (file) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    return cpanelAxios.post("/control/products/import-products/", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
+  importProducts: (file) => { const fd = new FormData(); fd.append("file", file); return cpanelAxios.post("/control/products/import-products/", fd, { headers: { "Content-Type": "multipart/form-data" } }); },
   downloadTemplate: () => cpanelAxios.get("/control/products/import-template/", { responseType: "blob" }),
   exportProducts: () => cpanelAxios.get("/control/products/export-products/", { responseType: "blob" }),
   exportOrders: () => cpanelAxios.get("/control/orders/export-orders/", { responseType: "blob" }),
@@ -115,7 +96,6 @@ const controlApi = {
   downloadInvoice: (id) => cpanelAxios.get(`/control/invoices/${id}/pdf/`, { responseType: 'blob' }),
   exportInvoices: (params = {}) => cpanelAxios.get("/control/invoices/export/", { params, responseType: 'blob' }),
   exportInvoicePdfs: (params = {}) => cpanelAxios.get("/control/invoices/export_pdfs/", { params, responseType: 'blob' }),
-  getStaffProfile: () => cpanelAxios.get("/control/me/"),
 };
 
 export default controlApi;

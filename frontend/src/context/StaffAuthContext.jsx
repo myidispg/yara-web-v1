@@ -9,15 +9,18 @@ export function StaffAuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         const { data } = await controlApi.getStaffProfile();
-        setUser(data);
+        if (isMounted) setUser(data);
       } catch {
-        setUser(null);
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
     })();
+    return () => { isMounted = false; };
   }, []);
 
   return (
@@ -26,5 +29,4 @@ export function StaffAuthProvider({ children }) {
     </StaffAuthContext.Provider>
   );
 }
-
-export const useStaffAuthContext = () => useContext(StaffAuthContext);
+export const useStaffAuth = () => useContext(StaffAuthContext);
