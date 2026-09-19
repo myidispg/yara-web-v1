@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useStaffAuth } from "@/hooks/useStaffAuth";
 import ControlLayout from "@/components/control/ControlLayout";
 
+
 export default function CPanelLayout({ children }) {
   const { authorized, loading } = useStaffAuth();
   const pathname = usePathname();

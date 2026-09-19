@@ -128,7 +128,7 @@ export default function OrdersPage() {
                                 return (
                                     <tr key={o.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
                                         <td className="px-6 py-4">
-                                            <Link href={`/control/orders/${o.id}`} className="font-mono text-sm font-bold text-[#B86B5A] hover:text-[#1A2536] hover:underline transition-colors">
+                                            <Link href={`/cpanel/orders/${o.id}`} className="font-mono text-sm font-bold text-[#B86B5A] hover:text-[#1A2536] hover:underline transition-colors">
                                                 {o.order_number}
                                             </Link>
                                         </td>

@@ -200,7 +200,7 @@ export default function ControlProductPage() {
         if (!confirm(`Permanently delete ${p.item_code}? This cannot be undone.`)) return;
         try {
             await controlApi.deleteProduct(p.id);
-            router.push(`/control/inventory?design=${p.design_id}`);
+            router.push(`/cpanel/inventory?design=${p.design_id}`);
         } catch (err) {
             alert(err.response?.data?.error || "Cannot delete this product.");
         }
@@ -222,7 +222,7 @@ export default function ControlProductPage() {
 
     return (
         <div>
-            <Link href={`/control/inventory?design=${p.design_id}`} className="text-sm text-gold-dark hover:text-ink">
+            <Link href={`/cpanel/inventory?design=${p.design_id}`} className="text-sm text-gold-dark hover:text-ink">
                 ← Back to {p.design_code}
             </Link>
 
@@ -250,7 +250,7 @@ export default function ControlProductPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-white rounded-xl border border-line p-6 shadow-card">
                     <h3 className="font-serif text-xl mb-4">Specifications</h3>
-                    <Row label="Design" value={<Link className="text-gold-dark hover:text-ink" href={`/control/inventory?design=${p.design_id}`}>{p.design_code}</Link>} />
+                    <Row label="Design" value={<Link className="text-gold-dark hover:text-ink" href={`/cpanel/inventory?design=${p.design_id}`}>{p.design_code}</Link>} />
                     <Row label="Karat" value={p.karat} />
                     <Row label="Gold Colour" value={p.gold_color} />
                     <Row label="Ring Size" value={p.ring_size || "—"} />
@@ -284,7 +284,7 @@ export default function ControlProductPage() {
                     <Row label="Sold In Order" value={p.sold_in_order_number || "—"} />
                     <Row label="Sold To" value={p.sold_to_email || "—"} />
                     {p.sold_in_order_id && (
-                        <Link href="/control/orders" className="inline-block mt-3 text-xs text-gold-dark font-semibold hover:text-ink">
+                        <Link href="/cpanel/orders" className="inline-block mt-3 text-xs text-gold-dark font-semibold hover:text-ink">
                             View order →
                         </Link>
                     )}

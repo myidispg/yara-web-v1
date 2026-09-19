@@ -164,7 +164,7 @@ export default function InvoicesPage() {
                                         <tr key={inv.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
                                             <td className="px-6 py-4 text-sm font-mono font-bold text-[#1A2536]">{inv.invoice_number}</td>
                                             <td className="px-6 py-4 text-sm">
-                                                <Link href={`/control/orders/${inv.order}`} className="font-mono text-[#B86B5A] font-bold hover:text-[#1A2536] hover:underline transition-colors">
+                                                <Link href={`/cpanel/orders/${inv.order}`} className="font-mono text-[#B86B5A] font-bold hover:text-[#1A2536] hover:underline transition-colors">
                                                     {inv.order_number}
                                                 </Link>
                                             </td>

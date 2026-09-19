@@ -258,7 +258,7 @@ export default function NewPage() {
                 hallmark_numbers: huids.filter(h => h.trim()),
             });
 
-            router.push("/control/inventory");
+            router.push("/cpanel/inventory");
         } catch (err) {
             const d = err.response?.data;
             setError(typeof d === "object" ? JSON.stringify(d) : String(d || err.message));
@@ -268,7 +268,7 @@ export default function NewPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-20">
-            <button onClick={() => router.push("/control/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+            <button onClick={() => router.push("/cpanel/inventory")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>

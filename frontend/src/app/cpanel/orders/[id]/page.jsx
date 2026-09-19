@@ -117,7 +117,7 @@ export default function OrderDetailPage() {
     return (
         <div className="space-y-6">
             {/* Back button */}
-            <button onClick={() => router.push("/control/orders")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
+            <button onClick={() => router.push("/cpanel/orders")} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -196,7 +196,7 @@ export default function OrderDetailPage() {
                         </div>
                         {order.customer_id && (
                             <Link
-                                href={`/control/customers/${order.customer_id}`}
+                                href={`/cpanel/customers/${order.customer_id}`}
                                 onClick={(e) => {
                                     if (!order.customer_id || order.customer_id <= 0) {
                                         e.preventDefault();
@@ -405,7 +405,7 @@ export default function OrderDetailPage() {
                                         <tr key={it.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
                                             <td className="px-6 py-4 text-sm">
                                                 {it.design_id ? (
-                                                    <Link href={`/control/inventory?design=${it.design_id}`} className="font-bold text-[#B86B5A] hover:text-[#1A2536] hover:underline transition-colors">
+                                                    <Link href={`/cpanel/inventory?design=${it.design_id}`} className="font-bold text-[#B86B5A] hover:text-[#1A2536] hover:underline transition-colors">
                                                         {it.product_name}
                                                     </Link>
                                                 ) : (
