@@ -56,12 +56,12 @@ export default function CustomersPage() {
     const customerCount = allUsers.filter((c) => !c.is_staff && c.is_active).length;
     const displayedUsers = allUsers.filter((c) => {
         if (!showStaff && c.is_staff) return false;
-        
+
         // If toggle is ON, hide active users (Show ONLY deactivated)
         // If toggle is OFF, hide deactivated users (Show ONLY active)
-        if (showDeactivated && c.is_active) return false; 
+        if (showDeactivated && c.is_active) return false;
         if (!showDeactivated && !c.is_active) return false;
-        
+
         return true;
     });
 
@@ -166,7 +166,7 @@ export default function CustomersPage() {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-4">
                                                 <Link
-                                                    href={`/control/customers/${customer.id}`}
+                                                    href={`/cpanel/customers/${customer.id}`}
                                                     className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
                                                 >
                                                     View

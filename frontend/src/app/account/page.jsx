@@ -42,11 +42,12 @@ export default function AccountPage() {
             ]);
             setProfile(profileRes.data);
             setOrders(ordersRes.data.results || ordersRes.data);
-            setForm({
+                        setForm({
                 first_name: profileRes.data.first_name || "",
                 last_name: profileRes.data.last_name || "",
                 gender: profileRes.data.gender || "",
                 date_of_birth: profileRes.data.date_of_birth || "",
+                phone: profileRes.data.phone || "",
             });
         } catch (err) {
             console.error("Failed to load profile:", err);
@@ -149,11 +150,17 @@ export default function AccountPage() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-[#1A2536]/60">Gender:</span>
-                                        <span className="font-bold text-[#1A2536]">{profile.gender || "—"}</span>
+                                        <span className="font-bold text-[#1A2536] capitalize">
+                                            {profile.gender ? profile.gender.replace(/_/g, ' ') : "—"}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-[#1A2536]/60">Date of Birth:</span>
-                                        <span className="font-bold text-[#1A2536]">{profile.date_of_birth || "—"}</span>
+                                        <span className="font-bold text-[#1A2536]">
+                                            {profile.date_of_birth 
+                                                ? new Date(profile.date_of_birth).toLocaleDateString('en-GB') 
+                                                : "—"}
+                                        </span>
                                     </div>
                                 </div>
                                 <button
@@ -169,9 +176,15 @@ export default function AccountPage() {
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Email</label>
                                     <input value={profile.email} disabled className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 bg-white/50 text-[#1A2536]/50 cursor-not-allowed" />
                                 </div>
-                                <div>
+                                                                <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Phone</label>
-                                    <input value={profile.phone || ""} disabled className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 bg-white/50 text-[#1A2536]/50 cursor-not-allowed" />
+                                    <input 
+                                        value={form.phone} 
+                                        onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} 
+                                        maxLength={10}
+                                        placeholder="10-digit mobile number"
+                                        className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" 
+                                    />
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">First Name</label>
@@ -192,7 +205,9 @@ export default function AccountPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Date of Birth</label>
+                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">
+                                        Date of Birth <span className="text-[#1A2536]/40 normal-case tracking-normal">(DD/MM/YYYY)</span>
+                                    </label>
                                     <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 </div>
                                 <div className="flex gap-3">
