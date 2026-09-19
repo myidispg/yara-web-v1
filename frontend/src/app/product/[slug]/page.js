@@ -8,17 +8,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // Fetch product directly from Django on the server
 async function getProduct(slug) {
   try {
-    const res = await fetch(`${API_URL}/api/products/${slug}/`, {
+    const res = await fetch(`${API_URL}/products/${slug}/`, {
       cache: "no-store" // Ensures we always get fresh stock data
     });
     if (!res.ok) return null;
-    
+
     const product = await res.json();
-    
+
     // The backend DesignDetailSerializer already includes parent_category_slug 
     // at the root level of the JSON response. We don't need to extract it manually.
     // (product.category is just an ID, so manual extraction was overwriting it with null!)
-    
+
     return product;
   } catch {
     return null;

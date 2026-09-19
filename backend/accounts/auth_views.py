@@ -9,6 +9,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from rest_framework.permissions import IsAuthenticated
+from .firebase_service import verify_firebase_token
+
 from .models import OTP
 
 User = get_user_model()
@@ -249,3 +252,31 @@ class GoogleAuthView(APIView):
         )
         
         return response
+
+class VerifyPhoneView(APIView):
+    """Accepts a Firebase ID token, verifies it, and marks the user's phone as verified."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        id_token = request.data.get('idToken')
+        if not id_token:
+            return Response({'error': 'ID token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        decoded = verify_firebase_token(id_token)
+        if not decoded:
+            return Response({'error': 'Invalid or expired Firebase token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Firebase returns phone in format "+919876543210", let's strip the country code
+        firebase_phone = decoded.get('phone_number', '')
+        phone_10_digit = firebase_phone.replace('+91', '').replace(' ', '').replace('-', '')
+
+        user = request.user
+        user.phone = phone_10_digit
+        user.is_phone_verified = True
+        user.save()
+
+        return Response({
+            'status': 'success',
+            'phone': user.phone,
+            'is_phone_verified': True
+        })
