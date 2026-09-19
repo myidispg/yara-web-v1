@@ -139,7 +139,7 @@ export default function EditDesignPage() {
                 await controlApi.reorderDesignMedia(id, form.media_order);
             }
 
-            router.push(`/control/inventory?design=${id}`);
+            router.push(`/cpanel/inventory?design=${id}`);
         } catch (err) {
             alert("Failed to save: " + JSON.stringify(err.response?.data || err.message));
             setSaving(false);
@@ -183,7 +183,7 @@ export default function EditDesignPage() {
 
     const handleBack = () => {
         if (dirty && !confirm("You have unsaved changes. Discard them?")) return;
-        router.push(`/control/inventory?design=${id}`);
+        router.push(`/cpanel/inventory?design=${id}`);
     };
 
     if (!form) return (

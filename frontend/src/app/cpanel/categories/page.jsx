@@ -159,7 +159,7 @@ export default function CategoriesPage() {
                                     {categoryDesigns.map((design) => (
                                         <Link
                                             key={design.id}
-                                            href={`/control/inventory?design=${design.id}`}
+                                            href={`/cpanel/inventory?design=${design.id}`}
                                             className="flex items-center gap-3 p-3 bg-[#1A2536]/[0.02] hover:bg-[#1A2536]/[0.05] rounded-xl transition-colors border border-[#E5BDB0]/40"
                                         >
                                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#1A2536]/[0.03] flex-shrink-0">
@@ -226,7 +226,7 @@ export default function CategoriesPage() {
                                                     {subDesigns.map((design) => (
                                                         <Link
                                                             key={design.id}
-                                                            href={`/control/inventory?design=${design.id}`}
+                                                            href={`/cpanel/inventory?design=${design.id}`}
                                                             className="flex items-center gap-3 p-2 bg-[#1A2536]/[0.02] hover:bg-[#1A2536]/[0.05] rounded-lg transition-colors"
                                                         >
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#1A2536]/[0.03] flex-shrink-0">

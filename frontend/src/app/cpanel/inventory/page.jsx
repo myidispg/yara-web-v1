@@ -50,7 +50,7 @@ export default function InventoryPage() {
 
     useEffect(() => {
         const handler = (e) => {
-            if (e.detail === "/control/inventory") { setSelected(null); setView("designs"); }
+            if (e.detail === "/cpanel/inventory") { setSelected(null); setView("designs"); }
         };
         window.addEventListener("control-nav", handler);
         return () => window.removeEventListener("control-nav", handler);
@@ -116,7 +116,7 @@ export default function InventoryPage() {
             setDesignChecked([]);
             // Push URL state so browser back button works
             if (pushUrl) {
-                router.push(`/control/inventory?design=${id}`, { scroll: false });
+                router.push(`/cpanel/inventory?design=${id}`, { scroll: false });
             }
         } catch (err) {
             console.error("Failed to load design:", err);
@@ -435,10 +435,10 @@ export default function InventoryPage() {
                             </>
                         )}
                     </div>
-                    <Link href="/control/inventory/new?mode=product" className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                    <Link href="/cpanel/inventory/new?mode=product" className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
                         + Add Product
                     </Link>
-                    <Link href="/control/inventory/new?mode=design" className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
+                    <Link href="/cpanel/inventory/new?mode=design" className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow">
                         + Add Design
                     </Link>
                 </div>
@@ -523,7 +523,7 @@ export default function InventoryPage() {
                                     {visibleProducts.map((p) => {
                                         const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
                                         return (
-                                            <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                            <tr key={p.id} onClick={() => router.push(`/cpanel/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
                                                 <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <input type="checkbox" checked={checked.includes(p.id)} onChange={() => toggleCheck(p.id)} className="w-4 h-4 accent-[#B86B5A]" />
                                                 </td>
@@ -568,7 +568,7 @@ export default function InventoryPage() {
                     <button onClick={() => {
                         setSelected(null);
                         setDesignChecked([]);
-                        router.push('/control/inventory', { scroll: false });
+                        router.push('/cpanel/inventory', { scroll: false });
                     }} className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -596,7 +596,7 @@ export default function InventoryPage() {
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <Link href={`/control/inventory/${selected.id}/edit`} className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
+                                <Link href={`/cpanel/inventory/${selected.id}/edit`} className="px-5 py-2.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
                                     Edit Design
                                 </Link>
                                 <button onClick={deleteDesign} className="px-5 py-2.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all">
@@ -708,7 +708,7 @@ export default function InventoryPage() {
                                     </div>
                                 )}
                                 <Link
-                                    href={`/control/inventory/new?mode=product&design_id=${selected.id}`}
+                                    href={`/cpanel/inventory/new?mode=product&design_id=${selected.id}`}
                                     className="text-xs text-[#B86B5A] font-bold uppercase tracking-wider hover:underline"
                                 >
                                     + Add Product
@@ -758,7 +758,7 @@ export default function InventoryPage() {
                                     {selected.products.map((p) => {
                                         const st = INSTANCE_STATUS[p.status] || { label: p.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-400" };
                                         return (
-                                            <tr key={p.id} onClick={() => router.push(`/control/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
+                                            <tr key={p.id} onClick={() => router.push(`/cpanel/inventory/products/${p.id}`)} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors cursor-pointer">
                                                 <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"

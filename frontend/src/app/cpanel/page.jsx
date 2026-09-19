@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Link href="/control/orders" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
+          <Link href="/cpanel/orders" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
             <div className="w-12 h-12 rounded-2xl bg-[#B86B5A]/20 flex items-center justify-center text-2xl mb-3">
               <svg className="w-6 h-6 text-[#E5BDB0]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -86,7 +86,7 @@ export default function DashboardPage() {
             <p className="text-sm text-white/70">View and update order statuses</p>
           </Link>
 
-          <Link href="/control/inventory" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
+          <Link href="/cpanel/inventory" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
             <div className="w-12 h-12 rounded-2xl bg-[#B86B5A]/20 flex items-center justify-center text-2xl mb-3">
               <svg className="w-6 h-6 text-[#E5BDB0]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -96,7 +96,7 @@ export default function DashboardPage() {
             <p className="text-sm text-white/70">Add instances, mark sold offline</p>
           </Link>
 
-          <Link href="/control/rate-card" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
+          <Link href="/cpanel/rate-card" className="bg-[#1A2536] rounded-3xl p-6 hover:bg-[#111A29] transition-all group shadow-lg">
             <div className="w-12 h-12 rounded-2xl bg-[#B86B5A]/20 flex items-center justify-center text-2xl mb-3">
               <svg className="w-6 h-6 text-[#E5BDB0]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

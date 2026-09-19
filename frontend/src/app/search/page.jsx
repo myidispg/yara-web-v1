@@ -63,7 +63,7 @@ function SearchInner() {
             setTotal(totalResults);
             setItems((prev) => (append ? [...prev, ...list] : list));
             if (!append && q) {
-                api.post("/control/search/track/", { q, results: totalResults }).catch(() => { });
+                api.post("/cpanel/search/track/", { q, results: totalResults }).catch(() => { });
             }
         } catch {
             if (seq === seqRef.current) { setItems([]); setTotal(0); }

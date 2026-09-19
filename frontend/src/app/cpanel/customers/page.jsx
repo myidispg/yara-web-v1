@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import controlApi from "@/api/controlClient";
 
 export default function CustomersPage() {
+    const router = useRouter();
     const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showStaff, setShowStaff] = useState(false);
@@ -136,7 +138,7 @@ export default function CustomersPage() {
                                 </tr>
                             ) : (
                                 displayedUsers.map((customer) => (
-                                    <tr key={customer.id} className="border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
+                                    <tr key={customer.id} onClick={() => router.push(`/cpanel/customers/${customer.id}`)} className="cursor-pointer border-b border-[#E5BDB0]/20 last:border-0 hover:bg-[#1A2536]/[0.02] transition-colors">
                                         <td className="px-6 py-4">
                                             <p className="font-bold text-[#1A2536]">
                                                 {[customer.first_name, customer.last_name].filter(Boolean).join(" ") || "—"}
