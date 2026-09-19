@@ -53,10 +53,15 @@ export default function CustomersPage() {
     };
 
     const staffCount = allUsers.filter((c) => c.is_staff).length;
-    const customerCount = allUsers.filter((c) => !c.is_staff).length;
+    const customerCount = allUsers.filter((c) => !c.is_staff && c.is_active).length;
     const displayedUsers = allUsers.filter((c) => {
         if (!showStaff && c.is_staff) return false;
+        
+        // If toggle is ON, hide active users (Show ONLY deactivated)
+        // If toggle is OFF, hide deactivated users (Show ONLY active)
+        if (showDeactivated && c.is_active) return false; 
         if (!showDeactivated && !c.is_active) return false;
+        
         return true;
     });
 

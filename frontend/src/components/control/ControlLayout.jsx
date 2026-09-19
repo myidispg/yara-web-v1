@@ -138,11 +138,11 @@ export default function ControlLayout({ children }) {
             <button
               onClick={async () => {
                 try {
-                  await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/cpanel-logout/`, {
-                    method: 'POST',
-                    credentials: 'include'
-                  });
-                } catch { }
+                  await controlApi._logout();
+                } catch (e) {
+                  console.error("Logout failed", e);
+                }
+                // Force a hard reload to clear the StaffAuthContext state
                 window.location.href = "/cpanel/login";
               }}
               className="text-[10px] font-bold uppercase tracking-wider bg-[#B86B5A] hover:bg-[#A05A4A] px-3 py-2 rounded-lg transition-colors"
