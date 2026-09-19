@@ -280,3 +280,91 @@ class VerifyPhoneView(APIView):
             'phone': user.phone,
             'is_phone_verified': True
         })
+
+from .firebase_service import verify_firebase_token
+
+class PhoneAuthView(APIView):
+    """
+    Handles Phone-based Login and Registration via Firebase.
+    Step 1: Frontend verifies SMS -> sends idToken.
+    Step 2: If user exists -> logs them in. If new -> returns 'needs_details'.
+    Step 3: Frontend asks for Name -> sends idToken + Name -> Backend creates user.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        id_token = request.data.get('idToken')
+        first_name = request.data.get('first_name', '').strip()
+        last_name = request.data.get('last_name', '').strip()
+        email = request.data.get('email', '').strip().lower()
+
+        if not id_token:
+            return Response({'error': 'ID token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        decoded = verify_firebase_token(id_token)
+        if not decoded:
+            return Response({'error': 'Invalid or expired Firebase token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Extract 10-digit phone from Firebase (e.g., "+919876543210" -> "9876543210")
+        firebase_phone = decoded.get('phone_number', '')
+        phone = firebase_phone.replace('+91', '').replace(' ', '').replace('-', '')
+
+        if not phone:
+            return Response({'error': 'Could not extract phone number'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone=phone).first()
+        created = False
+
+        if not user:
+            # NEW USER FLOW
+            if not first_name:
+                # We don't have their name yet. Tell frontend to ask for it.
+                return Response({
+                    'status': 'needs_details', 
+                    'phone': phone
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create the new user
+            user = User.objects.create_user(
+                phone=phone,
+                email=email if email else None,
+                first_name=first_name,
+                last_name=last_name,
+                is_phone_verified=True,
+                is_email_verified=bool(email) # If they provided email, mark it verified
+            )
+            created = True
+        else:
+            # EXISTING USER FLOW
+            if not user.is_active:
+                user.is_active = True # Auto-reactivate
+            
+            if not user.is_phone_verified:
+                user.is_phone_verified = True
+                
+            # If they didn't have an email before, but just provided one, save it
+            if not user.email and email:
+                user.email = email
+                user.is_email_verified = True
+                
+            user.save()
+
+        # Issue JWT Cookies (Storefront session)
+        refresh = RefreshToken.for_user(user)
+        response = Response({
+            'status': 'success',
+            'is_new_user': created,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone': user.phone,
+                'is_phone_verified': user.is_phone_verified,
+                'is_email_verified': user.is_email_verified
+            }
+        })
+        
+        response.set_cookie("access", str(refresh.access_token), max_age=int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
+        response.set_cookie("refresh", str(refresh), max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()), httponly=True, secure=not settings.DEBUG, samesite="Lax", path="/")
+        return response
