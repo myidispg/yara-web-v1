@@ -2,7 +2,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        is_cpanel = request.path.startswith('/api/control/')
+        is_cpanel = request.path.startswith('/api/cpanel/')
         cookie_name = "cpanel_access" if is_cpanel else "access"
         token = request.COOKIES.get(cookie_name)
         
