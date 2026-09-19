@@ -22,6 +22,19 @@ export default function AuthPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [emailForPhoneUser, setEmailForPhoneUser] = useState("");
+    const [phoneForEmailUser, setPhoneForEmailUser] = useState("");
+
+    // Phone verification sub-step states
+    const [phoneOtpStep, setPhoneOtpStep] = useState(false);
+    const [phoneOtp, setPhoneOtp] = useState("");
+    const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
+    const [phoneIdToken, setPhoneIdToken] = useState(null);
+
+    // Email verification sub-step states (for phone users)
+    const [emailOtpStep, setEmailOtpStep] = useState(false);
+    const [emailOtp, setEmailOtp] = useState("");
+    const [emailCountdown, setEmailCountdown] = useState(0);
+
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const [countdown, setCountdown] = useState(0);
@@ -39,7 +52,7 @@ export default function AuthPage() {
     }, [step]);
 
     useEffect(() => {
-        if (!authLoading && user && user.is_active) router.push(nextPath, { replace: true });
+        if (!authLoading && user) router.push(nextPath, { replace: true });
     }, [user, authLoading, router, nextPath]);
 
     useEffect(() => {
@@ -48,6 +61,13 @@ export default function AuthPage() {
             return () => clearTimeout(timer);
         }
     }, [countdown]);
+
+    useEffect(() => {
+        if (emailCountdown > 0) {
+            const timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [emailCountdown]);
 
     const handleGoogleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -183,22 +203,140 @@ export default function AuthPage() {
         if (isPhoneFlow) {
             // Phone user completing profile
             const idToken = sessionStorage.getItem('firebase_id_token');
+
+            // If email is provided, we need to verify it via email OTP first
+            if (emailForPhoneUser && !emailOtpStep) {
+                try {
+                    await api.sendOtp(emailForPhoneUser);
+                    setEmailOtpStep(true);
+                    setEmailCountdown(30);
+                } catch (err) {
+                    setError(parseErr(err));
+                } finally {
+                    setBusy(false);
+                }
+                return;
+            }
+
+            // Email verified (or no email) - complete registration
             try {
                 await api.post("/auth/phone-login/", {
                     idToken,
                     first_name: firstName,
                     last_name: lastName,
-                    email: emailForPhoneUser
+                    email: emailForPhoneUser,
+                    email_otp: emailOtp || undefined
                 });
                 sessionStorage.removeItem('firebase_id_token');
-                window.location.reload();
-            } catch (err) { setError(parseErr(err)); } finally { setBusy(false); }
+                window.location.href = nextPath;
+            } catch (err) {
+                const errMsg = parseErr(err);
+                if (errMsg.includes("email already") || errMsg.includes("Invalid or expired email")) {
+                    setEmailOtpStep(false);
+                    setEmailOtp("");
+                }
+                setError(errMsg);
+            } finally {
+                setBusy(false);
+            }
         } else {
-            // Email user completing profile (existing flow)
-            try {
-                await api.verifyOtp({ email: identifier, code: otp, first_name: firstName, last_name: lastName });
-                window.location.reload();
-            } catch (err) { setError(parseErr(err)); } finally { setBusy(false); }
+            // Email user completing profile
+            if (phoneForEmailUser && phoneForEmailUser.length === 10 && !phoneOtpStep) {
+                // User provided a phone number - send Firebase SMS OTP first
+                try {
+                    cleanupRecaptcha();
+                    if (!recaptchaContainerRef.current) throw new Error("Recaptcha missing");
+                    recaptchaVerifierRef.current = new RecaptchaVerifier(firebaseAuth, recaptchaContainerRef.current, { size: "invisible" });
+                    const formattedPhone = `+91${phoneForEmailUser}`;
+                    const result = await signInWithPhoneNumber(firebaseAuth, formattedPhone, recaptchaVerifierRef.current);
+                    setPhoneConfirmationResult(result);
+                    setPhoneOtpStep(true); // Show phone OTP input
+                } catch (err) {
+                    console.error(err);
+                    setError(err.code === "auth/invalid-phone-number" ? "Invalid phone number." : "Failed to send SMS OTP.");
+                    cleanupRecaptcha();
+                } finally {
+                    setBusy(false);
+                }
+            } else {
+                // No phone number provided, OR phone already verified - complete registration
+                try {
+                    const payload = {
+                        email: identifier,
+                        code: otp,
+                        first_name: firstName,
+                        last_name: lastName
+                    };
+                    // If phone was verified via Firebase, include the idToken
+                    if (phoneIdToken) {
+                        payload.phone_id_token = phoneIdToken;
+                    }
+                    await api.verifyOtp(payload);
+                    window.location.href = nextPath;
+                } catch (err) { setError(parseErr(err)); } finally { setBusy(false); }
+            }
+        }
+    };
+
+    // Handle phone OTP verification (sub-step)
+    const handleVerifyPhoneOtp = async (e) => {
+        e.preventDefault();
+        if (phoneOtp.length !== 6) return;
+        setError("");
+        setBusy(true);
+
+        try {
+            const result = await phoneConfirmationResult.confirm(phoneOtp);
+            const idToken = await result.user.getIdToken();
+            setPhoneIdToken(idToken);
+            setPhoneOtpStep(false); // Hide phone OTP input
+
+            // Now complete the registration with the verified phone
+            const payload = {
+                email: identifier,
+                code: otp,
+                first_name: firstName,
+                last_name: lastName,
+                phone_id_token: idToken
+            };
+            await api.verifyOtp(payload);
+            window.location.href = nextPath;
+        } catch (err) {
+            console.error(err);
+            if (err.code === "auth/invalid-verification-code") {
+                setError("Invalid phone OTP. Please try again.");
+            } else {
+                setError(parseErr(err));
+            }
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    // Handle email OTP verification (sub-step for phone users)
+    const handleVerifyEmailOtp = async (e) => {
+        e.preventDefault();
+        if (emailOtp.length !== 6) return;
+        setError("");
+        setBusy(true);
+
+        // Just trigger handleCompleteProfile again with the email OTP
+        // It will now pass the email_otp to the backend
+        const fakeEvent = { preventDefault: () => { } };
+        await handleCompleteProfile(fakeEvent);
+    };
+
+    const handleResendEmailOtp = async () => {
+        setError("");
+        setBusy(true);
+        try {
+            await api.sendOtp(emailForPhoneUser);
+            setEmailCountdown(30);
+            setEmailOtp("");
+        } catch (err) {
+            setError(parseErr(err));
+        } finally {
+            setBusy(false);
         }
     };
 
@@ -309,18 +447,130 @@ export default function AuthPage() {
                                         </div>
                                     </div>
 
-                                    {/* If they logged in with Phone, ask for Email */}
-                                    {isPhoneFlow && (
+                                    {/* If they logged in with Email, ask for Phone (optional) */}
+                                    {!isPhoneFlow && (
                                         <div>
-                                            <label className={labelCls}>Email <span className="text-[#1A2536]/40 normal-case tracking-normal">(Optional - for order updates)</span></label>
-                                            <input type="email" className={inputCls} value={emailForPhoneUser} onChange={(e) => setEmailForPhoneUser(e.target.value)} />
+                                            <label className={labelCls}>Mobile Number <span className="text-[#1A2536]/40 normal-case tracking-normal">(Optional - for order updates & will be verified via OTP)</span></label>
+                                            <div className="flex">
+                                                <span className="inline-flex items-center px-4 border border-r-0 border-[#E5BDB0] rounded-l-xl bg-[#1A2536]/[0.03] text-[#1A2536] text-sm font-bold">+91</span>
+                                                <input
+                                                    type="tel"
+                                                    maxLength={10}
+                                                    className="flex-1 border border-[#E5BDB0] rounded-r-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#1A2536] transition-colors"
+                                                    placeholder="10-digit mobile number"
+                                                    value={phoneForEmailUser}
+                                                    onChange={(e) => setPhoneForEmailUser(e.target.value.replace(/\D/g, ""))}
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
-                                    <button type="submit" disabled={busy || !firstName} className="w-full py-4 mt-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
-                                        {busy ? "Creating Account…" : "Complete Setup"}
+                                    {/* If they logged in with Phone, ask for Email (optional) */}
+                                    {isPhoneFlow && (
+                                        <div>
+                                            <label className={labelCls}>Email <span className="text-[#1A2536]/40 normal-case tracking-normal">(Optional - for order updates & verified via OTP)</span></label>
+                                            <input type="email" className={inputCls} value={emailForPhoneUser} onChange={(e) => setEmailForPhoneUser(e.target.value)} placeholder="you@example.com" />
+                                        </div>
+                                    )}
+
+                                    <button type="submit" disabled={busy || !firstName || (isPhoneFlow && emailOtpStep)} className="w-full py-4 mt-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
+                                        {busy
+                                            ? (phoneOtpStep ? "Verifying Phone…" : emailOtpStep ? "Verifying Email…" : "Creating Account…")
+                                            : (() => {
+                                                if (!isPhoneFlow && phoneForEmailUser && phoneForEmailUser.length === 10 && !phoneOtpStep) return "Verify Phone & Continue";
+                                                if (isPhoneFlow && emailForPhoneUser && !emailOtpStep) return "Verify Email & Continue";
+                                                return "Complete Setup";
+                                            })()
+                                        }
                                     </button>
                                 </form>
+
+                                {/* Email OTP Sub-Step (for phone users) */}
+                                {isPhoneFlow && emailOtpStep && (
+                                    <form onSubmit={handleVerifyEmailOtp} className="space-y-4 mt-6 pt-6 border-t border-[#E5BDB0]/40">
+                                        <p className="text-sm text-[#1A2536]/70 text-center">
+                                            We sent a 6-digit code to <span className="font-bold text-[#1A2536]">{emailForPhoneUser}</span>
+                                        </p>
+                                        <input
+                                            required
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            className="w-full bg-white border border-[#E5BDB0] rounded-xl px-4 py-4 text-2xl text-center tracking-[0.5em] font-mono font-bold text-[#1A2536] focus:outline-none focus:border-[#1A2536] transition-colors"
+                                            placeholder="• • • • • •"
+                                            value={emailOtp}
+                                            onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={busy || emailOtp.length !== 6}
+                                            className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
+                                        >
+                                            {busy ? "Verifying…" : "Verify Email & Complete"}
+                                        </button>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setEmailOtpStep(false); setEmailOtp(""); setEmailForPhoneUser(""); }}
+                                                className="text-[#1A2536]/50 hover:text-[#1A2536] font-bold uppercase tracking-wider"
+                                            >
+                                                ← Change Email
+                                            </button>
+                                            {emailCountdown > 0 ? (
+                                                <span className="text-[#1A2536]/40">Resend in {emailCountdown}s</span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResendEmailOtp}
+                                                    className="text-[#B86B5A] font-bold hover:underline"
+                                                >
+                                                    Resend Code
+                                                </button>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setEmailOtpStep(false); setEmailOtp(""); setEmailForPhoneUser(""); }}
+                                            className="w-full text-center text-xs text-[#1A2536]/50 hover:text-[#1A2536] font-bold uppercase tracking-wider"
+                                        >
+                                            Skip Email Verification
+                                        </button>
+                                    </form>
+                                )}
+                                {/* Phone OTP Sub-Step */}
+                                {phoneOtpStep && (
+                                    <form onSubmit={handleVerifyPhoneOtp} className="space-y-4 mt-6 pt-6 border-t border-[#E5BDB0]/40">
+                                        <p className="text-sm text-[#1A2536]/70 text-center">
+                                            We sent a 6-digit code to <span className="font-bold text-[#1A2536]">+91 {phoneForEmailUser}</span>
+                                        </p>
+                                        <input
+                                            required
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            className="w-full bg-white border border-[#E5BDB0] rounded-xl px-4 py-4 text-2xl text-center tracking-[0.5em] font-mono font-bold text-[#1A2536] focus:outline-none focus:border-[#1A2536] transition-colors"
+                                            placeholder="• • • • • •"
+                                            value={phoneOtp}
+                                            onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ""))}
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={busy || phoneOtp.length !== 6}
+                                            className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50"
+                                        >
+                                            {busy ? "Verifying…" : "Verify Phone & Complete"}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setPhoneOtpStep(false); setPhoneOtp(""); cleanupRecaptcha(); }}
+                                            className="w-full text-center text-xs text-[#1A2536]/50 hover:text-[#1A2536] font-bold uppercase tracking-wider"
+                                        >
+                                            ← Skip Phone Verification
+                                        </button>
+                                    </form>
+                                )}
                             </div>
                         )}
                     </div>
