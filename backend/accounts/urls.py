@@ -5,7 +5,7 @@ from .views import (
     MeView, RegisterView, CookieTokenObtainPairView, CookieTokenRefreshView,
     LogoutView, CPanelCookieTokenRefreshView, CPanelLogoutView,
 )
-from .auth_views import SendOTPView, VerifyOTPView, GoogleAuthView, VerifyPhoneView
+from .auth_views import SendOTPView, VerifyOTPView, GoogleAuthView, VerifyPhoneView, PhoneAuthView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="auth-register"),
@@ -24,4 +24,5 @@ urlpatterns = [
     path("cpanel-logout/", CPanelLogoutView.as_view(), name="auth-cpanel-logout"),
 
     path("verify-phone/", VerifyPhoneView.as_view(), name="auth-verify-phone"),
+    path("phone-login/", PhoneAuthView.as_view(), name="auth-phone-login"),
 ]
