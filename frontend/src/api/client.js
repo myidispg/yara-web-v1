@@ -21,7 +21,7 @@ api.interceptors.response.use(
         await api.post("/auth/refresh/");
         return api(original);
       } catch (refreshErr) {
-        const publicPaths = ["/auth", "/cpanel"];
+        const publicPaths = ["/auth", "/cpanel", "/control"];
         const isPublic = publicPaths.some(p => window.location.pathname.startsWith(p));
         if (!isPublic) {
           const next = window.location.pathname !== "/" ? window.location.pathname : "";

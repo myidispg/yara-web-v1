@@ -12,7 +12,7 @@ export default function ControlLoginPage() {
     const [busy, setBusy] = useState(false);
 
     useEffect(() => {
-        if (!loading && user) router.push("/control");
+        if (!loading && user) router.push("/cpanel");
     }, [user, loading, router]);
 
     const handleSubmit = async (e) => {
@@ -21,7 +21,7 @@ export default function ControlLoginPage() {
         setError("");
         try {
             await controlApi._login({ login: form.identifier, password: form.password });
-            window.location.href = "/control";
+            window.location.href = "/cpanel";
         } catch (err) {
             setError(err.response?.data?.detail || "Invalid credentials or account deactivated.");
             setBusy(false);
