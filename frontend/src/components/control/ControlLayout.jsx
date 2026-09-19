@@ -2,28 +2,28 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useStaffAuth } from "@/hooks/useStaffAuth";
 import controlApi from "@/api/controlClient";
 import { useState, useRef, useEffect } from "react";
 import NotificationBell from "./NotificationBell";
 
 const navItems = [
-  { label: "Dashboard", href: "/control", icon: "◆" },
-  { label: "Analytics", href: "/control/analytics", icon: "◈" },
-  { label: "Orders", href: "/control/orders", icon: "▣" },
-  { label: "Invoices", href: "/control/invoices", icon: "▤" },
-  { label: "Inventory", href: "/control/inventory", icon: "▥" },
-  { label: "Categories", href: "/control/categories", icon: "▦" },
-  { label: "Tags", href: "/control/tags", icon: "▧" },
-  { label: "Rate Card", href: "/control/rate-card", icon: "◇" },
-  { label: "Customers", href: "/control/customers", icon: "◎" },
-  { label: "Import/Export", href: "/control/import-export", icon: "⬡" },
-  { label: "Activity", href: "/control/activity", icon: "◉" },
-  { label: "Search Insights", href: "/control/search-analytics", icon: "◌" },
+  { label: "Dashboard", href: "/cpanel", icon: "◆" },
+  { label: "Analytics", href: "/cpanel/analytics", icon: "◈" },
+  { label: "Orders", href: "/cpanel/orders", icon: "▣" },
+  { label: "Invoices", href: "/cpanel/invoices", icon: "▤" },
+  { label: "Inventory", href: "/cpanel/inventory", icon: "▥" },
+  { label: "Categories", href: "/cpanel/categories", icon: "▦" },
+  { label: "Tags", href: "/cpanel/tags", icon: "▧" },
+  { label: "Rate Card", href: "/cpanel/rate-card", icon: "◇" },
+  { label: "Customers", href: "/cpanel/customers", icon: "◎" },
+  { label: "Import/Export", href: "/cpanel/import-export", icon: "⬡" },
+  { label: "Activity", href: "/cpanel/activity", icon: "◉" },
+  { label: "Search Insights", href: "/cpanel/search-analytics", icon: "◌" },
 ];
 
 export default function ControlLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user } = useStaffAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -36,11 +36,11 @@ export default function ControlLayout({ children }) {
 
   // Flatten results for easy keyboard navigation
   const flatResults = searchResults ? [
-    ...searchResults.products.map(p => ({ type: 'product', id: p.id, href: `/control/inventory/products/${p.id}` })),
-    ...searchResults.designs.map(d => ({ type: 'design', id: d.id, href: `/control/inventory?design=${d.id}` })),
-    ...searchResults.orders.map(o => ({ type: 'order', id: o.id, href: `/control/orders/${o.id}` })),
-    ...searchResults.customers.map(c => ({ type: 'customer', id: c.id, href: `/control/customers/${c.id}` })),
-    ...(searchResults.invoices || []).map(inv => ({ type: 'invoice', id: inv.id, href: `/control/orders/${inv.order}` })),
+    ...searchResults.products.map(p => ({ type: 'product', id: p.id, href: `/cpanel/inventory/products/${p.id}` })),
+    ...searchResults.designs.map(d => ({ type: 'design', id: d.id, href: `/cpanel/inventory?design=${d.id}` })),
+    ...searchResults.orders.map(o => ({ type: 'order', id: o.id, href: `/cpanel/orders/${o.id}` })),
+    ...searchResults.customers.map(c => ({ type: 'customer', id: c.id, href: `/cpanel/customers/${c.id}` })),
+    ...(searchResults.invoices || []).map(inv => ({ type: 'invoice', id: inv.id, href: `/cpanel/orders/${inv.order}` })),
   ] : [];
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function ControlLayout({ children }) {
   useEffect(() => { setMobileNavOpen(false); }, [pathname]);
 
   const isActive = (href) => {
-    if (href === "/control") return pathname === "/control";
+    if (href === "/cpanel") return pathname === "/cpanel";
     return pathname.startsWith(href);
   };
 
@@ -89,7 +89,7 @@ export default function ControlLayout({ children }) {
             </svg>
             <span className="h-[1px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
           </div>
-          <p className="text-[9px] uppercase tracking-[0.25em] text-[#E5BDB0] mt-2 font-bold">Control Panel</p>
+          <p className="text-[9px] uppercase tracking-[0.25em] text-[#E5BDB0] mt-2 font-bold">cPanel</p>
         </div>
 
         {/* Nav */}
@@ -143,7 +143,7 @@ export default function ControlLayout({ children }) {
                     credentials: 'include'
                   });
                 } catch { }
-                window.location.href = "/cpanel-login";
+                window.location.href = "/cpanel/login";
               }}
               className="text-[10px] font-bold uppercase tracking-wider bg-[#B86B5A] hover:bg-[#A05A4A] px-3 py-2 rounded-lg transition-colors"
             >
@@ -217,7 +217,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Products</p>
                       {searchResults.products.map((p) => (
-                        <Link key={`p-${p.id}`} href={`/control/inventory/products/${p.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'product' && activeItem?.id === p.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
+                        <Link key={`p-${p.id}`} href={`/cpanel/inventory/products/${p.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'product' && activeItem?.id === p.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{p.item_code}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{p.hallmark_number || p.report_number || "—"} · {p.status}</p>
                         </Link>
@@ -228,7 +228,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Designs</p>
                       {searchResults.designs.map((d) => (
-                        <Link key={`d-${d.id}`} href={`/control/inventory?design=${d.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'design' && activeItem?.id === d.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
+                        <Link key={`d-${d.id}`} href={`/cpanel/inventory?design=${d.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'design' && activeItem?.id === d.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold text-[#1A2536]">{d.name}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{d.design_code} · {d.category_name}</p>
                         </Link>
@@ -239,7 +239,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Orders</p>
                       {searchResults.orders.map((o) => (
-                        <Link key={`o-${o.id}`} href={`/control/orders/${o.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'order' && activeItem?.id === o.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
+                        <Link key={`o-${o.id}`} href={`/cpanel/orders/${o.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'order' && activeItem?.id === o.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{o.order_number}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{o.customer_name} · {o.status}</p>
                         </Link>
@@ -250,7 +250,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Customers</p>
                       {searchResults.customers.map((c) => (
-                        <Link key={`c-${c.id}`} href={`/control/customers/${c.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'customer' && activeItem?.id === c.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
+                        <Link key={`c-${c.id}`} href={`/cpanel/customers/${c.id}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'customer' && activeItem?.id === c.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold text-[#1A2536]">{`${c.first_name} ${c.last_name}`.trim() || c.email}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{c.email}{c.phone ? ` · ${c.phone}` : ""}</p>
                         </Link>
@@ -261,7 +261,7 @@ export default function ControlLayout({ children }) {
                     <>
                       <p className="px-4 py-2 text-[9px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40">Invoices</p>
                       {searchResults.invoices.map((inv) => (
-                        <Link key={`inv-${inv.id}`} href={`/control/orders/${inv.order}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'invoice' && activeItem?.id === inv.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
+                        <Link key={`inv-${inv.id}`} href={`/cpanel/orders/${inv.order}`} onClick={clearSearch} className={`block px-4 py-2.5 text-sm border-b border-[#E5BDB0]/20 last:border-0 ${activeItem?.type === 'invoice' && activeItem?.id === inv.id ? 'bg-[#1A2536]/[0.08]' : 'hover:bg-[#1A2536]/[0.03]'}`}>
                           <p className="font-bold font-mono text-[#1A2536]">{inv.invoice_number}</p>
                           <p className="text-[10px] text-[#1A2536]/50">{inv.customer_name} · ₹{inv.total}</p>
                         </Link>
