@@ -21,7 +21,9 @@ cpanelAxios.interceptors.response.use(
         await cpanelAxios.post("/auth/cpanel-refresh/");
         return cpanelAxios(original);
       } catch (refreshErr) {
-        if (window.location.pathname !== "/cpanel/login") {
+        // Only redirect to cPanel login if the user is actually trying to view a cPanel page.
+        // If they are on the storefront (e.g., /account), just fail silently.
+        if (window.location.pathname.startsWith("/cpanel") && window.location.pathname !== "/cpanel/login") {
           window.location.href = "/cpanel/login";
         }
         return Promise.reject(refreshErr);
