@@ -33,6 +33,7 @@ cpanelAxios.interceptors.response.use(
 
 const controlApi = {
   _login: (payload) => cpanelAxios.post("/auth/login/", payload),
+  _logout: () => cpanelAxios.post("/auth/cpanel-logout/"),
   getStaffProfile: () => cpanelAxios.get("/cpanel/me/"),
   getDashboard: () => cpanelAxios.get("/cpanel/dashboard/"),
   getOrders: () => cpanelAxios.get("/cpanel/orders/"),

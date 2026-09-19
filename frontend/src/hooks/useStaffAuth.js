@@ -27,7 +27,9 @@ export function useStaffAuth() {
 
   useEffect(() => {
     if (loading) return;
-    if (pathname === "/cpanel/login") return; // Don't redirect if already on login page
+    // Allow access to the login page without redirecting
+    if (pathname === "/cpanel/login") return; 
+    
     if (!user) {
       router.replace("/cpanel/login");
       return;

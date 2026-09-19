@@ -10,7 +10,7 @@ export default function CPanelLayout({ children }) {
 
   useEffect(() => { document.title = "cPanel | YA-RA"; }, [pathname]);
 
-  // If on login page, render ONLY the login page (no sidebar guard)
+  // Login page bypasses the auth guard
   if (pathname === "/cpanel/login") {
     return children;
   }

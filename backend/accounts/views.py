@@ -86,5 +86,7 @@ class CPanelLogoutView(APIView):
     """Staff Logout"""
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
-        response.delete_cookie("cpanel_access", path="/"); response.delete_cookie("cpanel_refresh", path="/")
+        # MUST match the exact path and samesite used when setting the cookie
+        response.delete_cookie("cpanel_access", path="/", samesite="Lax")
+        response.delete_cookie("cpanel_refresh", path="/", samesite="Lax")
         return response
