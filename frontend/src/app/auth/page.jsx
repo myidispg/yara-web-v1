@@ -99,6 +99,8 @@ export default function AuthPage() {
     };
 
     const isPhoneNumber = (val) => /^[6-9]\d{9}$/.test(val.replace(/\D/g, ''));
+    const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    const isIdentifierValid = isPhoneNumber(identifier) || isValidEmail(identifier);
 
     const cleanupRecaptcha = () => {
         if (recaptchaVerifierRef.current) {
@@ -384,7 +386,7 @@ export default function AuthPage() {
                                             autoFocus
                                         />
                                     </div>
-                                    <button type="submit" disabled={busy || !identifier} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
+                                    <button type="submit" disabled={busy || !isIdentifierValid} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl disabled:opacity-50">
                                         {busy ? "Sending Code…" : "Continue"}
                                     </button>
                                 </form>
