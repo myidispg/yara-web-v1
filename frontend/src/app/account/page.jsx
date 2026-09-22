@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
+import { isPincodeServiceable } from '@/lib/pincodeUtils';
 
 export default function AccountPage() {
     const router = useRouter();
@@ -376,28 +377,66 @@ export default function AccountPage() {
                         )}
 
                         <div className="space-y-3">
-                            {(profile.addresses || []).map((addr) => (
-                                <div key={addr.id} className="border-2 border-[#E5BDB0] rounded-2xl p-4 relative bg-white">
-                                    {addr.is_default && (
-                                        <span className="absolute top-2 right-2 text-[9px] bg-[#D4AF37] text-white px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
-                                            Default
-                                        </span>
-                                    )}
-                                    <p className="font-bold text-sm capitalize mb-2 text-[#1A2536]">{addr.label || "Home"}</p>
-                                    <p className="text-xs text-[#1A2536]/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
-                                    <p className="text-xs text-[#1A2536]/70">{addr.city}, {addr.state} - {addr.pincode}</p>
-                                    <div className="flex gap-3 mt-3 pt-3 border-t border-[#E5BDB0]/40">
-                                        {!addr.is_default && (
-                                            <button onClick={() => setDefault(addr.id)} className="text-xs text-[#B86B5A] font-bold hover:underline">
-                                                Set Default
-                                            </button>
+                            {[...(profile.addresses || [])].map((addr) => {
+                                const isServiceable = isPincodeServiceable(addr.pincode);
+
+                                return (
+                                    <div
+                                        key={addr.id}
+                                        className={`border-2 rounded-2xl p-4 relative ${isServiceable
+                                                ? 'border-[#E5BDB0] bg-white'
+                                                : 'border-red-300 bg-red-50/30'
+                                            }`}
+                                    >
+                                        {addr.is_default && (
+                                            <span className="absolute top-2 right-2 text-[9px] bg-[#D4AF37] text-white px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
+                                                Default
+                                            </span>
                                         )}
-                                        <button onClick={() => deleteAddress(addr.id)} className="text-xs text-red-500 font-bold hover:underline">
-                                            Delete
-                                        </button>
+                                        <p className="font-bold text-sm capitalize mb-2 text-[#1A2536]">{addr.label || "Home"}</p>
+                                        <p className="text-xs text-[#1A2536]/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
+                                        <p className="text-xs text-[#1A2536]/70">{addr.city}, {addr.state} - {addr.pincode}</p>
+
+                                        {/* Non-serviceable badge */}
+                                        {!isServiceable && (
+                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-red-200">
+                                                <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">
+                                                    Non-Serviceable
+                                                </span>
+                                                <div className="relative group">
+                                                    <button
+                                                        className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold hover:bg-red-200 transition-colors"
+                                                        aria-label="Serviceability info"
+                                                    >
+                                                        i
+                                                    </button>
+                                                    {/* Tooltip */}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 hidden md:block">
+                                                        This address falls outside our delivery partner's serviceable areas
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                    </div>
+                                                    {/* Mobile tooltip (click to show) */}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-active:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 md:hidden">
+                                                        This address falls outside our delivery partner's serviceable areas
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-3 mt-3 pt-3 border-t border-[#E5BDB0]/40">
+                                            {!addr.is_default && (
+                                                <button onClick={() => setDefault(addr.id)} className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                                    Set Default
+                                                </button>
+                                            )}
+                                            <button onClick={() => deleteAddress(addr.id)} className="text-xs text-red-500 font-bold hover:underline">
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {(!profile.addresses || profile.addresses.length === 0) && (
                                 <p className="text-sm text-[#1A2536]/50 text-center py-8">No addresses saved yet.</p>
                             )}

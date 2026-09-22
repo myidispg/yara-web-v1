@@ -217,22 +217,9 @@ export default function ProductClient({ product }) {
         setCheckingPincode(true);
 
         setTimeout(() => {
-            const pin = parseInt(pincode);
+            const { isPincodeServiceable, getCityForPincode } = require('@/lib/pincodeUtils');
 
-            const isDelhi = pin >= 110001 && pin <= 110096;
-            const isGurugram = pin >= 122001 && pin <= 122022;
-            const isFaridabad = pin >= 121001 && pin <= 121014;
-            const isNoida = pin >= 201301 && pin <= 201313;
-
-            const isDeliverable = isDelhi || isGurugram || isFaridabad || isNoida;
-
-            let city = "";
-            if (isDelhi) city = "Delhi";
-            else if (isGurugram) city = "Gurugram";
-            else if (isFaridabad) city = "Faridabad";
-            else if (isNoida) city = "Noida";
-
-            if (!isDeliverable) {
+            if (!isPincodeServiceable(pincode)) {
                 setPincodeResult({
                     notAvailable: true,
                     city: "Your Area",
@@ -242,6 +229,7 @@ export default function ProductClient({ product }) {
                 return;
             }
 
+            const city = getCityForPincode(pincode);
             const isInStock = stockCount > 0;
             const baseDays = isInStock ? 2 : 12;
             const deliveryDays = baseDays + Math.floor(Math.random() * 2);
