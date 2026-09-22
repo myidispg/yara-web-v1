@@ -48,6 +48,11 @@ class UserSerializer(serializers.ModelSerializer):
                   "gender", "date_of_birth", "date_joined", "is_staff", "is_active", "addresses"]
         # Removed "phone" from read_only_fields so users can update it
         read_only_fields = ["email", "date_joined", "is_staff"]
+        extra_kwargs = {
+            'date_of_birth': {'required': False, 'allow_null': True},
+            'phone': {'required': False, 'allow_null': True},
+            'gender': {'required': False, 'allow_blank': True},
+        }
 
     def validate_phone(self, value):
         import re

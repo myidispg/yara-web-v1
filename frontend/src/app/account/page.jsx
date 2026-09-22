@@ -15,6 +15,7 @@ export default function AccountPage() {
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({});
     const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressForm, setAddressForm] = useState({});
 
@@ -42,7 +43,7 @@ export default function AccountPage() {
             ]);
             setProfile(profileRes.data);
             setOrders(ordersRes.data.results || ordersRes.data);
-                        setForm({
+            setForm({
                 first_name: profileRes.data.first_name || "",
                 last_name: profileRes.data.last_name || "",
                 gender: profileRes.data.gender || "",
@@ -56,15 +57,77 @@ export default function AccountPage() {
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!form.first_name || !form.first_name.trim()) {
+            newErrors.first_name = "First name is required";
+        }
+
+        if (form.phone && form.phone.length > 0) {
+            if (!/^[6-9]\d{9}$/.test(form.phone)) {
+                newErrors.phone = "Enter a valid 10-digit Indian mobile number.";
+            }
+        }
+
+        // Only validate date if user actually entered something
+        if (form.date_of_birth && form.date_of_birth.length > 0) {
+            // Parse date manually to avoid UTC timezone issues
+            const [year, month, day] = form.date_of_birth.split("-").map(Number);
+            const selectedDate = new Date(year, month - 1, day);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Compare at midnight
+
+            if (isNaN(selectedDate.getTime())) {
+                newErrors.date_of_birth = "Please enter a valid date";
+            } else if (selectedDate > today) {
+                newErrors.date_of_birth = "Date of birth cannot be in the future";
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const saveProfile = async () => {
+        if (!validateForm()) return;
+
         setSaving(true);
+        setErrors({});
+
         try {
-            const { data } = await api.updateProfile(form);
+            const payload = {
+                first_name: form.first_name,
+                last_name: form.last_name || "",
+                gender: form.gender || "",
+            };
+
+            // Only include phone if it's a valid 10-digit number
+            if (form.phone && /^[6-9]\d{9}$/.test(form.phone)) {
+                payload.phone = form.phone;
+            }
+
+            // Only include date if user actually entered one
+            if (form.date_of_birth && form.date_of_birth.length === 10) {
+                payload.date_of_birth = form.date_of_birth;
+            } else {
+                payload.date_of_birth = null;
+            }
+
+            const { data } = await api.updateProfile(payload);
             setProfile(data);
             setEditing(false);
-            alert("Profile updated!");
         } catch (err) {
-            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
+            const serverErrors = err.response?.data;
+            if (serverErrors && typeof serverErrors === 'object') {
+                const formattedErrors = {};
+                Object.entries(serverErrors).forEach(([key, value]) => {
+                    formattedErrors[key] = Array.isArray(value) ? value[0] : value;
+                });
+                setErrors(formattedErrors);
+            } else {
+                setErrors({ general: "Failed to save profile. Please try again." });
+            }
         } finally {
             setSaving(false);
         }
@@ -76,9 +139,8 @@ export default function AccountPage() {
             setShowAddressForm(false);
             setAddressForm({});
             await load();
-            alert("Address saved!");
         } catch (err) {
-            alert("Failed: " + JSON.stringify(err.response?.data || err.message));
+            console.error("Failed to save address:", err);
         }
     };
 
@@ -91,6 +153,12 @@ export default function AccountPage() {
         if (!confirm("Delete this address?")) return;
         await api.deleteAddress(id);
         await load();
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "—";
+        const [year, month, day] = dateStr.split("-");
+        return `${day}/${month}/${year}`;
     };
 
     if (authLoading) return (
@@ -110,6 +178,13 @@ export default function AccountPage() {
             <p className="text-sm text-[#1A2536]/50">Unable to load profile.</p>
         </div>
     );
+
+    const inputCls = (field) => `w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors ${errors[field]
+        ? "border-red-500 focus:border-red-500 bg-red-50/50"
+        : "border-[#E5BDB0] focus:border-[#1A2536]"
+        }`;
+
+    const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5";
 
     return (
         <div className="bg-white min-h-screen pb-20">
@@ -156,15 +231,11 @@ export default function AccountPage() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-[#1A2536]/60">Date of Birth:</span>
-                                        <span className="font-bold text-[#1A2536]">
-                                            {profile.date_of_birth 
-                                                ? new Date(profile.date_of_birth).toLocaleDateString('en-GB') 
-                                                : "—"}
-                                        </span>
+                                        <span className="font-bold text-[#1A2536]">{formatDate(profile.date_of_birth)}</span>
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => setEditing(true)}
+                                    onClick={() => { setEditing(true); setErrors({}); }}
                                     className="w-full mt-6 py-3.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all"
                                 >
                                     Edit Profile
@@ -173,30 +244,48 @@ export default function AccountPage() {
                         ) : (
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Email</label>
+                                    <label className={labelCls}>Email</label>
                                     <input value={profile.email} disabled className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 bg-white/50 text-[#1A2536]/50 cursor-not-allowed" />
                                 </div>
-                                                                <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Phone</label>
-                                    <input 
-                                        value={form.phone} 
-                                        onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} 
+
+                                <div>
+                                    <label className={labelCls}>Phone</label>
+                                    <input
+                                        value={form.phone || ""}
+                                        onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                                         maxLength={10}
+                                        className={inputCls("phone")}
                                         placeholder="10-digit mobile number"
-                                        className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" 
+                                    />
+                                    {errors.phone && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.phone}</p>}
+                                </div>
+
+                                <div>
+                                    <label className={labelCls}>First Name *</label>
+                                    <input
+                                        value={form.first_name || ""}
+                                        onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                                        className={inputCls("first_name")}
+                                    />
+                                    {errors.first_name && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.first_name}</p>}
+                                </div>
+
+                                <div>
+                                    <label className={labelCls}>Last Name</label>
+                                    <input
+                                        value={form.last_name || ""}
+                                        onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                                        className={inputCls("last_name")}
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">First Name</label>
-                                    <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Last Name</label>
-                                    <input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">Gender</label>
-                                    <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]">
+                                    <label className={labelCls}>Gender</label>
+                                    <select
+                                        value={form.gender || ""}
+                                        onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                                        className={inputCls("gender")}
+                                    >
                                         <option value="">Select...</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -204,17 +293,46 @@ export default function AccountPage() {
                                         <option value="prefer_not_to_say">Prefer not to say</option>
                                     </select>
                                 </div>
+
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5">
-                                        Date of Birth <span className="text-[#1A2536]/40 normal-case tracking-normal">(DD/MM/YYYY)</span>
+                                    <label className={labelCls}>
+                                        Date of Birth <span className="text-[#1A2536]/40 normal-case">(Optional)</span>
                                     </label>
-                                    <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                    <input
+                                        type="date"
+                                        value={form.date_of_birth || ""}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setForm({ ...form, date_of_birth: val });
+                                            // Clear error when user changes the date
+                                            if (errors.date_of_birth) {
+                                                setErrors({ ...errors, date_of_birth: "" });
+                                            }
+                                        }}
+                                        className={inputCls("date_of_birth")}
+                                    />
+                                    {errors.date_of_birth && <p className="text-[10px] text-red-500 font-semibold mt-1">{errors.date_of_birth}</p>}
                                 </div>
+
+                                {/* General error message */}
+                                {errors.general && (
+                                    <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl font-semibold text-center">
+                                        {errors.general}
+                                    </div>
+                                )}
+
                                 <div className="flex gap-3">
-                                    <button onClick={saveProfile} disabled={saving} className="flex-1 py-3.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all disabled:opacity-50">
+                                    <button
+                                        onClick={saveProfile}
+                                        disabled={saving}
+                                        className="flex-1 py-3.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all disabled:opacity-50"
+                                    >
                                         {saving ? "Saving..." : "Save"}
                                     </button>
-                                    <button onClick={() => setEditing(false)} className="flex-1 py-3.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">
+                                    <button
+                                        onClick={() => { setEditing(false); setErrors({}); }}
+                                        className="flex-1 py-3.5 border-2 border-[#B86B5A] text-[#B86B5A] hover:bg-[#B86B5A] hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all"
+                                    >
                                         Cancel
                                     </button>
                                 </div>
@@ -237,7 +355,7 @@ export default function AccountPage() {
                         {showAddressForm && (
                             <div className="mb-6 space-y-3 border-2 border-[#E5BDB0] rounded-2xl p-5 bg-white/60">
                                 <div>
-                                    <label className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] block mb-1.5">Label</label>
+                                    <label className={labelCls}>Label</label>
                                     <select value={addressForm.label || "home"} onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]">
                                         <option value="home">Home</option>
                                         <option value="office">Office</option>
@@ -250,7 +368,7 @@ export default function AccountPage() {
                                     <input placeholder="City *" value={addressForm.city || ""} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                     <input placeholder="State *" value={addressForm.state || ""} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 </div>
-                                <input placeholder="PIN Code *" value={addressForm.pincode || ""} onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                <input placeholder="PIN Code *" value={addressForm.pincode || ""} onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 <button onClick={saveAddress} className="w-full py-3.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">
                                     Save Address
                                 </button>
@@ -298,12 +416,11 @@ export default function AccountPage() {
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-mono text-xs font-bold text-[#1A2536]">{order.order_number}</span>
-                                        <span className={`text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
-                                            order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                        <span className={`text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                                             order.status === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                            order.status === 'shipped' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                                            'bg-amber-50 text-amber-700 border border-amber-200'
-                                        }`}>
+                                                order.status === 'shipped' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                            }`}>
                                             {order.status}
                                         </span>
                                     </div>
