@@ -91,20 +91,20 @@ export default function CustomerDetailPage() {
                         </span>
                     )}
                 </div>
-                
+
                 {/* USER ACTIONS: Deactivate / Activate */}
                 {!c.is_staff && (
                     c.is_active ? (
-                        <button 
-                            onClick={handleDeactivate} 
+                        <button
+                            onClick={handleDeactivate}
                             disabled={processing}
                             className="px-6 py-2.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all disabled:opacity-50"
                         >
                             {processing ? "Processing..." : "Deactivate Account"}
                         </button>
                     ) : (
-                        <button 
-                            onClick={handleActivate} 
+                        <button
+                            onClick={handleActivate}
                             disabled={processing}
                             className="px-6 py-2.5 border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all disabled:opacity-50"
                         >
@@ -115,14 +115,28 @@ export default function CustomerDetailPage() {
             </div>
             <p className="text-sm text-[#1A2536]/60 mb-8">Customer since {new Date(c.date_joined).toLocaleDateString("en-IN")}</p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white rounded-xl border border-[#E5BDB0] p-6 shadow-sm">
                     <p className="text-xs uppercase tracking-[0.16em] font-semibold text-[#1A2536]/60 mb-1">Email</p>
-                    <p className="text-sm font-semibold break-all text-[#1A2536]">{c.email}</p>
+                    <p className="text-sm font-semibold break-all text-[#1A2536]">{c.email || "—"}</p>
                 </div>
                 <div className="bg-white rounded-xl border border-[#E5BDB0] p-6 shadow-sm">
                     <p className="text-xs uppercase tracking-[0.16em] font-semibold text-[#1A2536]/60 mb-1">Phone</p>
                     <p className="text-sm font-semibold text-[#1A2536]">{c.phone || "—"}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-[#E5BDB0] p-6 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.16em] font-semibold text-[#1A2536]/60 mb-1">Gender</p>
+                    <p className="text-sm font-semibold text-[#1A2536] capitalize">
+                        {c.gender ? c.gender.replace(/_/g, ' ') : "—"}
+                    </p>
+                </div>
+                <div className="bg-white rounded-xl border border-[#E5BDB0] p-6 shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.16em] font-semibold text-[#1A2536]/60 mb-1">Date of Birth</p>
+                    <p className="text-sm font-semibold text-[#1A2536]">
+                        {c.date_of_birth
+                            ? c.date_of_birth.split("-").reverse().join("/")
+                            : "—"}
+                    </p>
                 </div>
                 <div className="bg-white rounded-xl border border-[#E5BDB0] p-6 shadow-sm">
                     <p className="text-xs uppercase tracking-[0.16em] font-semibold text-[#1A2536]/60 mb-1">Total Orders</p>
