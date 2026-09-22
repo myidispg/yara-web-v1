@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import api from "@/api/client";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { isPincodeServiceable } from '@/lib/pincodeUtils';
 
 const inr = (n) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -321,35 +322,71 @@ export default function CheckoutPage() {
 
                             {savedAddresses.length > 0 && (
                                 <div className="space-y-3 mb-4">
-                                    {savedAddresses.map((addr) => (
-                                        <label
-                                            key={addr.id}
-                                            className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${!useNewAddress && selectedAddressId === addr.id
-                                                    ? "border-[#1A2536] bg-white shadow-lg"
-                                                    : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"
-                                                }`}
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <input
-                                                    type="radio"
-                                                    name="address"
-                                                    checked={!useNewAddress && selectedAddressId === addr.id}
-                                                    onChange={() => { setSelectedAddressId(addr.id); setUseNewAddress(false); }}
-                                                    className="mt-1 accent-[#1A2536]"
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-sm font-bold capitalize text-[#1A2536]">{addr.label || "Home"}</span>
-                                                        {addr.is_default && (
-                                                            <span className="text-[9px] bg-[#D4AF37] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Default</span>
-                                                        )}
+                                    {savedAddresses.map((addr) => {
+                                        const isServiceable = isPincodeServiceable(addr.pincode);
+
+                                        return (
+                                            <label
+                                                key={addr.id}
+                                                className={`block border-2 rounded-2xl p-5 transition-all ${!isServiceable
+                                                        ? 'border-red-300 bg-red-50/30 cursor-not-allowed opacity-70'
+                                                        : !useNewAddress && selectedAddressId === addr.id
+                                                            ? "border-[#1A2536] bg-white shadow-lg cursor-pointer"
+                                                            : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A] cursor-pointer"
+                                                    }`}
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    <input
+                                                        type="radio"
+                                                        name="address"
+                                                        checked={!useNewAddress && selectedAddressId === addr.id}
+                                                        onChange={() => {
+                                                            if (isServiceable) {
+                                                                setSelectedAddressId(addr.id);
+                                                                setUseNewAddress(false);
+                                                            }
+                                                        }}
+                                                        disabled={!isServiceable}
+                                                        className={`mt-1 ${isServiceable ? 'accent-[#1A2536]' : 'accent-red-500'}`}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-sm font-bold capitalize text-[#1A2536]">{addr.label || "Home"}</span>
+                                                            {addr.is_default && (
+                                                                <span className="text-[9px] bg-[#D4AF37] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Default</span>
+                                                            )}
+                                                            {!isServiceable && (
+                                                                <>
+                                                                    <span className="text-[9px] bg-red-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                                                                        Non-Serviceable
+                                                                    </span>
+                                                                    <div className="relative group">
+                                                                        <button
+                                                                            className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold hover:bg-red-200 transition-colors"
+                                                                            aria-label="Serviceability info"
+                                                                        >
+                                                                            i
+                                                                        </button>
+                                                                        {/* Tooltip */}
+                                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 hidden md:block">
+                                                                            This address falls outside our delivery partner's serviceable areas
+                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                                        </div>
+                                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-active:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 md:hidden">
+                                                                            This address falls outside our delivery partner's serviceable areas
+                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-[#1A2536]/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
+                                                        <p className="text-sm text-[#1A2536]/70">{addr.city}, {addr.state} — {addr.pincode}</p>
                                                     </div>
-                                                    <p className="text-sm text-[#1A2536]/70">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</p>
-                                                    <p className="text-sm text-[#1A2536]/70">{addr.city}, {addr.state} — {addr.pincode}</p>
                                                 </div>
-                                            </div>
-                                        </label>
-                                    ))}
+                                            </label>
+                                        );
+                                    })}
 
                                     <label
                                         className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${useNewAddress ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"
@@ -438,8 +475,8 @@ export default function CheckoutPage() {
                                                 value={newAddress.pincode}
                                                 onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
                                                 className={`w-full bg-white border rounded-xl px-4 py-3 text-sm focus:outline-none ${newAddress.pincode && newAddress.pincode.length !== 6
-                                                        ? "border-red-500 focus:border-red-500"
-                                                        : "border-[#E5BDB0] focus:border-[#1A2536]"
+                                                    ? "border-red-500 focus:border-red-500"
+                                                    : "border-[#E5BDB0] focus:border-[#1A2536]"
                                                     }`}
                                             />
                                             {newAddress.pincode && newAddress.pincode.length !== 6 && (
@@ -527,7 +564,7 @@ export default function CheckoutPage() {
                         <button type="submit" disabled={placing || !isAddressValid()} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                             {placing ? "Placing Secure Order…" : `Place Order (${inr(subtotal)})`}
                         </button>
-                        
+
                         <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#E5BDB0]/40">
                             <div className="text-center">
                                 <p className="text-[9px] font-bold text-[#1A2536] uppercase tracking-wider">256-bit SSL</p>

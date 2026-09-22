@@ -130,6 +130,17 @@ class OrderCreateSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(
         choices=["upi", "card", "netbanking", "emi", "cod"])
     items = _ItemInput(many=True)
+    
+    def validate_address(self, value):
+        """Validate that the address pincode is serviceable."""
+        from .pincode_utils import is_pincode_serviceable
+            
+        if not is_pincode_serviceable(value.pincode):
+            raise serializers.ValidationError(
+                "Sorry, we don't deliver to this pincode yet. "
+                "We currently serve only Delhi, Gurugram, Noida, and Faridabad."
+            )
+        return value
 
     def validate_items(self, items):
         if not items:
