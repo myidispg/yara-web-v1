@@ -91,11 +91,17 @@ export default function CartPage() {
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
                                                 <button
-                                                    onClick={() => setQty(i.key, i.qty - 1)}
-                                                    disabled={i.qty <= 1}
-                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                                    onClick={() => {
+                                                        if (i.qty <= 1) {
+                                                            removeItem(i.key);
+                                                        } else {
+                                                            setQty(i.key, i.qty - 1);
+                                                        }
+                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white hover:text-red-500 transition-colors font-bold"
+                                                    title={i.qty <= 1 ? "Remove item" : "Decrease quantity"}
                                                 >
-                                                    −
+                                                    {i.qty <= 1 ? "×" : "−"}
                                                 </button>
                                                 <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
                                                     {i.qty}
@@ -148,11 +154,17 @@ export default function CartPage() {
                                         <p className="font-extrabold text-lg text-[#1A2536]">{inr(i.unit_price * i.qty)}</p>
                                         <div className="flex items-center bg-white border border-[#E5BDB0] rounded-full overflow-hidden shadow-sm">
                                             <button
-                                                onClick={() => setQty(i.key, i.qty - 1)}
-                                                disabled={i.qty <= 1}
-                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                                onClick={() => {
+                                                    if (i.qty <= 1) {
+                                                        removeItem(i.key);
+                                                    } else {
+                                                        setQty(i.key, i.qty - 1);
+                                                    }
+                                                }}
+                                                className="w-8 h-8 flex items-center justify-center text-[#1A2536] hover:bg-white hover:text-red-500 transition-colors font-bold"
+                                                title={i.qty <= 1 ? "Remove item" : "Decrease quantity"}
                                             >
-                                                −
+                                                {i.qty <= 1 ? "×" : "−"}
                                             </button>
                                             <span className="w-8 h-8 flex items-center justify-center text-xs font-bold text-[#1A2536] border-x border-[#E5BDB0]">
                                                 {i.qty}

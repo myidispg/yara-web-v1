@@ -19,6 +19,7 @@ export default function AccountPage() {
     const [errors, setErrors] = useState({});
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [addressForm, setAddressForm] = useState({});
+    const [activeTooltip, setActiveTooltip] = useState(null);
 
     useEffect(() => {
         if (authLoading) return;
@@ -182,7 +183,7 @@ export default function AccountPage() {
 
     const inputCls = (field) => `w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors ${errors[field]
         ? "border-red-500 focus:border-red-500 bg-red-50/50"
-        : "border-[#E5BDB0] focus:border-[#1A2536]"
+        : "border-gray-200 focus:border-[#1A2536]"
         }`;
 
     const labelCls = "text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50 block mb-1.5";
@@ -207,7 +208,7 @@ export default function AccountPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     {/* Profile Card */}
-                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                    <div className="glass-card-vibrant rounded-3xl border border-gray-200 p-6 sm:p-8">
                         <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-6">Profile</h2>
                         {!editing ? (
                             <>
@@ -246,7 +247,7 @@ export default function AccountPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className={labelCls}>Email</label>
-                                    <input value={profile.email} disabled className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 bg-white/50 text-[#1A2536]/50 cursor-not-allowed" />
+                                    <input value={profile.email} disabled className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white/50 text-[#1A2536]/50 cursor-not-allowed" />
                                 </div>
 
                                 <div>
@@ -342,7 +343,7 @@ export default function AccountPage() {
                     </div>
 
                     {/* Addresses */}
-                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                    <div className="glass-card-vibrant rounded-3xl border border-gray-200 p-6 sm:p-8">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Addresses</h2>
                             <button
@@ -354,22 +355,22 @@ export default function AccountPage() {
                         </div>
 
                         {showAddressForm && (
-                            <div className="mb-6 space-y-3 border-2 border-[#E5BDB0] rounded-2xl p-5 bg-white/60">
+                            <div className="mb-6 space-y-3 border-2 border-gray-200 rounded-2xl p-5 bg-white/60">
                                 <div>
                                     <label className={labelCls}>Label</label>
-                                    <select value={addressForm.label || "home"} onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]">
+                                    <select value={addressForm.label || "home"} onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]">
                                         <option value="home">Home</option>
                                         <option value="office">Office</option>
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
-                                <input placeholder="Address Line 1 *" value={addressForm.line1 || ""} onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" required />
-                                <input placeholder="Address Line 2 (optional)" value={addressForm.line2 || ""} onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                <input placeholder="Address Line 1 *" value={addressForm.line1 || ""} onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" required />
+                                <input placeholder="Address Line 2 (optional)" value={addressForm.line2 || ""} onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input placeholder="City *" value={addressForm.city || ""} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
-                                    <input placeholder="State *" value={addressForm.state || ""} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                    <input placeholder="City *" value={addressForm.city || ""} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                    <input placeholder="State *" value={addressForm.state || ""} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 </div>
-                                <input placeholder="PIN Code *" value={addressForm.pincode || ""} onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} className="w-full border border-[#E5BDB0] rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
+                                <input placeholder="PIN Code *" value={addressForm.pincode || ""} onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A2536]" />
                                 <button onClick={saveAddress} className="w-full py-3.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all">
                                     Save Address
                                 </button>
@@ -384,8 +385,8 @@ export default function AccountPage() {
                                     <div
                                         key={addr.id}
                                         className={`border-2 rounded-2xl p-4 relative ${isServiceable
-                                                ? 'border-[#E5BDB0] bg-white'
-                                                : 'border-red-300 bg-red-50/30'
+                                            ? 'border-gray-200 bg-white'
+                                            : 'border-red-300 bg-red-50/30'
                                             }`}
                                     >
                                         {addr.is_default && (
@@ -399,32 +400,31 @@ export default function AccountPage() {
 
                                         {/* Non-serviceable badge */}
                                         {!isServiceable && (
-                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-red-200">
-                                                <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">
+                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-red-300">
+                                                <span className="text-[10px] text-red-700 font-bold uppercase tracking-wider">
                                                     Non-Serviceable
                                                 </span>
-                                                <div className="relative group">
+                                                <div className="relative">
                                                     <button
-                                                        className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold hover:bg-red-200 transition-colors"
+                                                        onClick={() => setActiveTooltip(activeTooltip === addr.id ? null : addr.id)}
+                                                        onMouseEnter={() => setActiveTooltip(addr.id)}
+                                                        onMouseLeave={() => setActiveTooltip(null)}
+                                                        className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-sm"
                                                         aria-label="Serviceability info"
                                                     >
                                                         i
                                                     </button>
-                                                    {/* Tooltip */}
-                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 hidden md:block">
-                                                        This address falls outside our delivery partner's serviceable areas
-                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
-                                                    </div>
-                                                    {/* Mobile tooltip (click to show) */}
-                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-active:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 md:hidden">
-                                                        This address falls outside our delivery partner's serviceable areas
-                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
-                                                    </div>
+                                                    {activeTooltip === addr.id && (
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2 bg-[#1A2536] text-white text-xs rounded-lg whitespace-nowrap z-50 shadow-lg animate-fadeIn">
+                                                            This address falls outside our delivery partner's serviceable areas
+                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div className="flex gap-3 mt-3 pt-3 border-t border-[#E5BDB0]/40">
+                                        <div className="flex gap-3 mt-3 pt-3 border-t border-gray-200/40">
                                             {!addr.is_default && (
                                                 <button onClick={() => setDefault(addr.id)} className="text-xs text-[#B86B5A] font-bold hover:underline">
                                                     Set Default
@@ -444,14 +444,14 @@ export default function AccountPage() {
                     </div>
 
                     {/* Order History */}
-                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 sm:p-8">
+                    <div className="glass-card-vibrant rounded-3xl border border-gray-200 p-6 sm:p-8">
                         <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536] mb-6">Order History</h2>
                         <div className="space-y-3">
                             {orders.map((order) => (
                                 <Link
                                     key={order.id}
                                     href={`/account/orders/${order.id}`}
-                                    className="block border-2 border-[#E5BDB0] rounded-2xl p-4 hover:border-[#B86B5A] transition-all bg-white hover:shadow-md"
+                                    className="block border-2 border-gray-200 rounded-2xl p-4 hover:border-[#B86B5A] transition-all bg-white hover:shadow-md"
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-mono text-xs font-bold text-[#1A2536]">{order.order_number}</span>
