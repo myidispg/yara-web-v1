@@ -40,6 +40,10 @@ export default function CheckoutPage() {
     const [placed, setPlaced] = useState(null);
     const [mounted, setMounted] = useState(false);
     const [mtoDialog, setMtoDialog] = useState(null);
+    const [activeTooltip, setActiveTooltip] = useState(null);
+
+    const [checkoutPhone, setCheckoutPhone] = useState("");
+    const [phoneError, setPhoneError] = useState("");
 
     useEffect(() => {
         document.title = "Secure Checkout | YA-RA Jewels";
@@ -108,6 +112,15 @@ export default function CheckoutPage() {
     const submitOrder = async (itemsPayload, expectedMtoItems = []) => {
         let addressId = selectedAddressId;
 
+        // Save phone to profile if user entered one at checkout
+        if (!user?.phone && checkoutPhone && checkoutPhone.length === 10) {
+            try {
+                await api.updateProfile({ phone: checkoutPhone });
+            } catch (err) {
+                console.error("Failed to save phone:", err);
+            }
+        }
+
         if (useNewAddress) {
             const addressPayload = {
                 label: newAddress.label,
@@ -135,9 +148,10 @@ export default function CheckoutPage() {
         });
 
         if (unexpectedMto.length > 0) {
-            setMtoDialog({ orderNumber, items: unexpectedMto, preOrder: false });
+            setMtoDialog({ orderNumber, orderId: data.id, items: unexpectedMto, preOrder: false });
         } else {
-            setPlaced({ number: orderNumber });
+            // Redirect to order detail page instead of showing thank you screen
+            router.push(`/account/orders/${data.id}`);
         }
     };
 
@@ -148,12 +162,23 @@ export default function CheckoutPage() {
 
     const placeOrder = async (e) => {
         e.preventDefault();
+
+        // Validate phone
+        if (!user?.phone && (!checkoutPhone || checkoutPhone.length !== 10)) {
+            setError("Please enter a valid 10-digit mobile number.");
+            setPhoneError("Valid 10-digit number required");
+            return;
+        }
+
+        // Validate address
         if (!isAddressValid()) {
             setError("Please select or enter a delivery address.");
             return;
         }
+
         setPlacing(true);
         setError("");
+        setPhoneError("");
         try {
             const itemsPayload = buildItemsPayload();
             const { data: preview } = await api.post("/orders/preview/", { items: itemsPayload });
@@ -241,7 +266,7 @@ export default function CheckoutPage() {
                         </div>
                     ) : (
                         <button
-                            onClick={() => { setPlaced({ number: mtoDialog.orderNumber }); setMtoDialog(null); }}
+                            onClick={() => { setMtoDialog(null); router.push(`/account/orders/${mtoDialog.orderId}`); }}
                             className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl"
                         >
                             Continue to Order Confirmation
@@ -305,12 +330,35 @@ export default function CheckoutPage() {
                                         <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50">Email</p>
                                         <p className="text-sm font-bold text-[#1A2536] mt-1">{user?.email}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50">Phone</p>
-                                        <p className="text-sm font-bold text-[#1A2536] mt-1">{user?.phone || "—"}</p>
+                                                                        <div>
+                                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50">Phone <span className="text-red-500">*</span></p>
+                                        {user?.phone ? (
+                                            <p className="text-sm font-bold text-[#1A2536] mt-1">{user.phone}</p>
+                                        ) : (
+                                            <div className="mt-1">
+                                                <input
+                                                    type="tel"
+                                                    placeholder="10-digit mobile number"
+                                                    maxLength={10}
+                                                    value={checkoutPhone}
+                                                    onChange={(e) => {
+                                                        setCheckoutPhone(e.target.value.replace(/\D/g, ""));
+                                                        setPhoneError("");
+                                                    }}
+                                                    className={`w-full bg-white border rounded-xl px-4 py-2 text-sm focus:outline-none ${
+                                                        phoneError ? "border-red-500 focus:border-red-500" : "border-[#E5BDB0] focus:border-[#1A2536]"
+                                                    }`}
+                                                />
+                                                {phoneError && (
+                                                    <p className="text-[10px] text-red-500 font-semibold mt-1">{phoneError}</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-end">
-                                        <Link href="/account" className="text-xs text-[#B86B5A] font-bold hover:underline">Edit in My Account →</Link>
+                                        <Link href="/account" className="text-xs text-[#B86B5A] font-bold hover:underline">
+                                            {user?.phone ? "Edit in My Account →" : "Complete Profile →"}
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -329,10 +377,10 @@ export default function CheckoutPage() {
                                             <label
                                                 key={addr.id}
                                                 className={`block border-2 rounded-2xl p-5 transition-all ${!isServiceable
-                                                        ? 'border-red-300 bg-red-50/30 cursor-not-allowed opacity-70'
-                                                        : !useNewAddress && selectedAddressId === addr.id
-                                                            ? "border-[#1A2536] bg-white shadow-lg cursor-pointer"
-                                                            : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A] cursor-pointer"
+                                                    ? "border-red-500 bg-red-50/50 cursor-not-allowed"
+                                                    : !useNewAddress && selectedAddressId === addr.id
+                                                        ? "border-[#1A2536] bg-white shadow-lg cursor-pointer"
+                                                        : "border-gray-200 bg-white/60 hover:border-[#B86B5A] cursor-pointer"
                                                     }`}
                                             >
                                                 <div className="flex items-start gap-4">
@@ -347,7 +395,7 @@ export default function CheckoutPage() {
                                                             }
                                                         }}
                                                         disabled={!isServiceable}
-                                                        className={`mt-1 ${isServiceable ? 'accent-[#1A2536]' : 'accent-red-500'}`}
+                                                        className={`mt-1 ${isServiceable ? "accent-[#1A2536]" : "accent-red-500"}`}
                                                     />
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
@@ -360,22 +408,27 @@ export default function CheckoutPage() {
                                                                     <span className="text-[9px] bg-red-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                                                                         Non-Serviceable
                                                                     </span>
-                                                                    <div className="relative group">
+                                                                    <div className="relative">
                                                                         <button
-                                                                            className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold hover:bg-red-200 transition-colors"
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setActiveTooltip(activeTooltip === addr.id ? null : addr.id);
+                                                                            }}
+                                                                            onMouseEnter={() => setActiveTooltip(addr.id)}
+                                                                            onMouseLeave={() => setActiveTooltip(null)}
+                                                                            className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-sm"
                                                                             aria-label="Serviceability info"
                                                                         >
                                                                             i
                                                                         </button>
-                                                                        {/* Tooltip */}
-                                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 hidden md:block">
-                                                                            This address falls outside our delivery partner's serviceable areas
-                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
-                                                                        </div>
-                                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1A2536] text-white text-xs rounded-lg opacity-0 group-active:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 md:hidden">
-                                                                            This address falls outside our delivery partner's serviceable areas
-                                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
-                                                                        </div>
+                                                                        {activeTooltip === addr.id && (
+                                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-2 bg-[#1A2536] text-white text-xs rounded-lg whitespace-nowrap z-50 shadow-lg">
+                                                                                This address falls outside our delivery partner's serviceable areas
+                                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1A2536]"></div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 </>
                                                             )}
@@ -389,7 +442,7 @@ export default function CheckoutPage() {
                                     })}
 
                                     <label
-                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${useNewAddress ? "border-[#1A2536] bg-white shadow-lg" : "border-[#E5BDB0] bg-white/60 hover:border-[#B86B5A]"
+                                        className={`block border-2 rounded-2xl p-5 cursor-pointer transition-all ${useNewAddress ? "border-[#1A2536] bg-white shadow-lg" : "border-gray-200 bg-white/60 hover:border-[#B86B5A]"
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">

@@ -239,3 +239,18 @@
     clip-path: none !important;
   }
 }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px) translateX(-50%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) translateX(-50%);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+}
