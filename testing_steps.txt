@@ -1,0 +1,34 @@
+Backup Database:
+
+# Create backup directory
+mkdir -p backups
+
+# Backup the database
+pg_dump -U postgres -h localhost yara_db > backups/db_backup_$(date +%Y%m%d_%H%M%S).sql
+
+echo "✅ Database backed up!"
+ls -lh backups/
+
+
+Run this to wipe data:
+
+Script is stored at: 
+yara-jewels/backend/accounts/management/commands/clean_test_data.py
+python manage.py clean_test_data
+
+
+Restore Database
+
+Stop both servers
+
+# List available backups
+ls -la backups/
+
+# Drop and recreate the database first (clean restore)
+psql -U postgres -h localhost -c "DROP DATABASE IF EXISTS yara_db;"
+psql -U postgres -h localhost -c "CREATE DATABASE yara_db;"
+
+# Restore from backup
+psql -U postgres -h localhost yara_db < backups/backup_name_here.sql
+
+echo "✅ Database restored!"
