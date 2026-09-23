@@ -40,12 +40,33 @@ class AddressSerializer(serializers.ModelSerializer):
         return Address.objects.create(user=user, **validated_data)
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    design_slug = serializers.CharField(source='instance.design.slug', read_only=True)
-    design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
+    design_slug = serializers.SerializerMethodField()
+    design_id = serializers.SerializerMethodField()
+    is_mto_pending = serializers.BooleanField(read_only=True)
+    mto_karat = serializers.CharField(read_only=True)
+    mto_gold_color = serializers.CharField(read_only=True)
+    mto_ring_size = serializers.CharField(read_only=True)
+    mto_diamond_grade = serializers.CharField(read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product_name", "variant_label", "quantity", "unit_price", "line_total", "design_slug", "design_id", "instance"]
+        fields = ["id", "product_name", "variant_label", "quantity", "unit_price", "line_total",
+                  "design_slug", "design_id", "instance", "is_mto_pending",
+                  "mto_karat", "mto_gold_color", "mto_ring_size", "mto_diamond_grade"]
+
+    def get_design_slug(self, obj):
+        if obj.instance:
+            return obj.instance.design.slug
+        if obj.mto_design:
+            return obj.mto_design.slug
+        return None
+
+    def get_design_id(self, obj):
+        if obj.instance:
+            return obj.instance.design.id
+        if obj.mto_design:
+            return obj.mto_design.id
+        return None
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -68,7 +89,7 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_mto_items(self, obj):
         mto = []
         for item in obj.items.all():
-            if item.instance and item.instance.item_code.startswith("MTO-"):
+            if item.is_mto_pending and not item.instance:
                 label = f"{item.product_name} · {item.variant_label}" if item.variant_label else item.product_name
                 mto.append(label)
         return mto
@@ -192,29 +213,24 @@ class OrderCreateSerializer(serializers.Serializer):
                         quantity=1, unit_price=unit_price, line_total=unit_price, is_mto_pending=False)
 
                 for _ in range(to_fabricate):
-                    net_weight = design.calculate_net_weight(karat, ring_size)
-                    mto_code = (f"MTO-{design.design_code}-{karat[:2]}{gold_color[0]}-"
-                                f"{ring_size or 'OS'}-{secrets.token_hex(2).upper()}")
-                    new_instance = Product.objects.create(
-                        item_code=mto_code, design=design, karat=karat,
-                        gold_color=gold_color, ring_size=ring_size,
-                        diamond_grade=grade,
-                        actual_net_weight=net_weight,
-                        actual_diamond_weight=design.total_diamond_weight,
-                        actual_color_stone_weight=design.color_stone_weight,
-                        status="sold", sold_to_user=user, sold_in_order=order,
-                        sold_at=timezone.now(),
-                    )
                     unit_price = Decimal(str(mto_price(design, karat, ring_size, grade)))
-                    new_instance.price = unit_price
-                    new_instance.save(update_fields=["price"])
                     subtotal += unit_price
-                    # product.price is GST-inclusive, store it as-is
-                    # Tax breakdown happens at invoice level
+                    # Create OrderItem WITHOUT a product — just store the MTO specs
                     OrderItem.objects.create(
-                        order=order, instance=new_instance, product_name=design.name,
+                        order=order,
+                        instance=None,
+                        product_name=design.name,
                         variant_label=(f"{karat} {gold_color} Gold" + (f" | Size {ring_size}" if ring_size else "") + " (Made to Order)"),
-                        quantity=1, unit_price=unit_price, line_total=unit_price, is_mto_pending = True)
+                        quantity=1,
+                        unit_price=unit_price,
+                        line_total=unit_price,
+                        is_mto_pending=True,
+                        mto_design=design,
+                        mto_karat=karat,
+                        mto_gold_color=gold_color,
+                        mto_ring_size=ring_size or "",
+                        mto_diamond_grade=grade,
+                    )
 
             order.subtotal = subtotal
             order.shipping_fee = Decimal("0.00")

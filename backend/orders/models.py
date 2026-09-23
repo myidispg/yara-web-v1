@@ -82,10 +82,10 @@ class Order(models.Model):
             timeline.append({"status": "cancelled", "timestamp": self.cancelled_at})
         return timeline
 
-
+# Here is the comment I want you to find. 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
-    instance = models.OneToOneField(Product, on_delete=models.PROTECT, related_name="order_item")
+    instance = models.OneToOneField(Product, on_delete=models.PROTECT, related_name="order_item", null=True, blank=True)
     product_name = models.CharField(max_length=220)
     variant_label = models.CharField(max_length=120, blank=True)
     quantity = models.PositiveIntegerField(default=1)
@@ -93,6 +93,13 @@ class OrderItem(models.Model):
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
 
     is_mto_pending = models.BooleanField(default=False, help_text="MTO item awaiting product fulfillment")
+
+    # MTO specification fields — stored when no physical product exists yet
+    mto_design = models.ForeignKey('catalog.Design', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    mto_karat = models.CharField(max_length=10, blank=True)
+    mto_gold_color = models.CharField(max_length=10, blank=True)
+    mto_ring_size = models.CharField(max_length=10, blank=True)
+    mto_diamond_grade = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return f"{self.quantity} × {self.product_name}"
