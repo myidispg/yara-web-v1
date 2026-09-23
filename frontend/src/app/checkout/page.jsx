@@ -63,7 +63,9 @@ export default function CheckoutPage() {
                 const { data } = await api.get("/addresses/");
                 const addresses = data.results || data;
                 setSavedAddresses(addresses);
-                const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
+                const { isPincodeServiceable } = await import('@/lib/pincodeUtils');
+                const serviceableAddresses = addresses.filter((a) => isPincodeServiceable(a.pincode));
+                const defaultAddr = serviceableAddresses.find((a) => a.is_default) || serviceableAddresses[0];
                 if (defaultAddr) {
                     setSelectedAddressId(defaultAddr.id);
                     setUseNewAddress(false);
@@ -330,7 +332,7 @@ export default function CheckoutPage() {
                                         <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50">Email</p>
                                         <p className="text-sm font-bold text-[#1A2536] mt-1">{user?.email}</p>
                                     </div>
-                                                                        <div>
+                                    <div>
                                         <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/50">Phone <span className="text-red-500">*</span></p>
                                         {user?.phone ? (
                                             <p className="text-sm font-bold text-[#1A2536] mt-1">{user.phone}</p>
@@ -345,9 +347,8 @@ export default function CheckoutPage() {
                                                         setCheckoutPhone(e.target.value.replace(/\D/g, ""));
                                                         setPhoneError("");
                                                     }}
-                                                    className={`w-full bg-white border rounded-xl px-4 py-2 text-sm focus:outline-none ${
-                                                        phoneError ? "border-red-500 focus:border-red-500" : "border-[#E5BDB0] focus:border-[#1A2536]"
-                                                    }`}
+                                                    className={`w-full bg-white border rounded-xl px-4 py-2 text-sm focus:outline-none ${phoneError ? "border-red-500 focus:border-red-500" : "border-[#E5BDB0] focus:border-[#1A2536]"
+                                                        }`}
                                                 />
                                                 {phoneError && (
                                                     <p className="text-[10px] text-red-500 font-semibold mt-1">{phoneError}</p>
