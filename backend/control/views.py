@@ -147,9 +147,27 @@ class OrderViewSet(viewsets.ModelViewSet):
         elif new_status == 'shipped' and not order.shipped_at:
             order.shipped_at = now
             logger.info(f"Setting shipped_at for order {order.id}")
+            # Mark all linked products as sold
+            for item in order.items.all():
+                if item.instance and item.instance.status != 'sold':
+                    item.instance.status = 'sold'
+                    item.instance.sold_to_user = order.user
+                    item.instance.sold_in_order = order
+                    item.instance.sold_at = now
+                    item.instance.save()
+                    logger.info(f"Marked product {item.instance.item_code} as sold (shipped)")
         elif new_status == 'delivered' and not order.delivered_at:
             order.delivered_at = now
             logger.info(f"Setting delivered_at for order {order.id}")
+            # Mark all linked products as sold (in case not already done at shipped)
+            for item in order.items.all():
+                if item.instance and item.instance.status != 'sold':
+                    item.instance.status = 'sold'
+                    item.instance.sold_to_user = order.user
+                    item.instance.sold_in_order = order
+                    item.instance.sold_at = now
+                    item.instance.save()
+                    logger.info(f"Marked product {item.instance.item_code} as sold (delivered)")
             # Auto-generate invoice on delivery
             try:
                 invoice = generate_invoice_for_order(order)
@@ -255,10 +273,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='map_product/(?P<item_id>[0-9]+)')
     def map_product(self, request, pk=None, item_id=None):
         """Map a real product to an MTO OrderItem."""
-        from orders.models import OrderItem, Invoice
-        from orders.utils import generate_invoice_for_order
+        from orders.models import OrderItem
         from catalog.models import Product
-        from django.utils import timezone
         
         order = self.get_object()
         product_id = request.data.get('product_id')
@@ -272,43 +288,25 @@ class OrderViewSet(viewsets.ModelViewSet):
             if not item.is_mto_pending:
                 return Response({'error': 'This item is not pending MTO fulfillment'}, status=400)
             
+            if item.instance:
+                return Response({'error': 'This item already has a product assigned'}, status=400)
+            
             product = Product.objects.get(id=product_id)
-            original_product = item.instance
             
-            # Verify it matches the order requirements
-            if (product.design != original_product.design or 
-                product.karat != original_product.karat or 
-                product.gold_color != original_product.gold_color):
-                return Response({'error': 'Product does not match order specifications'}, status=400)
+            # Verify it matches the MTO specs
+            if item.mto_design_id and product.design_id != item.mto_design_id:
+                return Response({'error': 'Product design does not match order specifications'}, status=400)
+            if item.mto_karat and product.karat != item.mto_karat:
+                return Response({'error': f'Product karat ({product.karat}) does not match order ({item.mto_karat})'}, status=400)
+            if item.mto_gold_color and product.gold_color != item.mto_gold_color:
+                return Response({'error': f'Product color ({product.gold_color}) does not match order ({item.mto_gold_color})'}, status=400)
+            if item.mto_ring_size and product.ring_size != item.mto_ring_size:
+                return Response({'error': f'Product ring size ({product.ring_size}) does not match order ({item.mto_ring_size})'}, status=400)
             
-            # Update the OrderItem to point to the real product FIRST
+            # Link the real product — do NOT mark as sold yet (happens on ship/deliver)
             item.instance = product
             item.is_mto_pending = False
             item.save()
-            
-            # Now that the OrderItem is safely linked to the real product, 
-            # delete the dummy MTO placeholder from the database completely
-            original_product.delete()
-            
-            # Mark the real product as sold
-            product.status = 'sold'
-            product.sold_to_user = order.user
-            product.sold_in_order = order
-            product.sold_at = timezone.now()
-            product.save()
-            
-            # If order has an invoice, regenerate it with the new product details
-            try:
-                old_invoice = order.invoice
-                if old_invoice.pdf_file:
-                    old_invoice.pdf_file.delete()
-                old_invoice.delete()
-            except Invoice.DoesNotExist:
-                pass
-            
-            # Generate new invoice if order is already delivered
-            if order.status == 'delivered':
-                generate_invoice_for_order(order)
             
             # Return updated order
             serializer = self.get_serializer(order)

@@ -179,26 +179,83 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class StaffOrderItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
-    design_slug = serializers.CharField(source='instance.design.slug', read_only=True)
-    design_id = serializers.IntegerField(source='instance.design.id', read_only=True)
-    design_code = serializers.CharField(source='instance.design.design_code', read_only=True)
-    design_name = serializers.CharField(source='instance.design.name', read_only=True)
+    design_slug = serializers.SerializerMethodField()
+    design_id = serializers.SerializerMethodField()
+    design_code = serializers.SerializerMethodField()
+    design_name = serializers.SerializerMethodField()
     is_mto_pending = serializers.BooleanField(read_only=True)
-    item_code = serializers.CharField(source='instance.item_code', read_only=True)
-    hallmark_numbers = serializers.ListField(source='instance.hallmark_numbers', read_only=True)
-    report_number = serializers.CharField(source='instance.report_number', read_only=True)
-    karat = serializers.CharField(source='instance.karat', read_only=True)
-    gold_color = serializers.CharField(source='instance.gold_color', read_only=True)
-    diamond_grade = serializers.CharField(source='instance.diamond_grade', read_only=True)
+    item_code = serializers.SerializerMethodField()
+    hallmark_numbers = serializers.SerializerMethodField()
+    report_number = serializers.SerializerMethodField()
+    karat = serializers.SerializerMethodField()
+    gold_color = serializers.SerializerMethodField()
+    diamond_grade = serializers.SerializerMethodField()
+    mto_karat = serializers.CharField(read_only=True)
+    mto_gold_color = serializers.CharField(read_only=True)
+    mto_ring_size = serializers.CharField(read_only=True)
+    mto_diamond_grade = serializers.CharField(read_only=True)
 
     class Meta:
         model = OrderItem
         fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
                   'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name',
-                  'is_mto_pending', 'item_code', 'hallmark_numbers', 'report_number', 'karat', 'gold_color', 'diamond_grade']
+                  'is_mto_pending', 'item_code', 'hallmark_numbers', 'report_number', 'karat', 'gold_color', 'diamond_grade',
+                  'mto_karat', 'mto_gold_color', 'mto_ring_size', 'mto_diamond_grade']
 
     def get_total_price(self, obj):
         return float(obj.line_total) if obj.line_total else float(obj.unit_price) * int(obj.quantity)
+
+    def get_design_slug(self, obj):
+        if obj.instance:
+            return obj.instance.design.slug
+        if obj.mto_design:
+            return obj.mto_design.slug
+        return None
+
+    def get_design_id(self, obj):
+        if obj.instance:
+            return obj.instance.design.id
+        if obj.mto_design:
+            return obj.mto_design.id
+        return None
+
+    def get_design_code(self, obj):
+        if obj.instance:
+            return obj.instance.design.design_code
+        if obj.mto_design:
+            return obj.mto_design.design_code
+        return None
+
+    def get_design_name(self, obj):
+        if obj.instance:
+            return obj.instance.design.name
+        if obj.mto_design:
+            return obj.mto_design.name
+        return obj.product_name
+
+    def get_item_code(self, obj):
+        return obj.instance.item_code if obj.instance else None
+
+    def get_hallmark_numbers(self, obj):
+        return obj.instance.hallmark_numbers if obj.instance else []
+
+    def get_report_number(self, obj):
+        return obj.instance.report_number if obj.instance else None
+
+    def get_karat(self, obj):
+        if obj.instance:
+            return obj.instance.karat
+        return obj.mto_karat or None
+
+    def get_gold_color(self, obj):
+        if obj.instance:
+            return obj.instance.gold_color
+        return obj.mto_gold_color or None
+
+    def get_diamond_grade(self, obj):
+        if obj.instance:
+            return obj.instance.diamond_grade
+        return obj.mto_diamond_grade or None
 
 
 class StaffOrderSerializer(serializers.ModelSerializer):

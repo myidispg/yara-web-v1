@@ -14,6 +14,7 @@ Run this to wipe data:
 
 Script is stored at: 
 yara-jewels/backend/accounts/management/commands/clean_test_data.py
+
 python manage.py clean_test_data
 
 
