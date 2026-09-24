@@ -46,7 +46,22 @@ export default function InventoryPage() {
         loadDesigns(1);
         loadFlat();
         loadCategories();
-    }, []);
+
+        // Refresh when page becomes visible (user navigates back)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                loadFlat();
+                if (selected) {
+                    viewDesign(selected.id, false);
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [selected]);
 
     useEffect(() => {
         const handler = (e) => {
@@ -548,6 +563,15 @@ export default function InventoryPage() {
                                                         <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}></span>
                                                         {st.label}
                                                     </span>
+                                                    {p.sold_in_order_number && (
+                                                        <Link
+                                                            href={`/cpanel/orders/${p.sold_in_order_id}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="block text-[10px] text-[#B86B5A] font-bold mt-1 font-mono hover:underline"
+                                                        >
+                                                            → {p.sold_in_order_number}
+                                                        </Link>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -652,6 +676,67 @@ export default function InventoryPage() {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Diamond & Stone Specifications */}
+                        {(selected.total_diamond_weight || selected.color_stone_weights?.length > 0) && (
+                            <div className="bg-[#1A2536]/[0.03] rounded-2xl p-5 mb-6 border border-[#E5BDB0]/40">
+                                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-3">Diamond & Stone Specifications (Reference)</p>
+
+                                {/* Diamond Section */}
+                                {selected.total_diamond_weight > 0 && (
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] mb-2">Diamond Weights</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-[10px] text-[#1A2536]/60 uppercase tracking-wider">Total</p>
+                                                <p className="font-bold text-[#1A2536]">{Number(selected.total_diamond_weight).toFixed(2)} Ct</p>
+                                            </div>
+                                            {selected.diamond_weight_round_melle > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] text-[#1A2536]/60 uppercase tracking-wider">Round Melle</p>
+                                                    <p className="font-bold text-[#1A2536]">{Number(selected.diamond_weight_round_melle).toFixed(2)} Ct</p>
+                                                </div>
+                                            )}
+                                            {selected.pointer_weights && selected.pointer_weights.length > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] text-[#1A2536]/60 uppercase tracking-wider">Pointer</p>
+                                                    <div className="space-y-0.5">
+                                                        {selected.pointer_weights.map((w, i) => (
+                                                            <p key={i} className="font-bold text-[#1A2536]">{Number(w).toFixed(2)} Ct</p>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selected.fancy_weights && selected.fancy_weights.length > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] text-[#1A2536]/60 uppercase tracking-wider">Fancy Cut</p>
+                                                    <div className="space-y-0.5">
+                                                        {selected.fancy_weights.map((w, i) => (
+                                                            <p key={i} className="font-bold text-[#1A2536]">{Number(w).toFixed(2)} Ct</p>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Color Stone Section */}
+                                {selected.color_stone_weights && selected.color_stone_weights.length > 0 && (
+                                    <div className="pt-4 border-t border-[#E5BDB0]/40">
+                                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#B86B5A] mb-2">Color Stone Weights</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                            {selected.color_stone_weights.map((w, i) => (
+                                                <div key={i}>
+                                                    <p className="text-[10px] text-[#1A2536]/60 uppercase tracking-wider">Stone {i + 1}</p>
+                                                    <p className="font-bold text-[#1A2536]">{Number(w).toFixed(2)} Ct</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -786,7 +871,15 @@ export default function InventoryPage() {
                                                         <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`}></span>
                                                         {st.label}
                                                     </span>
-                                                    {p.sold_in_order_number && <p className="text-[10px] text-[#1A2536]/50 mt-1 font-mono">→ {p.sold_in_order_number}</p>}
+                                                    {p.sold_in_order_number && (
+                                                        <Link
+                                                            href={`/cpanel/orders/${p.sold_in_order_id}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-[10px] text-[#B86B5A] font-bold mt-1 font-mono hover:underline"
+                                                        >
+                                                            → {p.sold_in_order_number}
+                                                        </Link>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end gap-2">

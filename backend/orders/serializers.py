@@ -42,17 +42,20 @@ class AddressSerializer(serializers.ModelSerializer):
 class OrderItemSerializer(serializers.ModelSerializer):
     design_slug = serializers.SerializerMethodField()
     design_id = serializers.SerializerMethodField()
+    design_code = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
     is_mto_pending = serializers.BooleanField(read_only=True)
     mto_karat = serializers.CharField(read_only=True)
     mto_gold_color = serializers.CharField(read_only=True)
     mto_ring_size = serializers.CharField(read_only=True)
     mto_diamond_grade = serializers.CharField(read_only=True)
+    product_details = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
         fields = ["id", "product_name", "variant_label", "quantity", "unit_price", "line_total",
-                  "design_slug", "design_id", "instance", "is_mto_pending",
-                  "mto_karat", "mto_gold_color", "mto_ring_size", "mto_diamond_grade"]
+                  "design_slug", "design_id", "design_code", "item_code", "instance", "is_mto_pending",
+                  "mto_karat", "mto_gold_color", "mto_ring_size", "mto_diamond_grade", "product_details"]
 
     def get_design_slug(self, obj):
         if obj.instance:
@@ -67,6 +70,45 @@ class OrderItemSerializer(serializers.ModelSerializer):
         if obj.mto_design:
             return obj.mto_design.id
         return None
+
+    def get_design_code(self, obj):
+        if obj.instance:
+            return obj.instance.design.design_code
+        if obj.mto_design:
+            return obj.mto_design.design_code
+        return None
+
+    def get_item_code(self, obj):
+        return obj.instance.item_code if obj.instance else None
+
+    def get_product_details(self, obj):
+        if obj.instance:
+            return {
+                'karat': obj.instance.karat,
+                'gold_color': obj.instance.gold_color,
+                'ring_size': obj.instance.ring_size,
+                'diamond_grade': obj.instance.diamond_grade,
+                'diamond_weight': float(obj.instance.actual_diamond_weight) if obj.instance.actual_diamond_weight else None,
+                'color_stone_weight': float(obj.instance.actual_color_stone_weight) if obj.instance.actual_color_stone_weight else None,
+                'net_weight': float(obj.instance.actual_net_weight) if obj.instance.actual_net_weight else None,
+                'report_lab': obj.instance.report_lab,
+                'report_number': obj.instance.report_number,
+                'hallmark_numbers': obj.instance.hallmark_numbers or [],
+            }
+        else:
+            # MTO item - return specs from mto_* fields
+            return {
+                'karat': obj.mto_karat,
+                'gold_color': obj.mto_gold_color,
+                'ring_size': obj.mto_ring_size or None,
+                'diamond_grade': obj.mto_diamond_grade or 'TBD',
+                'diamond_weight': None,
+                'color_stone_weight': None,
+                'net_weight': None,
+                'report_lab': 'TBD',
+                'report_number': None,
+                'hallmark_numbers': [],
+            }
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -197,10 +239,9 @@ class OrderCreateSerializer(serializers.Serializer):
                 to_fabricate = quantity - len(allocated)
 
                 for instance in allocated:
-                    instance.status = "sold"
+                    instance.status = "reserved"
                     instance.sold_to_user = user
                     instance.sold_in_order = order
-                    instance.sold_at = timezone.now()
                     instance.save()
 
                     unit_price = instance.price or instance.calculated_price

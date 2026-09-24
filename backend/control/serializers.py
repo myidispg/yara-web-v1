@@ -190,6 +190,10 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
     karat = serializers.SerializerMethodField()
     gold_color = serializers.SerializerMethodField()
     diamond_grade = serializers.SerializerMethodField()
+    diamond_weight = serializers.SerializerMethodField()
+    diamond_lab = serializers.SerializerMethodField()
+    diamond_report = serializers.SerializerMethodField()
+    net_weight = serializers.SerializerMethodField()
     mto_karat = serializers.CharField(read_only=True)
     mto_gold_color = serializers.CharField(read_only=True)
     mto_ring_size = serializers.CharField(read_only=True)
@@ -199,7 +203,8 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'product_name', 'variant_label', 'quantity', 'unit_price', 
                   'total_price', 'instance', 'design_slug', 'design_id', 'design_code', 'design_name',
-                  'is_mto_pending', 'item_code', 'hallmark_numbers', 'report_number', 'karat', 'gold_color', 'diamond_grade',
+                  'is_mto_pending', 'item_code', 'hallmark_numbers', 'report_number', 'karat', 'gold_color', 
+                  'diamond_grade', 'diamond_weight', 'diamond_lab', 'diamond_report', 'net_weight',
                   'mto_karat', 'mto_gold_color', 'mto_ring_size', 'mto_diamond_grade']
 
     def get_total_price(self, obj):
@@ -256,6 +261,18 @@ class StaffOrderItemSerializer(serializers.ModelSerializer):
         if obj.instance:
             return obj.instance.diamond_grade
         return obj.mto_diamond_grade or None
+
+    def get_diamond_weight(self, obj):
+        return float(obj.instance.actual_diamond_weight) if obj.instance else None
+
+    def get_diamond_lab(self, obj):
+        return obj.instance.report_lab if obj.instance else None
+
+    def get_diamond_report(self, obj):
+        return obj.instance.report_number if obj.instance else None
+
+    def get_net_weight(self, obj):
+        return float(obj.instance.actual_net_weight) if obj.instance else None
 
 
 class StaffOrderSerializer(serializers.ModelSerializer):

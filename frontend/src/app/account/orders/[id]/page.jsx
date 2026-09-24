@@ -66,7 +66,7 @@ export default function OrderDetailPage() {
     return (
         <div className="bg-white min-h-screen pb-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                                {/* Action Buttons */}
+                {/* Action Buttons */}
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <button
                         onClick={() => router.push("/account")}
@@ -77,7 +77,7 @@ export default function OrderDetailPage() {
                         </svg>
                         Back to My Account
                     </button>
-                    
+
                     <Link
                         href="/shop"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-lg"
@@ -132,8 +132,93 @@ export default function OrderDetailPage() {
                                             ) : (
                                                 <p className="font-serif-luxury text-lg font-semibold text-[#1A2536]">{item.product_name}</p>
                                             )}
+                                            {item.design_code && (
+                                                <p className="text-[10px] text-[#1A2536]/50 font-mono mt-0.5">Design: {item.design_code}</p>
+                                            )}
+                                            {item.item_code && (
+                                                <p className="text-[10px] text-[#B86B5A] font-mono font-bold mt-0.5">Product: {item.item_code}</p>
+                                            )}
+                                            {item.is_mto_pending && !item.item_code && (
+                                                <p className="text-[10px] text-amber-600 font-bold mt-0.5 italic">Product: Awaiting fabrication</p>
+                                            )}
                                             <p className="text-xs text-[#B86B5A] font-bold mt-1">{item.variant_label || "—"}</p>
                                             <p className="text-[10px] text-[#1A2536]/50 mt-1">Qty: {item.quantity}</p>
+
+                                            {/* Product Details */}
+                                            {item.product_details && (
+                                                <div className="mt-3 pt-3 border-t border-[#E5BDB0]/40">
+                                                    <p className="text-[9px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-2">Product Specifications</p>
+                                                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                                                        {item.product_details.karat && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Gold:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.karat} {item.product_details.gold_color}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.ring_size && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Ring Size:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.ring_size}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.net_weight && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Net Weight:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.net_weight.toFixed(3)} g</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.diamond_grade && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Diamond Grade:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.diamond_grade}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.diamond_weight && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Diamond Weight:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.diamond_weight.toFixed(2)} Ct</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.color_stone_weight && item.product_details.color_stone_weight > 0 && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Color Stone:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.color_stone_weight.toFixed(2)} Ct</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.report_lab && item.product_details.report_lab !== 'TBD' && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Certified By:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.report_lab}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.report_number && (
+                                                            <div>
+                                                                <span className="text-[#1A2536]/60">Report No.:</span>
+                                                                <span className="font-bold text-[#1A2536] ml-1">{item.product_details.report_number}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.product_details.diamond_grade === 'TBD' && (
+                                                            <div className="col-span-2">
+                                                                <span className="text-[#B86B5A] italic">Specifications will be confirmed during fabrication</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* HUID Numbers */}
+                                                    {item.product_details.hallmark_numbers && item.product_details.hallmark_numbers.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-[#E5BDB0]/30">
+                                                            <p className="text-[9px] uppercase tracking-[0.16em] font-bold text-[#1A2536]/60 mb-1.5">BIS Hallmark (HUID) Numbers</p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {item.product_details.hallmark_numbers.map((huid, idx) => (
+                                                                    <span key={idx} className="font-mono text-[10px] bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-2.5 py-1 rounded-full text-[#1A2536] font-bold">
+                                                                        {huid}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="text-right shrink-0 ml-4">
                                             <p className="font-extrabold text-lg text-[#1A2536]">{inr(item.line_total)}</p>

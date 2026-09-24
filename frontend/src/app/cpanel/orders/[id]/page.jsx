@@ -30,7 +30,6 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [mtoModal, setMtoModal] = useState(null);
-    const [availableProducts, setAvailableProducts] = useState([]);
 
     useEffect(() => { document.title = "Order | Control Panel"; }, []);
 
@@ -47,6 +46,34 @@ export default function OrderDetailPage() {
         })();
     }, [id]);
 
+    const [productCodeSearch, setProductCodeSearch] = useState('');
+    const [searching, setSearching] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const searchProducts = async (query) => {
+        if (query.length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            const { data } = await controlApi.globalSearch(query);
+            const products = data.products || [];
+            setSuggestions(products.slice(0, 5));
+            setShowSuggestions(true);
+        } catch (err) {
+            console.error("Search failed:", err);
+            setSuggestions([]);
+        }
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            searchProducts(productCodeSearch);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productCodeSearch]);
+
     if (loading) return (
         <div className="flex items-center justify-center py-24">
             <p className="text-sm text-[#1A2536]/50">Loading order…</p>
@@ -60,26 +87,33 @@ export default function OrderDetailPage() {
 
     const st = STATUS[order.status] || { label: order.status, cls: "bg-gray-50 text-gray-700 border-gray-200", dot: "bg-gray-500" };
 
-    const openMtoModal = async (item) => {
-        setMtoModal(item);
-        setAvailableProducts([]);
+    const handleSuggestionClick = (product) => {
+        setProductCodeSearch(product.item_code);
+        setShowSuggestions(false);
+        // Auto-map the selected product
+        mapProductByCodeWithCode(product.item_code);
+    };
+
+    const mapProductByCodeWithCode = async (itemCode) => {
+        if (!itemCode.trim()) return;
+        setSearching(true);
         try {
-            const { data } = await controlApi.getInstances({
-                design_id: item.design_id,
-                status: 'in_stock'
-            });
-            const products = data.results || data;
-            const matching = products.filter(p =>
-                p.design_id == item.design_id &&
-                p.karat === item.karat &&
-                p.gold_color === item.gold_color &&
-                p.diamond_grade === item.diamond_grade
-            );
-            setAvailableProducts(matching);
+            const { data } = await controlApi.mapProductByCode(order.id, mtoModal.id, itemCode.trim());
+            setOrder(data);
+            setMtoModal(null);
+            setProductCodeSearch('');
+            alert("Product mapped successfully!");
         } catch (err) {
-            console.error("Failed to load products:", err);
-            setAvailableProducts([]);
+            alert("Failed to map product: " + (err.response?.data?.error || err.message));
+        } finally {
+            setSearching(false);
         }
+    };
+
+    const openMtoModal = (item) => {
+        setMtoModal(item);
+        setProductCodeSearch('');
+        setSuggestions([]);
     };
 
     const mapProduct = async (productId) => {
@@ -90,6 +124,22 @@ export default function OrderDetailPage() {
             alert("Product mapped successfully!");
         } catch (err) {
             alert("Failed to map product: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const mapProductByCode = async () => {
+        if (!productCodeSearch.trim()) return;
+        setSearching(true);
+        try {
+            const { data } = await controlApi.mapProductByCode(order.id, mtoModal.id, productCodeSearch.trim());
+            setOrder(data);
+            setMtoModal(null);
+            setProductCodeSearch('');
+            alert("Product mapped successfully!");
+        } catch (err) {
+            alert("Failed to map product: " + (err.response?.data?.error || err.message));
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -412,10 +462,35 @@ export default function OrderDetailPage() {
                                                     <span className="font-bold text-[#1A2536]">{it.product_name}</span>
                                                 )}
                                                 {it.design_code && (
-                                                    <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">{it.design_code}</p>
+                                                    <p className="text-xs text-[#1A2536]/50 font-mono mt-0.5">Design: {it.design_code}</p>
+                                                )}
+                                                {it.item_code && (
+                                                    <p className="text-xs text-[#B86B5A] font-mono font-bold mt-0.5">Product: {it.item_code}</p>
+                                                )}
+                                                {it.is_mto_pending && !it.item_code && (
+                                                    <p className="text-xs text-amber-600 font-bold mt-0.5 italic">Product: Awaiting fabrication</p>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">{it.variant_label || "—"}</td>
+                                            <td className="px-6 py-4 text-sm text-[#1A2536]/70">
+                                                {it.variant_label || "—"}
+                                                <div className="mt-2 text-xs space-y-1">
+                                                    {it.diamond_grade && (
+                                                        <div><span className="text-[#1A2536]/60">Grade:</span> <span className="font-bold text-[#1A2536] ml-1">{it.diamond_grade}</span></div>
+                                                    )}
+                                                    {it.diamond_weight && (
+                                                        <div><span className="text-[#1A2536]/60">Weight:</span> <span className="font-bold text-[#1A2536] ml-1">{it.diamond_weight.toFixed(2)} Ct</span></div>
+                                                    )}
+                                                    {it.diamond_lab && it.diamond_lab !== 'TBD' && (
+                                                        <div><span className="text-[#1A2536]/60">Lab:</span> <span className="font-bold text-[#1A2536] ml-1">{it.diamond_lab}</span></div>
+                                                    )}
+                                                    {it.diamond_report && (
+                                                        <div><span className="text-[#1A2536]/60">Report:</span> <span className="font-bold text-[#1A2536] ml-1">{it.diamond_report}</span></div>
+                                                    )}
+                                                    {it.is_mto_pending && !it.diamond_grade && (
+                                                        <div className="text-[#B86B5A] italic">Specs TBD - will be confirmed during fabrication</div>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-right font-bold text-[#1A2536]">{it.quantity}</td>
                                             <td className="px-6 py-4 text-sm text-right font-extrabold text-[#1A2536]">{inr(it.total_price)}</td>
                                             <td className="px-6 py-4 text-sm text-center">
@@ -427,11 +502,11 @@ export default function OrderDetailPage() {
                                                         Map Product
                                                     </button>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-bold">
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                        Mapped
+                                                    <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${order.status === 'shipped' || order.status === 'delivered'
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                        }`}>
+                                                        {order.status === 'shipped' || order.status === 'delivered' ? 'Sold' : 'Reserved'}
                                                     </span>
                                                 )}
                                             </td>
@@ -471,50 +546,64 @@ export default function OrderDetailPage() {
                                 <span className="font-cursive text-2xl text-[#B86B5A] block -mb-1">fabrication mapping</span>
                                 <h2 className="font-serif-luxury text-2xl font-semibold text-[#1A2536]">Map Product to MTO Order</h2>
                             </div>
-                            <button onClick={() => setMtoModal(null)} className="w-9 h-9 rounded-full hover:bg-[#E5BDB0]/20 flex items-center justify-center text-[#1A2536]">
+                            <button onClick={() => { setMtoModal(null); setProductCodeSearch(''); }} className="w-9 h-9 rounded-full hover:bg-[#E5BDB0]/20 flex items-center justify-center text-[#1A2536]">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        <p className="text-sm text-[#1A2536]/70 mb-6">
-                            Select a fabricated product to map to this order:
-                        </p>
-                        <div className="space-y-3 mb-6">
-                            {availableProducts.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <p className="text-sm text-[#1A2536]/60">
-                                        No matching products available. Add a new product first.
-                                    </p>
-                                </div>
-                            ) : (
-                                availableProducts.map((product) => (
-                                    <div key={product.id} className="border-2 border-[#E5BDB0] rounded-2xl p-4 hover:border-[#B86B5A] transition-colors">
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-mono font-bold text-[#1A2536]">{product.item_code}</p>
-                                                <p className="text-sm text-[#1A2536]/80 mt-1">
-                                                    {product.karat} {product.gold_color} Gold
-                                                    {product.ring_size && ` · Size ${product.ring_size}`}
-                                                </p>
-                                                <p className="text-xs text-[#1A2536]/50 mt-1">
-                                                    Hallmark: {product.hallmark_number || "—"} ·
-                                                    Report: {product.report_number || "—"}
-                                                </p>
-                                                <p className="text-xs text-[#1A2536]/50">
-                                                    Weight: {product.actual_net_weight}g ·
-                                                    Diamond: {product.actual_diamond_weight}ct
-                                                </p>
+
+                        {/* Product Code Search */}
+                        <div className="mb-6 relative">
+                            <label className="block text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-2">
+                                Map by Product Code
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={productCodeSearch}
+                                    onChange={(e) => setProductCodeSearch(e.target.value)}
+                                    placeholder="Type to search (e.g., YRA-RG001)"
+                                    className="flex-1 border border-[#E5BDB0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1A2536]"
+                                    onKeyPress={(e) => e.key === 'Enter' && mapProductByCode()}
+                                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                />
+                                <button
+                                    onClick={mapProductByCode}
+                                    disabled={searching || !productCodeSearch.trim()}
+                                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all disabled:opacity-50"
+                                >
+                                    {searching ? 'Mapping...' : 'Map'}
+                                </button>
+                            </div>
+
+                            {/* Suggestions Dropdown */}
+                            {showSuggestions && suggestions.length > 0 && (
+                                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#E5BDB0] rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                                    {suggestions.map((product) => (
+                                        <button
+                                            key={product.id}
+                                            onClick={() => handleSuggestionClick(product)}
+                                            className="w-full text-left px-4 py-3 hover:bg-[#1A2536]/[0.03] border-b border-[#E5BDB0]/40 last:border-0 transition-colors"
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-mono font-bold text-[#B86B5A]">{product.item_code}</p>
+                                                    <p className="text-sm text-[#1A2536] truncate">{product.design_name}</p>
+                                                    <p className="text-xs text-[#1A2536]/60">
+                                                        {product.karat} {product.gold_color}
+                                                        {product.ring_size && ` · Size ${product.ring_size}`}
+                                                        {product.diamond_grade && ` · ${product.diamond_grade}`}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right text-xs text-[#1A2536]/60 ml-2">
+                                                    <p className="font-bold text-[#1A2536]">{product.status}</p>
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={() => mapProduct(product.id)}
-                                                className="px-5 py-2.5 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all shadow shrink-0"
-                                            >
-                                                Map to Order
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </div>
                         <button

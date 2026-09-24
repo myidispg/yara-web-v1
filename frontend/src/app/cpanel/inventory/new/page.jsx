@@ -258,7 +258,7 @@ export default function NewPage() {
                 hallmark_numbers: huids.filter(h => h.trim()),
             });
 
-            router.push("/cpanel/inventory");
+            router.push(`/cpanel/inventory?design=${designId}`);
         } catch (err) {
             const d = err.response?.data;
             setError(typeof d === "object" ? JSON.stringify(d) : String(d || err.message));
@@ -560,140 +560,142 @@ export default function NewPage() {
                         </div>
                     </div>
 
-                    <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
-                        <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Media Upload</h2>
+                    {mode === "new" && (
+                        <div className="glass-card-vibrant rounded-3xl border border-[#E5BDB0] p-6 space-y-6">
+                            <h2 className="font-serif-luxury text-xl font-semibold text-[#1A2536]">Media Upload</h2>
 
-                        <input
-                            type="file"
-                            multiple
-                            accept="image/*,video/*"
-                            onChange={handleFiles}
-                            className="hidden"
-                            id="file-upload"
-                        />
-                        <label
-                            htmlFor="file-upload"
-                            onDragOver={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
-                            }}
-                            onDragEnter={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
-                            }}
-                            onDragLeave={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
-                            }}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/*,video/*"
+                                onChange={handleFiles}
+                                className="hidden"
+                                id="file-upload"
+                            />
+                            <label
+                                htmlFor="file-upload"
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                                }}
+                                onDragEnter={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                                }}
+                                onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/10');
 
-                                const droppedFiles = Array.from(e.dataTransfer.files);
-                                if (droppedFiles.length > 0) {
-                                    const newFiles = droppedFiles.map((file, i) => ({
-                                        file,
-                                        id: Date.now() + i,
-                                        preview: URL.createObjectURL(file),
-                                    }));
-                                    setFiles(prev => [...prev, ...newFiles]);
-                                }
-                            }}
-                            className="cursor-pointer block border-2 border-dashed border-[#E5BDB0] rounded-2xl p-8 text-center hover:border-[#B86B5A] transition-colors"
-                        >
-                            <svg className="w-12 h-12 mx-auto text-[#B86B5A] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <p className="text-sm font-semibold text-[#1A2536]">Click to upload or drag and drop files here</p>
-                            <p className="text-xs text-[#1A2536]/50 mt-1">PNG, JPG, WEBP, MP4, WEBM up to 50MB</p>
-                        </label>
+                                    const droppedFiles = Array.from(e.dataTransfer.files);
+                                    if (droppedFiles.length > 0) {
+                                        const newFiles = droppedFiles.map((file, i) => ({
+                                            file,
+                                            id: Date.now() + i,
+                                            preview: URL.createObjectURL(file),
+                                        }));
+                                        setFiles(prev => [...prev, ...newFiles]);
+                                    }
+                                }}
+                                className="cursor-pointer block border-2 border-dashed border-[#E5BDB0] rounded-2xl p-8 text-center hover:border-[#B86B5A] transition-colors"
+                            >
+                                <svg className="w-12 h-12 mx-auto text-[#B86B5A] mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p className="text-sm font-semibold text-[#1A2536]">Click to upload or drag and drop files here</p>
+                                <p className="text-xs text-[#1A2536]/50 mt-1">PNG, JPG, WEBP, MP4, WEBM up to 50MB</p>
+                            </label>
 
-                        {files.length > 0 && (
-                            <div className="space-y-2">
-                                <p className="text-xs text-[#1A2536]/60 font-semibold uppercase tracking-wider">
-                                    Drag the ⋮⋮ icon to reorder • {files.length} file{files.length !== 1 ? 's' : ''}
-                                </p>
-                                {files.map((f, i) => (
-                                    <div
-                                        key={f.id}
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
-                                        }}
-                                        onDragEnter={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
-                                        }}
-                                        onDragLeave={(e) => {
-                                            e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
-                                        }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
-                                            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                                            const toIndex = i;
-                                            if (!isNaN(fromIndex) && fromIndex !== toIndex) {
-                                                reorderMedia(fromIndex, toIndex);
-                                            }
-                                        }}
-                                        className="flex items-center gap-3 glass-card-vibrant rounded-xl border-2 border-[#E5BDB0] p-3 transition-all"
-                                    >
+                            {files.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-[#1A2536]/60 font-semibold uppercase tracking-wider">
+                                        Drag the ⋮⋮ icon to reorder • {files.length} file{files.length !== 1 ? 's' : ''}
+                                    </p>
+                                    {files.map((f, i) => (
                                         <div
-                                            draggable
-                                            onDragStart={(e) => {
-                                                e.dataTransfer.effectAllowed = 'move';
-                                                e.dataTransfer.setData('text/plain', i.toString());
-                                                e.currentTarget.parentElement.classList.add('opacity-50', 'scale-95');
+                                            key={f.id}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
                                             }}
-                                            onDragEnd={(e) => {
-                                                e.currentTarget.parentElement.classList.remove('opacity-50', 'scale-95');
+                                            onDragEnter={(e) => {
+                                                e.preventDefault();
+                                                e.currentTarget.classList.add('border-[#B86B5A]', 'bg-[#B86B5A]/5');
                                             }}
-                                            className="cursor-grab active:cursor-grabbing p-2 hover:bg-[#1A2536]/[0.05] rounded-lg transition-colors flex-shrink-0"
+                                            onDragLeave={(e) => {
+                                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                            }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.currentTarget.classList.remove('border-[#B86B5A]', 'bg-[#B86B5A]/5');
+                                                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                                                const toIndex = i;
+                                                if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+                                                    reorderMedia(fromIndex, toIndex);
+                                                }
+                                            }}
+                                            className="flex items-center gap-3 glass-card-vibrant rounded-xl border-2 border-[#E5BDB0] p-3 transition-all"
                                         >
-                                            <svg className="w-5 h-5 text-[#1A2536]/40" fill="currentColor" viewBox="0 0 24 24">
-                                                <circle cx="9" cy="6" r="1.5" />
-                                                <circle cx="15" cy="6" r="1.5" />
-                                                <circle cx="9" cy="12" r="1.5" />
-                                                <circle cx="15" cy="12" r="1.5" />
-                                                <circle cx="9" cy="18" r="1.5" />
-                                                <circle cx="15" cy="18" r="1.5" />
-                                            </svg>
-                                        </div>
-
-                                        {f.file.type.startsWith('image/') ? (
-                                            <img src={f.preview} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
-                                        ) : (
-                                            <div className="w-16 h-16 bg-[#1A2536]/[0.03] rounded-lg flex items-center justify-center text-xs flex-shrink-0">
-                                                <svg className="w-6 h-6 text-[#1A2536]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <div
+                                                draggable
+                                                onDragStart={(e) => {
+                                                    e.dataTransfer.effectAllowed = 'move';
+                                                    e.dataTransfer.setData('text/plain', i.toString());
+                                                    e.currentTarget.parentElement.classList.add('opacity-50', 'scale-95');
+                                                }}
+                                                onDragEnd={(e) => {
+                                                    e.currentTarget.parentElement.classList.remove('opacity-50', 'scale-95');
+                                                }}
+                                                className="cursor-grab active:cursor-grabbing p-2 hover:bg-[#1A2536]/[0.05] rounded-lg transition-colors flex-shrink-0"
+                                            >
+                                                <svg className="w-5 h-5 text-[#1A2536]/40" fill="currentColor" viewBox="0 0 24 24">
+                                                    <circle cx="9" cy="6" r="1.5" />
+                                                    <circle cx="15" cy="6" r="1.5" />
+                                                    <circle cx="9" cy="12" r="1.5" />
+                                                    <circle cx="15" cy="12" r="1.5" />
+                                                    <circle cx="9" cy="18" r="1.5" />
+                                                    <circle cx="15" cy="18" r="1.5" />
                                                 </svg>
                                             </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-[#1A2536] truncate">{f.file.name}</p>
-                                            <p className="text-xs text-[#1A2536]/50">
-                                                {(f.file.size / 1024 / 1024).toFixed(2)} MB • {f.file.type.split('/')[0]}
-                                            </p>
+
+                                            {f.file.type.startsWith('image/') ? (
+                                                <img src={f.preview} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-16 h-16 bg-[#1A2536]/[0.03] rounded-lg flex items-center justify-center text-xs flex-shrink-0">
+                                                    <svg className="w-6 h-6 text-[#1A2536]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-[#1A2536] truncate">{f.file.name}</p>
+                                                <p className="text-xs text-[#1A2536]/50">
+                                                    {(f.file.size / 1024 / 1024).toFixed(2)} MB • {f.file.type.split('/')[0]}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => removeFile(f.id)}
+                                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => removeFile(f.id)}
-                                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="lg:col-span-1">

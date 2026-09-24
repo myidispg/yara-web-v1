@@ -153,30 +153,39 @@ export default function CheckoutPage() {
             setMtoDialog({ orderNumber, orderId: data.id, items: unexpectedMto, preOrder: false });
         } else {
             // Redirect to order detail page instead of showing thank you screen
-            router.push(`/account/orders/${data.id}`);
+            setTimeout(() => {
+                router.push(`/account/orders/${data.id}`);
+            }, 100);
         }
     };
 
-    const isAddressValid = () => {
-        if (!useNewAddress) return !!selectedAddressId;
-        return !!(newAddress.line1 && newAddress.city && newAddress.state && newAddress.pincode && newAddress.pincode.length === 6);
+    const isFormValid = () => {
+        // 1. Check user profile (name & email)
+        if (!user?.first_name || !user?.email) return false;
+
+        // 2. Check phone
+        if (!user?.phone && (!checkoutPhone || checkoutPhone.length !== 10)) return false;
+
+        // 3. Check address
+        let addressValid = false;
+        if (!useNewAddress) {
+            addressValid = !!selectedAddressId;
+        } else {
+            addressValid = !!(newAddress.line1 && newAddress.city && newAddress.state && newAddress.pincode && newAddress.pincode.length === 6);
+        }
+        if (!addressValid) return false;
+
+        // 4. Check payment method
+        if (!method) return false;
+        if (method === "upi" && !upiId.trim()) return false;
+
+        return true;
     };
 
     const placeOrder = async (e) => {
         e.preventDefault();
 
-        // Validate phone
-        if (!user?.phone && (!checkoutPhone || checkoutPhone.length !== 10)) {
-            setError("Please enter a valid 10-digit mobile number.");
-            setPhoneError("Valid 10-digit number required");
-            return;
-        }
-
-        // Validate address
-        if (!isAddressValid()) {
-            setError("Please select or enter a delivery address.");
-            return;
-        }
+        if (!isFormValid()) return;
 
         setPlacing(true);
         setError("");
@@ -615,7 +624,7 @@ export default function CheckoutPage() {
 
                         {error && <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 p-3 rounded-xl">{error}</p>}
 
-                        <button type="submit" disabled={placing || !isAddressValid()} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button type="submit" disabled={placing || !isFormValid()} className="w-full py-4 bg-[#1A2536] hover:bg-[#111A29] text-white text-xs font-bold uppercase tracking-widest rounded-full transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                             {placing ? "Placing Secure Order…" : `Place Order (${inr(subtotal)})`}
                         </button>
 

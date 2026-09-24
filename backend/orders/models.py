@@ -82,7 +82,6 @@ class Order(models.Model):
             timeline.append({"status": "cancelled", "timestamp": self.cancelled_at})
         return timeline
 
-# Here is the comment I want you to find. 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
     instance = models.OneToOneField(Product, on_delete=models.PROTECT, related_name="order_item", null=True, blank=True)

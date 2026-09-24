@@ -42,6 +42,7 @@ const controlApi = {
   getOrder: (id) => cpanelAxios.get(`/cpanel/orders/${id}/`),
   updateOrderStatus: (id, status) => cpanelAxios.post(`/cpanel/orders/${id}/update_status/`, { status }),
   mapProductToOrder: (orderId, itemId, productId) => cpanelAxios.post(`/cpanel/orders/${orderId}/map_product/${itemId}/`, { product_id: productId }),
+  mapProductByCode: (orderId, itemId, itemCode) => cpanelAxios.post(`/cpanel/orders/${orderId}/map_product_by_code/`, { item_id: itemId, item_code: itemCode }),
   cancelOrder: (id) => cpanelAxios.post(`/cpanel/orders/${id}/cancel/`),
   getProducts: (offset = 0, limit = 24) => cpanelAxios.get(`/cpanel/products/?offset=${offset}&limit=${limit}`),
   getProductsSummary: () => cpanelAxios.get("/cpanel/products/summary/"),

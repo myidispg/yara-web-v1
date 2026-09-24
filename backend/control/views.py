@@ -229,10 +229,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         """Get all orders with MTO items pending fulfillment."""
         from orders.models import OrderItem
         
-        # Find orders with MTO items
+        # Find orders with MTO items (only those without a product yet)
         mto_items = OrderItem.objects.filter(
-            is_mto_pending=True
-        ).select_related('order', 'order__user', 'instance').order_by('-order__created_at')
+            is_mto_pending=True,
+            instance__isnull=True
+        ).select_related('order', 'order__user', 'mto_design').order_by('-order__created_at')
         
         # Group by order
         orders_dict = {}
@@ -261,8 +262,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                         'item_id': item.id,
                         'product_name': item.product_name,
                         'variant_label': item.variant_label,
-                        'design_id': item.instance.design.id if item.instance else None,
-                        'design_code': item.instance.design.design_code if item.instance else None,
+                        'design_id': item.mto_design.id if item.mto_design else None,
+                        'design_code': item.mto_design.design_code if item.mto_design else None,
                     }
                     for item in data['mto_items']
                 ]
@@ -293,17 +294,65 @@ class OrderViewSet(viewsets.ModelViewSet):
             
             product = Product.objects.get(id=product_id)
             
-            # Verify it matches the MTO specs
+            # RELAXED MATCHING - only check design
+            # Allow different weights, grades, labs as per business requirement
             if item.mto_design_id and product.design_id != item.mto_design_id:
-                return Response({'error': 'Product design does not match order specifications'}, status=400)
-            if item.mto_karat and product.karat != item.mto_karat:
-                return Response({'error': f'Product karat ({product.karat}) does not match order ({item.mto_karat})'}, status=400)
-            if item.mto_gold_color and product.gold_color != item.mto_gold_color:
-                return Response({'error': f'Product color ({product.gold_color}) does not match order ({item.mto_gold_color})'}, status=400)
-            if item.mto_ring_size and product.ring_size != item.mto_ring_size:
-                return Response({'error': f'Product ring size ({product.ring_size}) does not match order ({item.mto_ring_size})'}, status=400)
+                return Response({'error': 'Product must be from the same design'}, status=400)
             
-            # Link the real product — do NOT mark as sold yet (happens on ship/deliver)
+            # Link the real product and mark as reserved (sold only when shipped)
+            item.instance = product
+            item.is_mto_pending = False
+            item.save()
+
+            # Reserve the product for this order
+            product.status = 'reserved'
+            product.sold_to_user = order.user
+            product.sold_in_order = order
+            product.sold_at = None  # Not sold yet, just reserved
+            product.save(update_fields=['status', 'sold_to_user', 'sold_in_order', 'sold_at'])
+            
+            # Product stays "in_stock" until order is shipped/delivered
+            
+            # Return updated order
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
+            
+        except OrderItem.DoesNotExist:
+            return Response({'error': 'Order item not found'}, status=404)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=True, methods=['post'], url_path='map_product_by_code')
+    def map_product_by_code(self, request, pk=None):
+        """Map a product to an MTO OrderItem using product code."""
+        from orders.models import OrderItem
+        from catalog.models import Product
+        
+        order = self.get_object()
+        item_id = request.data.get('item_id')
+        item_code = request.data.get('item_code')
+        
+        if not item_id or not item_code:
+            return Response({'error': 'item_id and item_code are required'}, status=400)
+        
+        try:
+            item = OrderItem.objects.get(id=item_id, order=order)
+            
+            if not item.is_mto_pending:
+                return Response({'error': 'This item is not pending MTO fulfillment'}, status=400)
+            
+            if item.instance:
+                return Response({'error': 'This item already has a product assigned'}, status=400)
+            
+            product = Product.objects.get(item_code=item_code)
+            
+            # RELAXED MATCHING - only check design
+            if item.mto_design_id and product.design_id != item.mto_design_id:
+                return Response({'error': 'Product must be from the same design'}, status=400)
+            
+            # Link the real product
             item.instance = product
             item.is_mto_pending = False
             item.save()
@@ -721,6 +770,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def return_to_stock(self, request, pk=None):
         product = self.get_object()
+        # Only allow return from sold_offline or reserved states
+        if product.status not in ('sold_offline', 'reserved'):
+            return Response(
+                {'error': f'Cannot return product with status "{product.status}" to stock. Only reserved or sold offline items can be returned.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         product.status = 'in_stock'
         product.sold_at = None
         product.sold_to_user = None
