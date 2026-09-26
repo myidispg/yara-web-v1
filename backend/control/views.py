@@ -116,7 +116,6 @@ class DashboardView(APIView):
             'offline_sales': offline_sales,
         })
 
-# Again making you hunt for comment
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaff]
     serializer_class = StaffOrderSerializer
@@ -156,6 +155,18 @@ class OrderViewSet(viewsets.ModelViewSet):
                     item.instance.sold_at = now
                     item.instance.save()
                     logger.info(f"Marked product {item.instance.item_code} as sold (shipped)")
+            # Auto-generate invoice on shipment
+            try:
+                invoice = generate_invoice_for_order(order)
+                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
+            except Exception as e:
+                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
+            # Auto-generate invoice on shipment
+            try:
+                invoice = generate_invoice_for_order(order)
+                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
+            except Exception as e:
+                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
         elif new_status == 'delivered' and not order.delivered_at:
             order.delivered_at = now
             logger.info(f"Setting delivered_at for order {order.id}")
@@ -356,6 +367,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             item.instance = product
             item.is_mto_pending = False
             item.save()
+
+            # Reserve the product for this order
+            product.status = 'reserved'
+            product.sold_to_user = order.user
+            product.sold_in_order = order
+            product.sold_at = None
+            product.save(update_fields=['status', 'sold_to_user', 'sold_in_order', 'sold_at'])
             
             # Return updated order
             serializer = self.get_serializer(order)
