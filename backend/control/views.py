@@ -85,6 +85,8 @@ def optimize_uploaded_image(file):
 
 OPEN_STATUSES = ['placed', 'confirmed']
 
+
+# One more comment to find
 class DashboardView(APIView):
     permission_classes = [IsStaff]
 
