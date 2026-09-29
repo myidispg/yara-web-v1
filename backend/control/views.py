@@ -163,12 +163,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
             except Exception as e:
                 logger.error(f"Failed to generate invoice for order {order.id}: {e}")
-            # Auto-generate invoice on shipment
-            try:
-                invoice = generate_invoice_for_order(order)
-                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
-            except Exception as e:
-                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
         elif new_status == 'delivered' and not order.delivered_at:
             order.delivered_at = now
             logger.info(f"Setting delivered_at for order {order.id}")
