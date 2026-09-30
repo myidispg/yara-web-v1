@@ -13,12 +13,15 @@ export const metadata = generateSEO({
 });
 
 const IMG = {
-    hero: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=2200&q=80",
     studs: "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
-    rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
-    earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80",
-    necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
-    bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?auto=format&fit=crop&w=1000&q=80",
+    // rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
+    rings: "/home/categories/Rings category.jpeg",
+    earrings: "/home/categories/Earrings category.jpeg",
+    necklaces: "/home/categories/Necklaces category.jpeg",
+    bracelets: "/home/categories/Bracelets category.jpeg",
+    // earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80",
+    // necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+    // bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?auto=format&fit=crop&w=1000&q=80",
     color1: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80",
     color2: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=500&q=80",
 };
@@ -150,11 +153,11 @@ export default async function Home() {
                                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div>
-                                <div className="absolute bottom-6 left-6 right-6 text-white text-center">
+                                {/* <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div> */}
+                                {/* <div className="absolute bottom-6 left-6 right-6 text-white text-center">
                                     <span className="text-[10px] font-bold text-[#E5BDB0] uppercase tracking-widest block mb-1">{c.tag}</span>
                                     <h3 className="font-serif-luxury text-2xl font-normal">{c.title}</h3>
-                                </div>
+                                </div> */}
                             </div>
                         </Link>
                     ))}
