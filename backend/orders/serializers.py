@@ -168,7 +168,19 @@ def mto_price(design, karat, ring_size, grade):
     rc = RateCard.get()
     net = float(design.calculate_net_weight(karat, ring_size))
     dia = float(design.total_diamond_weight)
-    gold_value = net * float(rc.gold_rate_18kt if karat == "18Kt" else rc.gold_rate_14kt)
+    gold_rate = float(rc.gold_rate_18kt if karat == "18Kt" else rc.gold_rate_14kt)
+    gold_value = net * gold_rate
+    dia_value = dia * float(rc.rate_for_grade(grade))
+    making = (gold_value + dia_value) * (float(rc.making_charges_percentage) / 100)
+    gst = (gold_value + dia_value + making) * (float(rc.gst_percentage) / 100)
+    return round(gold_value + dia_value + making + gst), gold_rate
+
+def mto_price_with_rate(design, karat, ring_size, grade, gold_rate):
+    """Calculate MTO price using a specific gold rate (for reserved rate calculations)."""
+    rc = RateCard.get()
+    net = float(design.calculate_net_weight(karat, ring_size))
+    dia = float(design.total_diamond_weight)
+    gold_value = net * gold_rate
     dia_value = dia * float(rc.rate_for_grade(grade))
     making = (gold_value + dia_value) * (float(rc.making_charges_percentage) / 100)
     gst = (gold_value + dia_value + making) * (float(rc.gst_percentage) / 100)
@@ -254,7 +266,8 @@ class OrderCreateSerializer(serializers.Serializer):
                         quantity=1, unit_price=unit_price, line_total=unit_price, is_mto_pending=False)
 
                 for _ in range(to_fabricate):
-                    unit_price = Decimal(str(mto_price(design, karat, ring_size, grade)))
+                    unit_price, gold_rate_used = mto_price(design, karat, ring_size, grade)
+                    unit_price = Decimal(str(unit_price))
                     subtotal += unit_price
                     # Create OrderItem WITHOUT a product — just store the MTO specs
                     OrderItem.objects.create(
@@ -271,6 +284,7 @@ class OrderCreateSerializer(serializers.Serializer):
                         mto_gold_color=gold_color,
                         mto_ring_size=ring_size or "",
                         mto_diamond_grade=grade,
+                        mto_gold_rate=Decimal(str(gold_rate_used)),  # Lock in the gold rate
                     )
 
             order.subtotal = subtotal

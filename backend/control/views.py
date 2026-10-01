@@ -163,12 +163,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
             except Exception as e:
                 logger.error(f"Failed to generate invoice for order {order.id}: {e}")
-            # Auto-generate invoice on shipment
-            try:
-                invoice = generate_invoice_for_order(order)
-                logger.info(f"Generated invoice {invoice.invoice_number} for order {order.order_number}")
-            except Exception as e:
-                logger.error(f"Failed to generate invoice for order {order.id}: {e}")
         elif new_status == 'delivered' and not order.delivered_at:
             order.delivered_at = now
             logger.info(f"Setting delivered_at for order {order.id}")
@@ -312,6 +306,43 @@ class OrderViewSet(viewsets.ModelViewSet):
             if item.mto_design_id and product.design_id != item.mto_design_id:
                 return Response({'error': 'Product must be from the same design'}, status=400)
             
+            # Recalculate price using the RESERVED gold rate from order time
+            if item.mto_gold_rate:
+                from orders.serializers import mto_price_with_rate
+                from decimal import Decimal
+                
+                # Use the product's actual weights but the reserved gold rate
+                net_weight = float(product.actual_net_weight)
+                diamond_weight = float(product.actual_diamond_weight)
+                color_stone_weight = float(product.actual_color_stone_weight)
+                
+                rc = RateCard.get()
+                gold_rate = float(item.mto_gold_rate)
+                gold_value = net_weight * gold_rate
+                diamond_value = diamond_weight * float(rc.rate_for_grade(product.diamond_grade))
+                color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
+                
+                # Making charges
+                gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+                making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+                making = making_per_gram * net_weight
+                
+                subtotal_item = gold_value + diamond_value + color_stone_value + making
+                gst = subtotal_item * (float(rc.gst_percentage) / 100)
+                new_price = round(subtotal_item + gst, 2)
+                
+                # Update the OrderItem with the recalculated price
+                old_price = float(item.unit_price)
+                price_difference = new_price - old_price
+                
+                item.unit_price = Decimal(str(new_price))
+                item.line_total = Decimal(str(new_price))
+                
+                # Update the order total
+                order.subtotal = order.subtotal + Decimal(str(price_difference))
+                order.total = order.subtotal + order.shipping_fee
+                order.save()
+            
             # Link the real product and mark as reserved (sold only when shipped)
             item.instance = product
             item.is_mto_pending = False
@@ -364,6 +395,43 @@ class OrderViewSet(viewsets.ModelViewSet):
             # RELAXED MATCHING - only check design
             if item.mto_design_id and product.design_id != item.mto_design_id:
                 return Response({'error': 'Product must be from the same design'}, status=400)
+            
+            # Recalculate price using the RESERVED gold rate from order time
+            if item.mto_gold_rate:
+                from orders.serializers import mto_price_with_rate
+                from decimal import Decimal
+                
+                # Use the product's actual weights but the reserved gold rate
+                net_weight = float(product.actual_net_weight)
+                diamond_weight = float(product.actual_diamond_weight)
+                color_stone_weight = float(product.actual_color_stone_weight)
+                
+                rc = RateCard.get()
+                gold_rate = float(item.mto_gold_rate)
+                gold_value = net_weight * gold_rate
+                diamond_value = diamond_weight * float(rc.rate_for_grade(product.diamond_grade))
+                color_stone_value = color_stone_weight * float(rc.color_stone_rate_per_carat or 0)
+                
+                # Making charges
+                gold_rate_24kt = float(rc.gold_rate_18kt) * (24.0 / 18.0)
+                making_per_gram = float(rc.making_fixed_per_gram) + (float(rc.making_pct_24kt) / 100.0) * gold_rate_24kt
+                making = making_per_gram * net_weight
+                
+                subtotal_item = gold_value + diamond_value + color_stone_value + making
+                gst = subtotal_item * (float(rc.gst_percentage) / 100)
+                new_price = round(subtotal_item + gst, 2)
+                
+                # Update the OrderItem with the recalculated price
+                old_price = float(item.unit_price)
+                price_difference = new_price - old_price
+                
+                item.unit_price = Decimal(str(new_price))
+                item.line_total = Decimal(str(new_price))
+                
+                # Update the order total
+                order.subtotal = order.subtotal + Decimal(str(price_difference))
+                order.total = order.subtotal + order.shipping_fee
+                order.save()
             
             # Link the real product
             item.instance = product

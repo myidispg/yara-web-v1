@@ -2,8 +2,8 @@ import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
 const BRACKETS = [
-    { note: "Everyday sparkle", price: "Under ₹30K", max: 30000, img: "https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=800&q=80" },
-    { note: "Signature pieces", price: "Under ₹50K", max: 50000, img: "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=800&q=80" },
+    { note: "Everyday sparkle", price: "Under ₹30K", max: 30000, img: "/home/shop-by-price/under-30k.jpeg" },
+    { note: "Signature pieces", price: "Under ₹50K", max: 50000, img: "/home/shop-by-price/under-50k.jpeg" },
     { note: "Statement luxury", price: "Under ₹75K", max: 75000, img: "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=800&q=80" },
     { note: "Heirloom grade", price: "Under ₹1 Lakh", max: 100000, img: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80" },
 ];
@@ -41,12 +41,12 @@ export default function ShopByPrice() {
                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/90 via-[#1A2536]/25 to-transparent" />
+                            {/* <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/90 via-[#1A2536]/25 to-transparent" /> */}
                         </div>
 
                         {/* Price label */}
                         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white">
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-[#E5BDB0] font-bold mb-1">
+                            <p className="text-[12px] uppercase tracking-[0.18em] font-bold mb-1">
                                 {b.note}
                             </p>
                             <div className="flex items-end justify-between gap-2">
@@ -57,6 +57,7 @@ export default function ShopByPrice() {
                     </Link>
                 ))}
             </div>
+            {/* Another comment for you to find. */}
         </section>
     );
 }

@@ -99,6 +99,10 @@ class OrderItem(models.Model):
     mto_gold_color = models.CharField(max_length=10, blank=True)
     mto_ring_size = models.CharField(max_length=10, blank=True)
     mto_diamond_grade = models.CharField(max_length=20, blank=True)
+    
+    # Reserved gold rate at order time (protects customer from price fluctuations)
+    mto_gold_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, 
+                                        help_text="Gold rate per gram locked at order time for MTO items")
 
     def __str__(self):
         return f"{self.quantity} × {self.product_name}"
