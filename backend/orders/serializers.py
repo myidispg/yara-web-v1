@@ -161,6 +161,7 @@ class _ItemInput(serializers.Serializer):
     karat = serializers.ChoiceField(choices=["14Kt", "18Kt"])
     gold_color = serializers.ChoiceField(choices=["Yellow", "Rose", "White"])
     ring_size = serializers.CharField(max_length=10, required=False, allow_null=True, allow_blank=True)
+    diamond_grade = serializers.CharField(max_length=20, required=False, allow_blank=True)
     quantity = serializers.IntegerField(min_value=1, default=1)
 
 
@@ -243,6 +244,7 @@ class OrderCreateSerializer(serializers.Serializer):
                 gold_color = item["gold_color"]
                 ring_size = item["ring_size"]
                 quantity = item["quantity"]
+                grade = item.get("diamond_grade") or rc.default_grade
 
                 qs = Product.objects.select_for_update().filter(
                     design=design, karat=karat, gold_color=gold_color,

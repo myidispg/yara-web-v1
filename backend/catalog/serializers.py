@@ -53,6 +53,7 @@ class ProductSerializer(serializers.ModelSerializer):
     making_charges = serializers.SerializerMethodField()
     gst_amount = serializers.SerializerMethodField()
     hallmark_numbers = serializers.JSONField(read_only=True)
+    diamond_grade = serializers.CharField(read_only=True)
 
     class Meta:
         model = Product

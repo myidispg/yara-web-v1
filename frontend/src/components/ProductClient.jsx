@@ -18,6 +18,15 @@ const SWATCH = {
     White: "linear-gradient(135deg, #F5F5F3, #C9CCD3)",
 };
 const RING_SIZES = ["6", "8", "10", "12", "14", "16", "18", "20"];
+
+const GRADE_SUGGESTIONS = {
+    "LM/SI": { tier: "Affordable", desc: "Affordable diamonds, suggested for diamond heavy items that you will wear occasionally." },
+    "KL/SI": { tier: "Affordable", desc: "Affordable diamonds, suggested for diamond heavy items that you will wear occasionally." },
+    "JK/SI": { tier: "Best Value", desc: "Best balance of affordability and sparkle. These are the market standards and will never disappoint." },
+    "IJ/SI": { tier: "Best Value", desc: "Best balance of affordability and sparkle. These are the market standards and will never disappoint." },
+    "GH/VS": { tier: "Premium", desc: "Premium range that will stand out over others." },
+    "HI/SI": { tier: "Premium", desc: "Premium range that will stand out over others." },
+};
 const BLUR_DATA = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q==";
 
 const ChevronIcon = ({ open }) => (
@@ -41,6 +50,7 @@ export default function ProductClient({ product }) {
     const [purity, setPurity] = useState(null);
     const [color, setColor] = useState(null);
     const [size, setSize] = useState(null);
+    const [grade, setGrade] = useState(null);
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [added, setAdded] = useState(false);
     const [zoomedImage, setZoomedImage] = useState(null);
@@ -116,20 +126,20 @@ export default function ProductClient({ product }) {
         : null;
     const defaultSelection = cheapestInStock ?? cheapestOverall;
 
+    const rc = product.rate_card ?? {};
+    const defaultGrade = rc.default_grade ?? "IJ/SI";
+
     const activePurity = KARATS.includes(purity) ? purity : (defaultSelection?.karat ?? KARATS[0]);
     const activeColor = COLORS.includes(color) ? color : (defaultSelection?.gold_color ?? COLORS[0]);
     const activeSize = isRing ? (RING_SIZES.includes(size) ? size : (defaultSelection?.ring_size ?? "12")) : null;
+    const activeGrade = grade || defaultSelection?.diamond_grade || defaultGrade;
 
     const matching = allProducts.filter((i) =>
-        i.karat === activePurity && i.gold_color === activeColor && (!isRing || i.ring_size === activeSize)
+        i.karat === activePurity && i.gold_color === activeColor && i.diamond_grade === activeGrade && (!isRing || i.ring_size === activeSize)
     );
     const inStockMatching = matching.filter((i) => i.status === "in_stock");
     const stockCount = inStockMatching.length;
     const activeProduct = inStockMatching[0] ?? matching[0] ?? null;
-
-    const rc = product.rate_card ?? {};
-    const defaultGrade = rc.default_grade ?? "IJ/SI";
-    const activeGrade = activeProduct?.diamond_grade ?? defaultGrade;
 
     let price, breakdown, netWeight, diaWeight, colorStoneWeight;
     if (activeProduct) {
@@ -158,7 +168,7 @@ export default function ProductClient({ product }) {
         if (activePurity === "18Kt") baseWeight *= 1.20;
 
         const goldRate = activePurity === "18Kt" ? rc.gold_rate_18kt : rc.gold_rate_14kt;
-        const diaRate = rc.diamond_rates?.[defaultGrade] ?? 0;
+        const diaRate = rc.diamond_rates?.[activeGrade] ?? 0;
 
         const goldValue = baseWeight * Number(goldRate ?? 0);
         const diaValue = Number(product.total_diamond_weight || 0) * Number(diaRate);
@@ -187,7 +197,7 @@ export default function ProductClient({ product }) {
         colorStoneWeight = Number(product.color_stone_weight || 0).toFixed(2);
     }
 
-    const selection = { karat: activePurity, gold_color: activeColor, ring_size: activeSize, price };
+    const selection = { karat: activePurity, gold_color: activeColor, ring_size: activeSize, diamond_grade: activeGrade, price };
     const handleAdd = () => { addItem(product, selection); setAdded(true); setTimeout(() => setAdded(false), 1500); };
     const handleBuyNow = () => { addItem(product, selection); router.push("/checkout"); };
 
@@ -491,7 +501,7 @@ export default function ProductClient({ product }) {
                             <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-2.5">Select Ring Size</p>
                             <div className="flex flex-wrap gap-2.5">
                                 {RING_SIZES.map((s) => {
-                                    const sizeMatches = allProducts.filter((i) => i.karat === activePurity && i.gold_color === activeColor && i.ring_size === s);
+                                    const sizeMatches = allProducts.filter((i) => i.karat === activePurity && i.gold_color === activeColor && i.diamond_grade === activeGrade && i.ring_size === s);
                                     const count = sizeMatches.filter((i) => i.status === "in_stock").length;
                                     const isInStock = count > 0;
                                     return (
@@ -531,6 +541,61 @@ export default function ProductClient({ product }) {
                             )}
                         </div>
                     )}
+
+                    {/* Diamond Grade Selector */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#1A2536] mb-2.5">Select Diamond Grade</p>
+                        <div className="flex flex-wrap gap-2.5">
+                            {Object.keys(rc.diamond_rates || {}).filter(g => rc.diamond_rates[g] > 0).length > 0 ? (
+                                Object.keys(rc.diamond_rates).filter(g => rc.diamond_rates[g] > 0).map((g) => {
+                                    const suggestion = GRADE_SUGGESTIONS[g] || { tier: "Standard", desc: "Certified natural diamond." };
+                                    const gradeMatches = allProducts.filter((i) =>
+                                        i.karat === activePurity &&
+                                        i.gold_color === activeColor &&
+                                        i.diamond_grade === g &&
+                                        (!isRing || i.ring_size === activeSize)
+                                    );
+                                    const gradeInStock = gradeMatches.filter((i) => i.status === "in_stock").length;
+                                    return (
+                                        <button
+                                            key={g}
+                                            onClick={() => setGrade(g)}
+                                            className={`min-w-[110px] py-3 px-4 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${g === activeGrade
+                                                    ? "border-[#1A2536] bg-[#1A2536] text-white shadow-md"
+                                                    : "border-[#E5BDB0] bg-white text-[#1A2536] hover:border-[#B86B5A]"
+                                                }`}
+                                        >
+                                            <span className="text-sm font-bold">{g}</span>
+                                            <span className={`text-[8px] uppercase tracking-[0.08em] font-bold ${g === activeGrade ? "text-[#E5BDB0]" : "text-[#1A2536]/50"
+                                                }`}>
+                                                {suggestion.tier}
+                                            </span>
+                                            <span className={`text-[8px] uppercase tracking-[0.08em] font-bold ${g === activeGrade ? "text-emerald-400" : gradeInStock > 0 ? "text-emerald-600" : "text-[#B86B5A]"
+                                                }`}>
+                                                {gradeInStock > 0 ? `${gradeInStock} in stock` : "Made to Order"}
+                                            </span>
+                                        </button>
+                                    );
+                                })
+                            ) : (
+                                <button
+                                    onClick={() => setGrade(defaultGrade)}
+                                    className="min-w-[110px] py-3 px-4 rounded-xl border border-[#1A2536] bg-[#1A2536] text-white shadow-md flex flex-col items-center justify-center gap-1"
+                                >
+                                    <span className="text-sm font-bold">{defaultGrade}</span>
+                                    <span className="text-[8px] uppercase tracking-[0.08em] font-bold text-[#E5BDB0]">
+                                        {GRADE_SUGGESTIONS[defaultGrade]?.tier || "Standard"}
+                                    </span>
+                                </button>
+                            )}
+                        </div>
+                        {GRADE_SUGGESTIONS[activeGrade]?.desc && (
+                            <p className="text-xs text-[#1A2536]/60 mt-3 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#B86B5A] flex-shrink-0"></span>
+                                {GRADE_SUGGESTIONS[activeGrade].desc}
+                            </p>
+                        )}
+                    </div>
 
                     {/* Pincode Delivery Checker */}
                     <div className="glass-card-vibrant rounded-2xl border border-[#E5BDB0] p-5">
@@ -659,7 +724,7 @@ export default function ProductClient({ product }) {
                                         <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Design Code</dt><dd className="font-semibold text-[#1A2536] text-right">{product.design_code}</dd></div>
                                         <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Gold Karat</dt><dd className="font-semibold text-[#1A2536] text-right">{activePurity} {activeColor}</dd></div>
                                         {isRing && activeSize && <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Ring Size</dt><dd className="font-semibold text-[#1A2536] text-right">{activeSize}</dd></div>}
-                                        <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Diamond Grade</dt><dd className="font-semibold text-[#1A2536] text-right">{defaultGrade}</dd></div>
+                                        <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Diamond Grade</dt><dd className="font-semibold text-[#1A2536] text-right">{activeGrade}</dd></div>
                                         <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Est. Net Gold Weight</dt><dd className="font-semibold text-[#1A2536] text-right">{netWeight} g</dd></div>
                                         <div className="flex justify-between gap-3"><dt className="text-[#1A2536]/50">Est. Diamond Weight</dt><dd className="font-semibold text-[#1A2536] text-right">{diaWeight} Ct</dd></div>
                                         {Number(product.color_stone_weight ?? 0) > 0 && (

@@ -85,6 +85,7 @@ export default function CheckoutPage() {
             karat: i.karat,
             gold_color: i.gold_color,
             ring_size: i.ring_size,
+            diamond_grade: i.diamond_grade,
             quantity: i.qty,
         }));
 

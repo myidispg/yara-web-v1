@@ -12,9 +12,9 @@ export function CartProvider({ children }) {
 
     useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }, [items]);
 
-    /* selection = { karat, gold_color, ring_size, price } */
+    /* selection = { karat, gold_color, ring_size, diamond_grade, price } */
     const addItem = (product, selection, qty = 1) => {
-        const key = `${product.id}:${selection.karat}:${selection.gold_color}:${selection.ring_size ?? "OS"}`;
+        const key = `${product.id}:${selection.karat}:${selection.gold_color}:${selection.ring_size ?? "OS"}:${selection.diamond_grade ?? "STD"}`;
         setItems((prev) => {
             const existing = prev.find((i) => i.key === key);
             if (existing)
@@ -29,7 +29,8 @@ export function CartProvider({ children }) {
                 karat: selection.karat,
                 gold_color: selection.gold_color,
                 ring_size: selection.ring_size ?? null,
-                label: `${selection.karat} ${selection.gold_color} Gold${selection.ring_size ? ` | Size ${selection.ring_size}` : ""}`,
+                diamond_grade: selection.diamond_grade ?? null,
+                label: `${selection.karat} ${selection.gold_color} Gold${selection.ring_size ? ` | Size ${selection.ring_size}` : ""} | ${selection.diamond_grade ?? "STD"}`,
                 unit_price: Number(selection.price),
                 qty: Number(qty),
             }];
