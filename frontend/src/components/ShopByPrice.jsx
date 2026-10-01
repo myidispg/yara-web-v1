@@ -45,18 +45,19 @@ export default function ShopByPrice() {
                         </div>
 
                         {/* Price label */}
-                        {/* <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white">
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-[#E5BDB0] font-bold mb-1">
+                        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white">
+                            <p className="text-[12px] uppercase tracking-[0.18em] font-bold mb-1">
                                 {b.note}
                             </p>
                             <div className="flex items-end justify-between gap-2">
                                 <span className="font-serif-luxury text-xl sm:text-2xl leading-none">{b.price}</span>
                                 <span className="text-[#E5BDB0] text-lg group-hover:translate-x-1 transition-transform">→</span>
                             </div>
-                        </div> */}
+                        </div>
                     </Link>
                 ))}
             </div>
+            {/* Another comment for you to find. */}
         </section>
     );
 }
