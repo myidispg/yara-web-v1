@@ -9,12 +9,21 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
+
+    // Skip intercepting auth endpoints and the initial profile check.
+    // If /auth/me/ fails, it just means the user is not logged in (normal for storefront).
+    if (
+      original.url.includes("/auth/refresh/") ||
+      original.url.includes("/auth/login/") ||
+      original.url.includes("/auth/me/")
+    ) {
+      return Promise.reject(err);
+    }
+
     if (
       typeof window !== "undefined" &&
       err.response?.status === 401 &&
-      !original._retry &&
-      !original.url.includes("/auth/refresh/") &&
-      !original.url.includes("/auth/login/")
+      !original._retry
     ) {
       original._retry = true;
       try {

@@ -14,16 +14,10 @@ export const metadata = generateSEO({
 
 const IMG = {
     studs: "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
-    // rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
     rings: "/home/categories/Rings_category_no_name.jpg",
     earrings: "/home/categories/Earrings_category_no_name.jpg",
     necklaces: "/home/categories/Necklaces_category_no_name.jpg",
     bracelets: "/home/categories/Bracelets_category_no_name.jpg",
-    // earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80",
-    // necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
-    // bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?auto=format&fit=crop&w=1000&q=80",
-    color1: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80",
-    color2: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=500&q=80",
 };
 
 const TILES = [

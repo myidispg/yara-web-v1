@@ -9,9 +9,11 @@ const COLLECTIONS = [
 ];
 
 export default function ShopByCollection() {
+
+    // Find this Qwen
     return (
-        <section className="bg-[#FBF7F2] py-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <section className="bg-[#FBF7F2] py-14">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
                 {/* Section header */}
                 <div className="flex flex-row items-end justify-between gap-3 border-b border-[#E5BDB0]/60 pb-4">
                     <div className="min-w-0">
