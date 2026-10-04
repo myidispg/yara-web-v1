@@ -15,10 +15,10 @@ export const metadata = generateSEO({
 const IMG = {
     studs: "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
     // rings: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
-    rings: "/home/categories/Rings category.jpeg",
-    earrings: "/home/categories/Earrings category.jpeg",
-    necklaces: "/home/categories/Necklaces category.jpeg",
-    bracelets: "/home/categories/Bracelets category.jpeg",
+    rings: "/home/categories/Rings_category_no_name.jpg",
+    earrings: "/home/categories/Earrings_category_no_name.jpg",
+    necklaces: "/home/categories/Necklaces_category_no_name.jpg",
+    bracelets: "/home/categories/Bracelets_category_no_name.jpg",
     // earrings: "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80",
     // necklaces: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
     // bracelets: "https://images.unsplash.com/photo-1611591475119-232145e143b4?auto=format&fit=crop&w=1000&q=80",
@@ -140,7 +140,7 @@ export default async function Home() {
                         100% NATURAL DIAMONDS • 14KT & 18KT GOLD
                     </p>
                 </div>
-
+                        {/* One more comment to find for Qwen */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
@@ -154,10 +154,10 @@ export default async function Home() {
                                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
                                 {/* <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div> */}
-                                {/* <div className="absolute bottom-6 left-6 right-6 text-white text-center">
-                                    <span className="text-[10px] font-bold text-[#E5BDB0] uppercase tracking-widest block mb-1">{c.tag}</span>
-                                    <h3 className="font-serif-luxury text-2xl font-normal">{c.title}</h3>
-                                </div> */}
+                                <div className="absolute bottom-6 left-6 right-6 text-white text-center">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest block mb-1">{c.tag}</span>
+                                    <h3 className="font-serif-luxury text-4xl font-normal text-white">{c.title}</h3>
+                                </div>
                             </div>
                         </Link>
                     ))}
