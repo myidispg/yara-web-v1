@@ -2,10 +2,10 @@ import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
 const BRACKETS = [
-    { note: "Everyday sparkle", price: "Under ₹30K", max: 30000, img: "/home/shop-by-price/under-30k.jpeg" },
-    { note: "Signature pieces", price: "Under ₹50K", max: 50000, img: "/home/shop-by-price/under-50k.jpeg" },
-    { note: "Statement luxury", price: "Under ₹75K", max: 75000, img: "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=800&q=80" },
-    { note: "Heirloom grade", price: "Under ₹1 Lakh", max: 100000, img: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80" },
+    { note: "Everyday sparkle", price: "Under ₹30K", max: 30000, img: "/home/shop-by-price/under-30k.jpg" },
+    { note: "Signature pieces", price: "Under ₹50K", max: 50000, img: "/home/shop-by-price/under-50k.jpg" },
+    { note: "Statement luxury", price: "Under ₹75K", max: 75000, img: "/home/shop-by-price/under-75k.jpg" },
+    { note: "Heirloom grade", price: "Under ₹1 Lakh", max: 100000, img: "/home/shop-by-price/under-1-lakh.jpg" },
 ];
 
 export default function ShopByPrice() {

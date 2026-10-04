@@ -140,7 +140,6 @@ export default async function Home() {
                         100% NATURAL DIAMONDS • 14KT & 18KT GOLD
                     </p>
                 </div>
-                        {/* One more comment to find for Qwen */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {TILES.map((c) => (
                         <Link key={c.slug} href={`/category/${c.slug}`} className="group cursor-pointer space-y-3">
