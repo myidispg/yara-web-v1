@@ -5,8 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
 import SafeImage from "@/components/SafeImage";
 import HeroCarousel from "@/components/HeroCarousel";
-import ShopByPrice from "@/components/ShopByPrice";
-import ShopByCollection from "@/components/ShopByCollection";
+import ShopByGrid from "@/components/ShopByGrid";
 
 export const metadata = generateSEO({
     title: 'Buy your daily wear jewellery at YA-RA',
@@ -217,10 +216,36 @@ export default async function Home() {
             </section>
 
             {/* SHOP BY PRICE */}
-            <ShopByPrice />
+            <ShopByGrid
+                title="Shop by Price"
+                kicker="find your budget"
+                tagline="Effortless Luxury"
+                taglineSize="normal"
+                hasBackground={false}
+                padding="spacious"
+                items={[
+                    { label: "Under ₹30K", href: "/shop?priceMax=30000", img: "/home/shop-by-price/under-30k-2.jpg", altText: "Under ₹30K" },
+                    { label: "Under ₹50K", href: "/shop?priceMax=50000", img: "/home/shop-by-price/under-50k.jpg", altText: "Under ₹50K" },
+                    { label: "Under ₹75K", href: "/shop?priceMax=75000", img: "/home/shop-by-price/under-75k.jpg", altText: "Under ₹75K" },
+                    { label: "Under ₹1 Lakh", href: "/shop?priceMax=100000", img: "/home/shop-by-price/under-1-lakh.jpg", altText: "Under ₹1 Lakh" },
+                ]}
+            />
 
             {/* SHOP BY COLLECTION */}
-            <ShopByCollection />
+            <ShopByGrid
+                title="Shop by Collection"
+                kicker="curated edits"
+                tagline="Signature edits"
+                taglineSize="small"
+                hasBackground={true}
+                padding="compact"
+                items={[
+                    { label: "Solitaire Jewellery", href: "/shop?tag=solitaire", img: "/home/shop-by-collection/solitaire-jewellery.jpg", altText: "Solitaire Jewellery" },
+                    { label: "Tennis Bracelets", href: "/shop?tag=tennis-bracelet", img: "/home/shop-by-collection/tennis-bracelets-1.jpg", altText: "Tennis Bracelets" },
+                    { label: "Daily Wear Earrings", href: "/shop?tag=daily-wear&category=earrings", img: "/home/shop-by-collection/daily-wear-earrings.jpg", altText: "Daily Wear Earrings" },
+                    { label: "Cocktail Rings", href: "/shop?tag=cocktail&category=rings", img: "/home/shop-by-collection/cocktail-rings.jpg", altText: "Cocktail Rings" },
+                ]}
+            />
 
             {/* COLOR STONE BANNER */}
             {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
