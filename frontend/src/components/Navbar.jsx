@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
@@ -108,23 +109,27 @@ export default function Navbar() {
             </div> */}
 
             {/* Main Navigation */}
-            <div className="glass-nav-vibrant py-1">
-                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2 max-w-7xl mx-auto">
+            <div className="glass-nav-vibrant py-0.5">
+                <div className="flex items-center gap-6 lg:gap-10 px-6 lg:px-12 py-2.5 md:py-1.5 max-w-7xl mx-auto">
                     {/* Mobile Menu Button */}
                     <button className="md:hidden text-[#1A2536] text-2xl" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
                         ☰
                     </button>
 
                     {/* Logo */}
-                    <Link href="/" className="shrink-0 flex flex-col items-center justify-center py-1 group">
-                        <div className="flex items-center gap-2">
-                            <span className="font-serif-luxury text-3xl lg:text-4xl tracking-[0.3em] text-[#1A2536] group-hover:text-[#B86B5A] transition-colors">
-                                YA<span className="text-[#B86B5A]">-</span>RA
-                            </span>
-                            <span className="text-[9px] font-sans border border-[#1A2536]/40 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[#1A2536] -mt-3">®</span>
+                    <Link href="/" className="absolute left-1/2 -translate-x-1/2 md:static md:transform-none shrink-0 flex flex-col items-center justify-center py-1 group">
+                        <div className="relative w-32 h-10 md:w-40 md:h-12">
+                            <Image
+                                src="/home/logo/yara-logo.svg"
+                                alt="YA-RA Jewels - Natural Diamond Jewellery"
+                                fill
+                                sizes="(max-width: 768px) 128px, 160px"
+                                priority
+                                className="object-contain group-hover:scale-105 transition-transform duration-300"
+                            />
                         </div>
                         {/* Diamond Divider */}
-                        <div className="flex items-center gap-3 w-full my-0.5">
+                        {/* <div className="flex items-center gap-3 w-full my-0.5">
                             <span className="h-[1.5px] bg-gradient-to-r from-transparent via-[#E5BDB0] to-[#E5BDB0] flex-1"></span>
                             <div className="relative w-4 h-4 flex items-center justify-center">
                                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-[#1A2536]">
@@ -133,14 +138,14 @@ export default function Navbar() {
                                 </svg>
                             </div>
                             <span className="h-[1.5px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
-                        </div>
-                        <span className="hidden xl:block text-[9px] tracking-[0.25em] uppercase font-bold text-[#B86B5A] mt-1">
+                        </div> */}
+                        <span className="hidden xl:block text-[9px] tracking-[0.25em] uppercase font-bold text-[#B86B5A] mt-1 group-hover:scale-105 transition-transform duration-300">
                             Diamond & Gold Jewellery
                         </span>
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <nav className="hidden md:flex flex-1 justify-center gap-6 lg:gap-8 uppercase tracking-widest text-xs font-bold text-[#1A2536]">
+                    <nav className="hidden md:flex flex-1 justify-center gap-6 lg:gap-8 uppercase tracking-widest text-xs font-bold text-[#1A2536] ml-8">
                         {categories.map((c) => (
                             <Link
                                 key={c.slug}

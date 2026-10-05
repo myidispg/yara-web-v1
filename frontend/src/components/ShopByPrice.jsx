@@ -14,8 +14,8 @@ export default function ShopByPrice() {
             {/* Section header */}
             <div className="flex flex-row items-end justify-between gap-3 border-b border-[#E5BDB0]/60 pb-4">
                 <div className="min-w-0">
-                    <span className="font-cursive text-xl sm:text-3xl text-[#B86B5A] block -mb-2">find your budget</span>
-                    <h2 className="font-serif-luxury text-2xl sm:text-4xl lg:text-5xl font-normal text-[#1A2536] leading-tight">
+                    <span className="font-cursive text-2xl sm:text-3xl text-[#B86B5A] block -mb-2">find your budget</span>
+                    <h2 className="font-serif-luxury text-3xl sm:text-4xl lg:text-5xl font-normal text-[#1A2536] leading-tight">
                         Shop by Price
                     </h2>
                 </div>
@@ -25,14 +25,14 @@ export default function ShopByPrice() {
             </div>
 
             {/* Staggered price tiles */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 {BRACKETS.map((b, i) => (
                     <Link
                         key={b.max}
                         href={`/shop?priceMax=${b.max}`}
                         className={`group relative block overflow-hidden rounded-2xl border-2 border-[#E5BDB0] bg-[#1A2536] shadow-md hover:shadow-2xl hover:border-[#B86B5A] transition-all duration-500`}
                     >
-                        <div className="relative aspect-[15/16] md:aspect-[3/4] overflow-hidden">
+                        <div className="relative h-56 md:h-auto md:aspect-[3/4] overflow-hidden">
                             <SafeImage
                                 src={b.img}
                                 alt={b.price}

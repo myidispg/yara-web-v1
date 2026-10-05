@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import { generateSEO } from '@/lib/seo';
@@ -99,33 +100,64 @@ export default async function Home() {
             <HeroCarousel />
 
             {/* TRUST BADGES */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                    {[
-                        { icon: "💎", title: "100% Natural Diamonds", sub: "GIA, IGI & SGL Certified", color: "#B86B5A" },
-                        { icon: "🛡️", title: "BIS Hallmarked Gold", sub: "14KT & 18KT Pure Gold", color: "#D4AF37" },
-                        { icon: "🔄", title: "Lifetime Buyback", sub: "Guaranteed exchange and returns", color: "#10B981" },
-                        // { icon: "🚚💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
-                        { icon: "💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
-                    ].map((item, idx) => (
-                        <div key={idx} className="glass-card-vibrant p-6 rounded-3xl flex items-center gap-4 border-l-4 transition-all" style={{ borderLeftColor: item.color }}>
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ backgroundColor: `${item.color}15` }}>
-                                {item.icon}
+            <section className="bg-gradient-to-b from-[#FBF7F2]/50 to-white py-10 md:py-14">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+                        {[
+                            { icon: "💎", title: "100% Natural Diamonds", sub: "GIA, IGI & SGL Certified", color: "#B86B5A" },
+                            {
+                                icon: (
+                                    <Image
+                                        src="/home/logo/bis_logo.svg"
+                                        alt="BIS Hallmark"
+                                        width={40}
+                                        height={40}
+                                        className="w-8 h-8 md:w-10 md:h-10 object-contain"
+                                    />
+                                ), title: "BIS Hallmarked Gold", sub: "14KT & 18KT Pure Gold", color: "#D4AF37"
+                            },
+                            { icon: "🔄", title: "Lifetime Buyback", sub: "Guaranteed exchange and returns", color: "#10B981" },
+                            // { icon: "🚚💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
+                            { icon: "💸", title: "Cash on Delivery", sub: "Partial COD Available. ", color: "#1A2536" },
+                        ].map((item, idx) => (
+                            <div key={idx} className="flex flex-col items-center text-center group">
+                                {/* Circular icon badge */}
+                                <div
+                                    className="relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-4 md:mb-5 transition-all duration-300 group-hover:scale-105 shadow-sm"
+                                    style={{
+                                        backgroundColor: `${item.color}12`,
+                                        border: `1.5px solid ${item.color}30`,
+                                    }}
+                                >
+                                    <span className="text-2xl md:text-3xl">{item.icon}</span>
+                                    {/* Subtle ring accent */}
+                                    <div
+                                        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                        style={{ boxShadow: `0 0 0 3px ${item.color}20` }}
+                                    />
+                                </div>
+                                {/* Title */}
+                                <h4 className="font-serif-luxury text-base md:text-lg font-semibold text-[#1A2536] leading-tight mb-1.5">
+                                    {item.title}
+                                </h4>
+                                {/* Subtitle */}
+                                <p
+                                    className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.12em] leading-relaxed max-w-[180px]"
+                                    style={{ color: item.color }}
+                                >
+                                    {item.sub}
+                                </p>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-sm text-[#1A2536]">{item.title}</h4>
-                                <p className="text-xs font-semibold" style={{ color: item.color }}>{item.sub}</p>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </section>
 
             {/* SHOP BY CATEGORY */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14 space-y-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E5BDB0]/60 pb-4">
                     <div>
-                        <span className="font-cursive text-3xl text-[#B86B5A] block -mb-2">curated for you</span>
+                        <span className="font-cursive text-4xl sm:text-3xl text-[#B86B5A] block -mb-2">curated for you</span>
                         <h2 className="font-serif-luxury text-4xl sm:text-5xl font-normal text-[#1A2536]">
                             Shop by Category
                         </h2>
@@ -146,10 +178,10 @@ export default async function Home() {
                                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
-                                {/* <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/85 via-transparent to-transparent"></div> */}
-                                <div className="absolute bottom-6 left-6 right-6 text-white text-center">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest block mb-1">{c.tag}</span>
-                                    <h3 className="font-serif-luxury text-4xl font-normal text-white">{c.title}</h3>
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#1A2536]/90 via-[#1A2536]/20 to-transparent"></div>
+                                <div className="absolute bottom-0 left-0 right-0 px-6 pt-8 pb-4 md:p-6 text-white text-center">
+                                    <span className="hidden md:block text-[10px] font-bold uppercase tracking-widest mb-1">{c.tag}</span>
+                                    <h3 className="font-serif-luxury text-2xl md:text-3xl lg:text-4xl font-normal text-white">{c.title}</h3>
                                 </div>
                             </div>
                         </Link>
@@ -158,11 +190,11 @@ export default async function Home() {
             </section>
 
             {/* BEST SELLERS */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-20">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14 space-y-5 md:space-y-10">
                 <div className="flex flex-row items-end justify-between gap-3 border-b border-[#E5BDB0]/60 pb-4">
                     <div className="min-w-0">
-                        <span className="font-cursive text-xl sm:text-3xl text-[#B86B5A] block -mb-1">bestselling pieces</span>
-                        <h2 className="font-serif-luxury text-2xl sm:text-4xl lg:text-5xl font-normal text-[#1A2536] leading-tight">
+                        <span className="font-cursive text-2xl sm:text-3xl text-[#B86B5A] block -mb-1">curated favourites</span>
+                        <h2 className="font-serif-luxury text-3xl sm:text-4xl lg:text-5xl font-normal text-[#1A2536] leading-tight">
                             Signature Designs
                         </h2>
                     </div>
@@ -233,7 +265,7 @@ export default async function Home() {
             </section> */}
 
             {/* 4CS EDUCATION */}
-            <section className="bg-[#1A2536] text-white py-20">
+            <section className="bg-[#1A2536] text-white py-10 md:py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <span className="font-cursive text-3xl text-[#E5BDB0] block -mb-2">diamond education</span>

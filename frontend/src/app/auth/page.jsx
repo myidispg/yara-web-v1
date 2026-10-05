@@ -172,9 +172,9 @@ export default function AuthPage() {
                         {step === 1 && (
                             <div className="space-y-6">
                                 <div className="text-center mb-8">
-                                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">welcome back</span>
+                                    <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">Sign In</span>
                                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
-                                        Sign In
+                                        Join YA-RA
                                     </h1>
                                 </div>
 

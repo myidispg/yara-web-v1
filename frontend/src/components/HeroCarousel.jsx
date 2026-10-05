@@ -16,8 +16,8 @@ const SLIDES = [
   {
     href: "/shop?priceMax=30000",
     alt: "Jewellery under 30,000/-",
-    desktop: "/home/hero/Banner 2 Desktop.jpeg",
-    mobile: "/home/hero/Banner 2 Mobile.png",
+    desktop: "/home/hero/Banner 2 Desktop (revised).jpeg",
+    mobile: "/home/hero/Banner 2 Mobile (revised).png",
     theme: "dark",
   },
 ];
@@ -44,13 +44,13 @@ export default function HeroCarousel() {
   const darkImage = SLIDES[index].theme === "dark";
 
   const arrowCls = `absolute top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full backdrop-blur-md flex items-center justify-center transition-colors duration-500 ${darkImage
-      ? "bg-white/15 border border-white/25 text-white hover:bg-white/30"
-      : "bg-[#1A2536]/10 border border-[#1A2536]/25 text-[#1A2536] hover:bg-[#1A2536]/20"
+    ? "bg-white/15 border border-white/25 text-white hover:bg-white/30"
+    : "bg-[#1A2536]/10 border border-[#1A2536]/25 text-[#1A2536] hover:bg-[#1A2536]/20"
     }`;
 
   return (
     <section className="relative w-full overflow-hidden bg-[#1A2536]" aria-label="Featured YA-RA collections">
-      <div className="relative w-full h-[85vh] min-h-[550px] md:h-[78vh] md:min-h-[520px] md:max-h-[760px]">
+      <div className="relative w-full h-[77vh] min-h-[495px] md:h-[78vh] md:min-h-[520px] md:max-h-[760px]">
 
         {/* Slides — each one is its own clickable Link */}
         {SLIDES.map((slide, i) => {
@@ -129,72 +129,3 @@ export default function HeroCarousel() {
     </section>
   );
 }
-
-// export default function HeroCarousel() {
-//   const [index, setIndex] = useState(0);
-
-//   // Auto-cycle every 5 seconds
-//   useEffect(() => {
-//     const timer = setInterval(() => {
-//       setIndex((i) => (i + 1) % SLIDES.length);
-//     }, 5000);
-//     return () => clearInterval(timer);
-//   }, []);
-
-//   return (
-//     <section className="relative w-full overflow-hidden bg-[#1A2536]" aria-label="Featured collections">
-//       <div className="relative w-full h-[62vh] min-h-[420px] md:h-[78vh] md:min-h-[520px] md:max-h-[760px]">
-//         {SLIDES.map((slide, i) => {
-//           const active = i === index;
-//           return (
-//             <Link
-//               key={slide.href}
-//               href={slide.href}
-//               aria-hidden={!active}
-//               tabIndex={active ? 0 : -1}
-//               className={`absolute inset-0 block transition-opacity duration-700 ease-in-out ${
-//                 active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-//               }`}
-//             >
-//               {/* Desktop / tablet image (wide crop) */}
-//               <Image
-//                 src={slide.desktop}
-//                 alt={slide.alt}
-//                 fill
-//                 priority={i === 0}
-//                 sizes="100vw"
-//                 className="hidden md:block object-cover"
-//               />
-//               {/* Mobile image (vertical crop for portrait screens) */}
-//               <Image
-//                 src={slide.mobile}
-//                 alt={slide.alt}
-//                 fill
-//                 priority={i === 0}
-//                 sizes="100vw"
-//                 className="md:hidden object-cover"
-//               />
-//               {/* Bottom gradient so dots stay visible */}
-//               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#1A2536]/60 to-transparent pointer-events-none" />
-//             </Link>
-//           );
-//         })}
-
-//         {/* Slide dots */}
-//         <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5">
-//           {SLIDES.map((slide, i) => (
-//             <button
-//               key={slide.href}
-//               type="button"
-//               aria-label={`Go to slide ${i + 1}`}
-//               onClick={() => setIndex(i)}
-//               className={`h-2 rounded-full transition-all duration-300 ${
-//                 i === index ? "w-8 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
-//               }`}
-//             />
-//           ))}
-//         </div>
-//       </div>
-//     </section>
-//   );
-// }
