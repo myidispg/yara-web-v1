@@ -21,7 +21,7 @@ const SLIDES = [
     theme: "dark",
   },
 ];
-
+// Comment for qwen.
 export default function HeroCarousel() {
   const [index, setIndex] = useState(0);
 
