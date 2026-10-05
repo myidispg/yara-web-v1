@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import api from "@/api/client";
+import SafeImage from "@/components/SafeImage";
 
 export default function AuthPage() {
     const { user, loading: authLoading } = useAuth();
@@ -150,18 +151,27 @@ export default function AuthPage() {
             <meta name="robots" content="noindex, nofollow" />
             <div className="flex-1 grid lg:grid-cols-[55fr_45fr]">
                 <div className="relative hidden lg:block bg-[#1A2536] overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#1A2536]/90 via-[#1A2536]/70 to-[#111A29]/90"></div>
+                    {/* Background image */}
+                    <SafeImage
+                        src="/auth/auth_page_background.jpg"
+                        alt="YA-RA Jewels"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                    {/* Dark gradient overlay for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#1A2536]/80 via-[#1A2536]/60 to-[#111A29]/80"></div>
                     <div className="relative h-full flex flex-col items-center justify-center text-white p-16 text-center max-w-lg mx-auto">
-                        <span className="font-serif-luxury text-4xl tracking-[0.2em] text-white">
+                        <span className="font-serif-luxury text-7xl tracking-[0.2em] text-white">
                             YA<span className="text-[#B86B5A]">-</span>RA
                         </span>
-                        <p className="font-cursive text-3xl text-[#E5BDB0] mt-4 mb-4">
-                            every diamond tells your story
+                        <p className="font-cursive text-4xl text-[#E5BDB0] mt-4 mb-4">
+                            Every diamond tells your story
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center px-6 sm:px-8 lg:px-12 py-12 bg-white">
+                <div className="flex items-center justify-center px-6 sm:px-8 lg:px-12 py-2 sm:py-12 bg-white">
                     <div className="w-full max-w-md">
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl mb-6 font-semibold text-center">
@@ -171,7 +181,7 @@ export default function AuthPage() {
 
                         {step === 1 && (
                             <div className="space-y-6">
-                                <div className="text-center mb-8">
+                                <div className="text-center mb-4 sm:mb-8">
                                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">Sign In</span>
                                     <h1 className="font-serif-luxury text-3xl sm:text-4xl font-normal text-[#1A2536]">
                                         Join YA-RA
@@ -200,7 +210,7 @@ export default function AuthPage() {
                                     </button>
                                 </form>
 
-                                <div className="flex items-center gap-4 my-6">
+                                <div className="flex items-center gap-4 my-4 sm:my-6">
                                     <div className="flex-1 h-px bg-[#E5BDB0]/40"></div>
                                     <span className="text-[10px] uppercase tracking-widest text-[#1A2536]/50 font-bold">Or</span>
                                     <div className="flex-1 h-px bg-[#E5BDB0]/40"></div>
@@ -224,7 +234,7 @@ export default function AuthPage() {
 
                         {step === 2 && (
                             <div className="space-y-6">
-                                <div className="text-center mb-8">
+                                <div className="text-center mb-4 sm:mb-8">
                                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">
                                         check your inbox
                                     </span>
@@ -278,7 +288,7 @@ export default function AuthPage() {
 
                         {step === 3 && (
                             <div className="space-y-6">
-                                <div className="text-center mb-8">
+                                <div className="text-center mb-4 sm:mb-8">
                                     <span className="font-cursive text-3xl text-[#B86B5A] block -mb-1">
                                         join the family
                                     </span>
@@ -323,11 +333,10 @@ export default function AuthPage() {
                                             <input
                                                 type="tel"
                                                 maxLength={10}
-                                                className={`flex-1 border rounded-r-xl px-4 py-3.5 text-sm focus:outline-none transition-colors ${
-                                                    phoneError
-                                                        ? "border-red-500 focus:border-red-500"
-                                                        : "border-[#E5BDB0] focus:border-[#1A2536]"
-                                                }`}
+                                                className={`flex-1 border rounded-r-xl px-4 py-3.5 text-sm focus:outline-none transition-colors ${phoneError
+                                                    ? "border-red-500 focus:border-red-500"
+                                                    : "border-[#E5BDB0] focus:border-[#1A2536]"
+                                                    }`}
                                                 placeholder="10-digit mobile number"
                                                 value={phone}
                                                 onChange={(e) => handlePhoneChange(e.target.value)}
