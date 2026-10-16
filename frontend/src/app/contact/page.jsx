@@ -25,7 +25,7 @@ export default function ContactPage() {
         <div className="space-y-6">
           <p className="text-sm text-[#1A2536]/70 leading-relaxed max-w-lg">
             Whether you have a question about our collection, need help with a custom order, 
-            or want to schedule a showroom visit, our concierge team is here to assist you.
+            or want to schedule a showroom visit, our team is here to assist you.
           </p>
           
           <div className="space-y-4">
@@ -38,8 +38,8 @@ export default function ContactPage() {
               </span>
               <div>
                 <h4 className="font-bold text-sm text-[#1A2536] mb-1">Phone / WhatsApp</h4>
-                <a href="tel:+919876543210" className="text-sm text-[#1A2536]/70 hover:text-[#B86B5A] font-semibold">+91 98765 43210</a>
-                <p className="text-[10px] text-[#1A2536]/50 mt-1 font-semibold uppercase tracking-wider">Mon-Sat: 10am - 7pm IST</p>
+                <a href="tel:+919953105105" className="text-sm text-[#1A2536]/70 hover:text-[#B86B5A] font-semibold">+91 9953105105</a>
+                <p className="text-[10px] text-[#1A2536]/50 mt-1 font-semibold uppercase tracking-wider">Wednesday to Monday: 11am - 8pm IST. (Tuesdays are off)</p>
               </div>
             </div>
 
@@ -67,10 +67,10 @@ export default function ContactPage() {
                 </svg>
               </span>
               <div>
-                <h4 className="font-bold text-sm text-[#1A2536] mb-1">Flagship Showroom</h4>
+                <h4 className="font-bold text-sm text-[#1A2536] mb-1">Our Showroom</h4>
                 <p className="text-sm text-[#1A2536]/70">
-                  C-Scheme, Ashok Marg<br />
-                  Jaipur, Rajasthan 302001
+                  UGF-27, AVA Court Market, near Park Hospital<br />
+                  Sector-47, Gurugram, Haryana - 122017
                 </p>
                 <Link href="/showroom" className="text-xs text-[#B86B5A] font-bold hover:underline mt-2 inline-block uppercase tracking-wider">
                   View directions →
