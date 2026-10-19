@@ -22,9 +22,9 @@ export default function PoliciesPage() {
       icon: "↻"
     },
     {
-      title: "Diamond Certification",
-      description: "Learn about IGI, GIA, and SGL certification partners.",
-      link: "/certification",
+      title: "Diamond Guide",
+      description: "Understand the 4Cs, diamond shapes, and certification.",
+      link: "/diamond-guide",
       icon: "◆"
     },
     {
@@ -34,9 +34,9 @@ export default function PoliciesPage() {
       icon: "◯"
     },
     {
-      title: "Jewellery Care",
-      description: "Tips for cleaning and maintaining your pieces.",
-      link: "/tips",
+      title: "Jewellery Care Guide",
+      description: "Expert tips for cleaning and maintaining your fine jewellery.",
+      link: "/jewellery-care",
       icon: "✨"
     },
     {

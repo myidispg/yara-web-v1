@@ -1,7 +1,7 @@
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  
+
   const staticPages = [
     '',
     '/about',
@@ -9,9 +9,9 @@ export default async function sitemap() {
     '/policies',
     '/privacy',
     '/buyback',
-    '/certification',
+    '/diamond-guide',
     '/size-guide',
-    '/tips',
+    '/jewellery-care',
     '/showroom',
   ].map(route => ({
     url: `${baseUrl}${route}`,
@@ -22,8 +22,8 @@ export default async function sitemap() {
 
   let categoryPages = [];
   try {
-    const res = await fetch(`${apiUrl}/api/categories/`, { 
-      next: { revalidate: 3600 } 
+    const res = await fetch(`${apiUrl}/api/categories/`, {
+      next: { revalidate: 3600 }
     });
     if (res.ok) {
       const categories = await res.json();
@@ -42,8 +42,8 @@ export default async function sitemap() {
 
   let productPages = [];
   try {
-    const res = await fetch(`${apiUrl}/api/products/?limit=1000`, { 
-      next: { revalidate: 3600 } 
+    const res = await fetch(`${apiUrl}/api/products/?limit=1000`, {
+      next: { revalidate: 3600 }
     });
     if (res.ok) {
       const data = await res.json();

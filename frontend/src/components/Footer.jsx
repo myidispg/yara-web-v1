@@ -91,7 +91,7 @@ export default function Footer() {
                         <h4 className="font-bold text-sm uppercase tracking-wider text-[#D4AF37]">Information</h4>
                         <ul className="space-y-2.5 text-sm text-gray-300">
                             <li>
-                                <Link className="hover:text-white transition-colors" href="/certification">
+                                <Link className="hover:text-white transition-colors" href="/diamond-guide">
                                     Diamond Guide
                                 </Link>
                             </li>
@@ -101,7 +101,7 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link className="hover:text-white transition-colors" href="/tips">
+                                <Link className="hover:text-white transition-colors" href="/jewellery-care">
                                     Jewellery Care Guide
                                 </Link>
                             </li>
