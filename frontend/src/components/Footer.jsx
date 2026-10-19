@@ -29,8 +29,8 @@ export default function Footer() {
                                 <span className="h-[1.5px] bg-gradient-to-r from-transparent via-[#E5BDB0] to-[#E5BDB0] flex-1"></span>
                                 <div className="relative w-4 h-4 flex items-center justify-center">
                                     <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-white">
-                                        <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7"/>
-                                        <path d="M12 2V22M3 9H21M7.5 5.5L12 9L16.5 5.5" stroke="currentColor" strokeWidth="1.2"/>
+                                        <path d="M12 2L3 9L12 22L21 9L12 2Z" stroke="currentColor" strokeWidth="1.5" fill="#E5BDB0" fillOpacity="0.7" />
+                                        <path d="M12 2V22M3 9H21M7.5 5.5L12 9L16.5 5.5" stroke="currentColor" strokeWidth="1.2" />
                                     </svg>
                                 </div>
                                 <span className="h-[1.5px] bg-gradient-to-r from-[#E5BDB0] via-[#E5BDB0] to-transparent flex-1"></span>
@@ -92,7 +92,7 @@ export default function Footer() {
                         <ul className="space-y-2.5 text-sm text-gray-300">
                             <li>
                                 <Link className="hover:text-white transition-colors" href="/certification">
-                                    Diamond Certification (SGL/IGI/GIA)
+                                    Diamond Guide
                                 </Link>
                             </li>
                             <li>
@@ -102,7 +102,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link className="hover:text-white transition-colors" href="/tips">
-                                    Tips and Tricks
+                                    Jewellery Care Guide
                                 </Link>
                             </li>
                         </ul>
