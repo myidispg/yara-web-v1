@@ -175,6 +175,9 @@ if not CORS_ALLOWED_ORIGINS and not DEBUG:
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Tell Django to trust the proxy's HTTPS header (Required for Railway/Vercel)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
