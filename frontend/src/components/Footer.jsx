@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export default function Footer() {
     const pathname = usePathname();
-    const isControl = pathname.startsWith("/control");
+    const isControl = pathname.startsWith("/cpanel");
 
     // Don't render footer on control panel
     if (isControl) return null;

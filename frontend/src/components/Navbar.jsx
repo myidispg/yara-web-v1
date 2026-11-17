@@ -25,7 +25,7 @@ export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
     const initialPathRef = useRef(null);
-    const isControl = pathname.startsWith("/control");
+    const isControl = pathname.startsWith("/cpanel");
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
