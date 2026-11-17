@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
       {
@@ -11,9 +12,9 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
       { protocol: 'http', hostname: '127.0.0.1', pathname: '/**' },
-      // Production domains — update these when you deploy
       { protocol: 'https', hostname: 'api.yarajewels.com', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.yarajewels.com', pathname: '/**' },
       { protocol: 'https', hostname: 'media.yarajewels.com', pathname: '/**' },
