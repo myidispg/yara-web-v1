@@ -521,8 +521,16 @@ class DesignViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Unsupported file type'}, status=status.HTTP_400_BAD_REQUEST)
             if f.size > 50 * 1024 * 1024:
                 return Response({'error': 'File too large (max 50MB)'}, status=status.HTTP_400_BAD_REQUEST)
-            name = default_storage.save(f"designs/{design.slug}/{secrets.token_hex(4)}.{ext}", f)
-            url = request.build_absolute_uri(settings.MEDIA_URL + name)
+            
+            import cloudinary.uploader
+            f.seek(0)
+            result = cloudinary.uploader.upload(
+                f,
+                folder=f"yara/designs/{design.slug}",
+                resource_type="video" if kind == "video" else "image",
+                public_id=secrets.token_hex(4),
+            )
+            url = result["secure_url"]
 
         if not url:
             return Response({'error': 'Provide a file or url'}, status=status.HTTP_400_BAD_REQUEST)
