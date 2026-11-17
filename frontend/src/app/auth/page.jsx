@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import api from "@/api/client";
 import SafeImage from "@/components/SafeImage";
 
-export default function AuthPage() {
+function AuthInner() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -361,5 +361,14 @@ export default function AuthPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+
+export default function AuthPage() {
+    return (
+        <Suspense fallback={null}>
+            <AuthInner />
+        </Suspense>
     );
 }
