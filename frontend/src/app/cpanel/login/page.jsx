@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStaffAuth } from "@/context/StaffAuthContext";
 import controlApi from "@/api/controlClient";
+import { describeApiError } from "@/lib/apiError";
 
 export default function ControlLoginPage() {
     const { user, loading } = useStaffAuth();
@@ -23,7 +24,8 @@ export default function ControlLoginPage() {
             await controlApi._login({ login: form.identifier, password: form.password });
             window.location.href = "/cpanel";
         } catch (err) {
-            setError(err.response?.data?.detail || "Invalid credentials or account deactivated.");
+            console.error("cpanel login failed:", err);
+            setError(describeApiError(err));
             setBusy(false);
         }
     };
