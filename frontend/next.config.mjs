@@ -1,14 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  skipTrailingSlashRedirect: true,
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://yara-web-v1-production.up.railway.app/api/:path*',
-      },
-    ];
-  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
